@@ -47,6 +47,7 @@ export class BelotGame {
     this.scores = [0, 0]; // Team scores
     this.roundScore = [0, 0]; // Points from current round
     this.lastRoundScore = [0, 0]; // Points from last completed round (for display)
+    this.lastRoundBreakdown = [{ cardPoints: 0, combinationPoints: 0, valatPoints: 0 }, { cardPoints: 0, combinationPoints: 0, valatPoints: 0 }]; // Breakdown of last round points
     this.hangingPoints = 0; // Points hanging from last round
     this.announcedCombinations = [[], []]; // Team combinations
     this.winner = null;
@@ -81,6 +82,8 @@ export class BelotGame {
     this.roundScore = [0, 0];
     // Clear last round scores when starting new deal
     this.lastRoundScore = [0, 0];
+    // Clear last round breakdown when starting new deal
+    this.lastRoundBreakdown = [{ cardPoints: 0, combinationPoints: 0, valatPoints: 0 }, { cardPoints: 0, combinationPoints: 0, valatPoints: 0 }];
   }
 
 
@@ -179,27 +182,6 @@ export class BelotGame {
     }
   }
 
-  announceCombination(playerId, combination) {
-    const player = this.players[playerId];
-    const team = player.team;
-    
-    // Check if player has the combination
-    const allCombos = getAllCombinations(player.hand, this.trumpSuit);
-    const combo = allCombos.find(c => 
-      c.type === combination.type && 
-      JSON.stringify(c.cards.map(c => c.id).sort()) === JSON.stringify(combination.cards.map(c => c.id).sort())
-    );
-    
-    if (!combo) return false;
-    
-    this.announcedCombinations[team].push({
-      ...combo,
-      playerId
-    });
-    
-    return true;
-  }
-
   playCard(playerId, cardId) {
     if (playerId !== this.currentPlayer) return false;
     if (this.phase !== GAME_PHASES.PLAYING) return false;
@@ -212,6 +194,21 @@ export class BelotGame {
     
     // Validate card play
     if (!this.isValidCardPlay(player, card)) return false;
+    
+    // Auto-announce combinations on first card play in first trick
+    const isFirstTrick = this.tricks.length === 0;
+    if (isFirstTrick && this.contract && this.contract !== 'no-trump') {
+      const allCombos = getAllCombinations(player.hand, this.trumpSuit);
+      if (allCombos.length > 0) {
+        const team = player.team;
+        allCombos.forEach(combo => {
+          this.announcedCombinations[team].push({
+            ...combo,
+            playerId
+          });
+        });
+      }
+    }
     
     // Remove card from hand
     player.hand.splice(cardIndex, 1);
@@ -423,32 +420,45 @@ export class BelotGame {
   }
 
   endRound() {
+    // Calculate breakdown - card points are already in roundScore
+    const breakdown = [
+      { cardPoints: this.roundScore[0], combinationPoints: 0, valatPoints: 0 },
+      { cardPoints: this.roundScore[1], combinationPoints: 0, valatPoints: 0 }
+    ];
         
     if (this.contract === 'no-trump') {
       // Double points in no-trump
       this.roundScore[0] *= 2;
       this.roundScore[1] *= 2;
+      breakdown[0].cardPoints *= 2;
+      breakdown[1].cardPoints *= 2;
     }
         
-    const isValat = false;
+    let isValat = false;
     // Check for valat (winning all tricks)
     if (this.tricks.every(t => {return t.team === 0; })) {
       this.roundScore[0] += 90;
+      breakdown[0].valatPoints = 90;
       isValat = true;
     } else if (this.tricks.every(t => {return t.team === 1; })) {
       this.roundScore[1] += 90;
+      breakdown[1].valatPoints = 90;
       isValat = true;
     }
     
     // Add combination points
     this.announcedCombinations.forEach((combos, team) => {
+      let comboPoints = 0;
       combos.forEach(combo => {
+        comboPoints += combo.points;
         this.roundScore[team] += combo.points;
       });
+      breakdown[team].combinationPoints = comboPoints;
     });
     
-    // Store original round scores for display (before any modifications)
+    // Store original round scores and breakdown for display
     this.lastRoundScore = [...this.roundScore];
+    this.lastRoundBreakdown = breakdown;
     
     // Calculate final scores
     const contractTeam = this.players[this.bids.find(b => b.bid === this.contract).playerId].team;
@@ -519,6 +529,7 @@ export class BelotGame {
     this.redouble = false;
     this.announcedCombinations = [[], []];
     this.winner = null;
+    // Note: lastRoundScore and lastRoundBreakdown are preserved for display
     
     // Set phase to SCORING to show full score panel
     this.phase = GAME_PHASES.SCORING;

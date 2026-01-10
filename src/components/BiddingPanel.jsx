@@ -89,36 +89,72 @@ export default function BiddingPanel({
 
   const playerNames = ['Player', 'West', 'Partner', 'East'];
 
+  // Calculate initial bidding order (counter-clockwise starting from currentBidder)
+  // When no bids exist, show all 4 players in turn order
+  // When bids exist, show players in order: those who bid, then remaining in turn order
+  const getBiddingOrder = () => {
+    // Always show 4 players
+    const order = [];
+    
+    // Start from the first bidder (currentBidder when no bids, or first bidder)
+    const firstBidder = bids.length > 0 ? bids[0].playerId : currentBidder;
+    
+    // Add players in counter-clockwise order
+    for (let i = 0; i < 4; i++) {
+      const playerId = (firstBidder - i) % 4;
+      order.push(playerId);
+    }
+    
+    return order;
+  };
+
+  const biddingOrder = getBiddingOrder();
+  const bidsByPlayer = {};
+  bids.forEach(bid => {
+    bidsByPlayer[bid.playerId] = bid;
+  });
+
   return (
     <div className="bidding-panel">
       <h3 className="bidding-title">Select your bid</h3>
       
-      {bids.length > 0 && (
-        <div className="bids-list">
-          {bids.map((bid, idx) => {
-            const display = getContractDisplay(bid.bid);
-            return (
-              <div key={idx} className="bid-item-row">
-                <span className="bid-player-name">{playerNames[bid.playerId]}</span>
-                {bid.bid !== 'pass' && bid.bid !== 'double' && bid.bid !== 'redouble' && (
-                  <span className="bid-suit-icon" style={{ color: display.iconColor }}>
-                    {display.icon}
+      <div className="bids-list">
+        {biddingOrder.map((playerId, idx) => {
+          const bid = bidsByPlayer[playerId];
+          const isCurrentBidder = playerId === currentBidder;
+          const display = bid ? getContractDisplay(bid.bid) : null;
+          
+          return (
+            <div key={idx} className="bid-item-row">
+              <span className="bid-player-name">{playerNames[playerId]}</span>
+              <div className="bid-right-side">
+                {bid ? (
+                  <>
+                    {bid.bid !== 'pass' && bid.bid !== 'double' && bid.bid !== 'redouble' && (
+                      <span className="bid-suit-icon" style={{ color: display.iconColor }}>
+                        {display.icon}
+                      </span>
+                    )}
+                    {bid.bid === 'pass' && (
+                      <span className="bid-text">Pass</span>
+                    )}
+                    {bid.bid === 'double' && (
+                      <span className="bid-text">Double</span>
+                    )}
+                    {bid.bid === 'redouble' && (
+                      <span className="bid-text">Redouble</span>
+                    )}
+                  </>
+                ) : isCurrentBidder && !isMyTurn ? (
+                  <span className="waiting-message-inline">
+                    Waiting...
                   </span>
-                )}
-                {bid.bid === 'pass' && (
-                  <span className="bid-text">Pass</span>
-                )}
-                {bid.bid === 'double' && (
-                  <span className="bid-text">Double</span>
-                )}
-                {bid.bid === 'redouble' && (
-                  <span className="bid-text">Redouble</span>
-                )}
+                ) : null}
               </div>
-            );
-          })}
-        </div>
-      )}
+            </div>
+          );
+        })}
+      </div>
       
       {isMyTurn && (
         <>
@@ -183,11 +219,6 @@ export default function BiddingPanel({
         </>
       )}
       
-      {!isMyTurn && (
-        <div className="waiting-message">
-          Waiting for {['Player', 'West', 'Partner', 'East'][currentBidder]} to bid...
-        </div>
-      )}
     </div>
   );
 }

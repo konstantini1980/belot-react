@@ -1,0 +1,26 @@
+.combination-balloon {
+  position: relative;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  padding: 8px 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+}
+
+.combination-balloon.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+

@@ -9,7 +9,9 @@ export default function FullScorePanel({
   round = 1,
   onNextDeal = null,
   onClose = null,
-  showOverlay = false
+  showOverlay = false,
+  roundBreakdown = null,
+  announcedCombinations = [[], []]
 }) {
   const maxScore = 151;
   const isRoundOver = phase === GAME_PHASES.SCORING || phase === GAME_PHASES.FINISHED;
@@ -76,6 +78,8 @@ export default function FullScorePanel({
       {isRoundOver && roundScores && (
         <>
           <div className="score-section-title">Last Deal</div>
+          
+          {/* Player Team Breakdown */}
           <div className="score-section">
             <div className="score-row">
               <div className="score-row-left">
@@ -88,10 +92,40 @@ export default function FullScorePanel({
                   </svg>
                 </div>
                 <span className="team-name team-name-green">You & Partner</span>
-              </div>
-              <div className="score-value">{playerRoundScore}</div>
+              </div>              
             </div>
+            {roundBreakdown && roundBreakdown[0] && (
+              <div className="score-breakdown">
+                <div className="breakdown-item">
+                  <span className="breakdown-label">Card Points:</span>
+                  <span className="breakdown-value">{roundBreakdown[0].cardPoints}</span>
+                </div>
+                {roundBreakdown[0].combinationPoints > 0 && (
+                  <div className="breakdown-item">
+                    <span className="breakdown-label">Combinations:</span>
+                    <span className="breakdown-value breakdown-premium">+{roundBreakdown[0].combinationPoints}</span>
+                  </div>
+                )}
+                {roundBreakdown[0].valatPoints > 0 && (
+                  <div className="breakdown-item">
+                    <span className="breakdown-label">Valat:</span>
+                    <span className="breakdown-value breakdown-premium">+{roundBreakdown[0].valatPoints}</span>
+                  </div>
+                )}
+                {announcedCombinations[0] && announcedCombinations[0].length > 0 && (
+                  <div className="breakdown-combinations">
+                    {announcedCombinations[0].map((combo, idx) => (
+                      <span key={idx} className="combination-badge">
+                        {combo.type.toUpperCase()} (+{combo.points})
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+          
+          {/* Opponent Team Breakdown */}
           <div className="score-section">
             <div className="score-row">
               <div className="score-row-left">
@@ -105,8 +139,36 @@ export default function FullScorePanel({
                 </div>
                 <span className="team-name team-name-red">Opponents</span>
               </div>
-              <div className="score-value">{opponentRoundScore}</div>
             </div>
+            {roundBreakdown && roundBreakdown[1] && (
+              <div className="score-breakdown">
+                <div className="breakdown-item">
+                  <span className="breakdown-label">Card Points:</span>
+                  <span className="breakdown-value">{roundBreakdown[1].cardPoints}</span>
+                </div>
+                {roundBreakdown[1].combinationPoints > 0 && (
+                  <div className="breakdown-item">
+                    <span className="breakdown-label">Combinations:</span>
+                    <span className="breakdown-value breakdown-premium">+{roundBreakdown[1].combinationPoints}</span>
+                  </div>
+                )}
+                {roundBreakdown[1].valatPoints > 0 && (
+                  <div className="breakdown-item">
+                    <span className="breakdown-label">Valat:</span>
+                    <span className="breakdown-value breakdown-premium">+{roundBreakdown[1].valatPoints}</span>
+                  </div>
+                )}
+                {announcedCombinations[1] && announcedCombinations[1].length > 0 && (
+                  <div className="breakdown-combinations">
+                    {announcedCombinations[1].map((combo, idx) => (
+                      <span key={idx} className="combination-badge">
+                        {combo.type.toUpperCase()} (+{combo.points})
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div className="score-section-divider"></div>
         </>
@@ -116,8 +178,7 @@ export default function FullScorePanel({
       {renderScoreSection('You & Partner', 'green', playerTotalScore, playerTotalProgress)}
       {renderScoreSection('Opponents', 'red', opponentTotalScore, opponentTotalProgress)}
 
-      <div className="score-footer">
-        <span className="win-condition">First to 151 wins</span>
+      <div className="score-footer">        
         {onNextDeal && (
           <button 
             onClick={onNextDeal}
@@ -126,6 +187,7 @@ export default function FullScorePanel({
             Next Deal
           </button>
         )}
+        <span className="win-condition">First to 151 wins</span>
       </div>
     </div>
   );

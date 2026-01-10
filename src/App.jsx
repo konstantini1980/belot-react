@@ -5,7 +5,6 @@ import { makeAIBid, makeAIPlayCard } from './game/aiplayer';
 import GameBoard from './components/GameBoard';
 import PlayerHand from './components/PlayerHand';
 import BiddingPanel from './components/BiddingPanel';
-import CombinationPanel from './components/CombinationPanel'; 
 import './App.css';
 
 const PLAYER_ID = 0; // Human player is always player 0
@@ -17,7 +16,7 @@ export default function App() {
   const [showEmptyHand, setShowEmptyHand] = useState(false);
   const [displayTrick, setDisplayTrick] = useState([]);
   const [trickComplete, setTrickComplete] = useState(false);
-  const [combinations, setCombinations] = useState(null);
+  const [playerCombinations, setPlayerCombinations] = useState({}); // { playerId: combinations[] }
   const prevTricksLengthRef = useRef(0);
   const trickTimeoutRef = useRef(null);
 
@@ -26,6 +25,7 @@ export default function App() {
       game.deal();
       setGame({ ...game });
       setPlayableCards([]); // Clear playable cards when dealing
+      setPlayerCombinations({});
     }
     
     // // Clear playable cards in scoring phase
@@ -199,6 +199,13 @@ export default function App() {
     Object.assign(newGame, game);
     const player = newGame.players[PLAYER_ID];
     const wasLastCardInTrick = newGame.currentTrick.length === 3;
+    const isFirstTrick = game.tricks.length === 0;
+
+    // Check combinations before playing (on full hand)
+    let combos = [];
+    if (isFirstTrick && game.contract && game.contract !== 'no-trump') {
+      combos = getAllCombinations(player.hand, game.trumpSuit);
+    }
 
     if (newGame.playCard(PLAYER_ID, card.id)) {
       setGame(newGame);
@@ -211,13 +218,19 @@ export default function App() {
           setShowEmptyHand(false);
         }, 2000);
       }
-    }
 
-    // On first card play, show combinations
-    if (game.tricks.length === 0) {
-      setCombinations(game.contract && game.contract !== 'no-trump' 
-        ? getAllCombinations(player.hand, game.trumpSuit)
-        : []);
+      // On first card play in first trick, show combinations
+      if (isFirstTrick && combos.length > 0) {
+        setPlayerCombinations(prev => ({ ...prev, [PLAYER_ID]: combos }));
+        // Auto-dismiss after 4 seconds
+        setTimeout(() => {
+          setPlayerCombinations(prev => {
+            const updated = { ...prev };
+            delete updated[PLAYER_ID];
+            return updated;
+          });
+        }, 4000);
+      }
     }
   };
 
@@ -225,6 +238,14 @@ export default function App() {
     const newGame = new BelotGame();
     Object.assign(newGame, game);
     const playerId = newGame.currentPlayer;
+    const isFirstTrick = game.tricks.length === 0;
+    const player = newGame.players[playerId];
+    
+    // Check combinations before playing (on full hand)
+    let combos = [];
+    if (isFirstTrick && game.contract && game.contract !== 'no-trump') {
+      combos = getAllCombinations(player.hand, game.trumpSuit);
+    }
     
     // Use AI to select card
     const cardToPlay = makeAIPlayCard(newGame, playerId);
@@ -232,16 +253,22 @@ export default function App() {
     if (cardToPlay) {
       newGame.playCard(playerId, cardToPlay.id);
       setGame(newGame);
+
+      // On first card play in first trick, show combinations for AI players
+      if (isFirstTrick && combos.length > 0) {
+        setPlayerCombinations(prev => ({ ...prev, [playerId]: combos }));
+        // Auto-dismiss after 4 seconds
+        setTimeout(() => {
+          setPlayerCombinations(prev => {
+            const updated = { ...prev };
+            delete updated[playerId];
+            return updated;
+          });
+        }, 4000);
+      }
     }
   };
 
-  const handleAnnounceCombination = (combination) => {
-    const newGame = new BelotGame();
-    Object.assign(newGame, game);
-    if (newGame.announceCombination(PLAYER_ID, combination)) {
-      setGame(newGame);
-    }
-  };
 
   const handleNewGame = () => {
     const newGame = new BelotGame();
@@ -259,6 +286,7 @@ export default function App() {
     setGame(newGame);
     setSelectedCard(null);
     setPlayableCards([]);
+    setPlayerCombinations({});
   };
 
   const player = game.players[PLAYER_ID];
@@ -292,6 +320,10 @@ export default function App() {
           isDouble={game.double}
           isRedouble={game.redouble}
           onNextDeal={handleNextDeal}
+          playerCombinations={playerCombinations}
+          announcedCombinations={game.announcedCombinations}
+          roundBreakdown={game.lastRoundBreakdown}
+          bids={game.bids}
           biddingPanel={game.phase === GAME_PHASES.BIDDING ? (
             <BiddingPanel
               currentBidder={game.currentBidder}
@@ -313,18 +345,6 @@ export default function App() {
             />
           ) : null}
         />
-
-        {game.phase === GAME_PHASES.PLAYING && (
-           combinations && combinations.length > 0 /*&& game.currentPlayer === PLAYER_ID && game.tricks.length === 0*/ && 
-          (
-            <CombinationPanel
-              combinations={combinations}
-              onAnnounce={handleAnnounceCombination}
-              playerId={PLAYER_ID}
-              currentPlayer={game.currentPlayer}
-            />
-          )
-        )}
       </div>
     </div>
   );

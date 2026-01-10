@@ -12,17 +12,16 @@ export default function CombinationPanel({
   }
 
   return (
-    <div className="combination-panel">
-      <h4>Available Combinations</h4>
+    <div className="combination-panel">      
       <div className="combinations-list">
         {combinations.map((combo, idx) => (
-          <button
+          <div
             key={idx}
-            className="combination-button"
+            className="combination-item"
             onClick={() => onAnnounce(combo)}
           >
             {combo.type.toUpperCase()}: {combo.points} points
-          </button>
+          </div>
         ))}
       </div>
     </div>

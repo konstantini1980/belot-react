@@ -3,6 +3,7 @@ import Card from './Card';
 import CardBack from './CardBack';
 import CompactScorePanel from './CompactScorePanel';
 import FullScorePanel from './FullScorePanel';
+import CombinationBalloon from './CombinationBalloon';
 import { GAME_PHASES } from '../game/gameLogic';
 import './GameBoard.css';
 
@@ -21,7 +22,11 @@ export default function GameBoard({
   phase,
   isDouble = false,
   isRedouble = false,
-  onNextDeal = null
+  onNextDeal = null,
+  playerCombinations = {},
+  announcedCombinations = [[], []],
+  roundBreakdown = null,
+  bids = []
 }) {
   const [showFullScorePanel, setShowFullScorePanel] = useState(false);
   const isRoundOver = phase === GAME_PHASES.SCORING || phase === GAME_PHASES.FINISHED;
@@ -62,23 +67,36 @@ export default function GameBoard({
       </div>
       
       <div className="player-positions">
-        {players.map((player, idx) => (
-          <div key={idx} className={`player-indicator-container ${getPlayerPosition(idx)}`}>
-            <div className={`player-chip ${currentPlayer === idx ? 'active' : ''}`}>
-              <span className="player-chip-name">{player.name}</span>
-              {currentPlayer === idx && (
-                <span className="player-turn-dot"></span>
+        {players.map((player, idx) => {
+          const position = getPlayerPosition(idx);
+          const combinations = playerCombinations[idx] || [];
+          return (
+            <div key={idx} className={`player-indicator-container ${position}`}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+                <div className={`player-chip ${currentPlayer === idx ? 'active' : ''}`}>
+                  <span className="player-chip-name">{player.name}</span>
+                  <span className={`player-turn-dot ${currentPlayer === idx ? 'visible' : ''}`}></span>
+                </div>
+                {combinations.length > 0 && (
+                  <div className={`combination-balloon-wrapper ${position}`}>
+                    <CombinationBalloon
+                      combinations={combinations}
+                      playerName={player.name}
+                      onClose={() => {}}
+                    />
+                  </div>
+                )}
+              </div>
+              {idx !== 0 && (
+                <div className="player-cards-back">
+                  {Array.from({ length: player.hand.length }).map((_, i) => (
+                    <CardBack key={i} size="small" />
+                  ))}
+                </div>
               )}
             </div>
-            {idx !== 0 && (
-              <div className="player-cards-back">
-                {Array.from({ length: player.hand.length }).map((_, i) => (
-                  <CardBack key={i} size="small" />
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
       
       {playerHand && (
@@ -95,11 +113,15 @@ export default function GameBoard({
             isDouble={isDouble}
             isRedouble={isRedouble}
             onClick={() => setShowFullScorePanel(true)}
+            contractTeam={contract && bids.length > 0 ? (() => {
+              const contractBid = bids.find(b => b.bid === contract);
+              return contractBid ? players[contractBid.playerId].team : null;
+            })() : null}
           />
         )}
       </div>
       
-      {showFullScorePanel && (
+        {showFullScorePanel && (
         <FullScorePanel 
           scores={scores}
           roundScores={isRoundOver ? lastRoundScore : null}
@@ -108,6 +130,9 @@ export default function GameBoard({
           onNextDeal={isRoundOver ? onNextDeal : null}
           onClose={!isRoundOver ? () => setShowFullScorePanel(false) : null}
           showOverlay={true}
+          announcedCombinations={announcedCombinations}
+          tricks={tricks}
+          roundBreakdown={isRoundOver ? roundBreakdown : null}
         />
       )}
     </div>

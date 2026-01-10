@@ -15,7 +15,8 @@ export default function CompactScorePanel({
   contract = null,
   isDouble = false,
   isRedouble = false,
-  onClick = null
+  onClick = null,
+  contractTeam = null
 }) {
   const playerScore = roundScores?.[0] || 0;
   const opponentScore = roundScores?.[1] || 0;
@@ -42,11 +43,17 @@ export default function CompactScorePanel({
       <div className="round-score-values">
         <div className="round-score-item">
           <span className="round-score-number round-score-green">{playerScore}</span>
-          <span className="round-score-label">You</span>
+          <span className="round-score-label">
+            You            
+          </span>
+          {contractTeam === 0 && <span className="contract-indicator"></span>}
         </div>
         <div className="round-score-item">
           <span className="round-score-number round-score-red">{opponentScore}</span>
-          <span className="round-score-label">Opp</span>
+          <span className="round-score-label">
+            Opp
+            {contractTeam === 1 && <span className="contract-indicator"></span>}
+          </span>
         </div>
       </div>
     </div>

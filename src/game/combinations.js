@@ -1,80 +1,113 @@
 import { SEQUENCE_ORDER } from './cards';
 
-// Premium combinations
-export const COMBINATIONS = {
-  tierce: { name: 'Tierce', points: 20, length: 3 },
-  quarte: { name: 'Quarte', points: 50, length: 4 },
-  quint: { name: 'Quint', points: 100, length: 5 },
-  equal: { name: 'Equal', points: { '10': 100, 'Q': 100, 'Q': 100, 'K': 100, 'A': 100, '9': 150, 'J': 200 } }
-};
+// Sequence order for sorting (descending: A, K, Q, J, 10, 9, 8, 7)
+const SEQUENCE_ORDER_DESC = ['A', 'K', 'Q', 'J', '10', '9', '8', '7'];
+
+// Check if two cards are consecutive (x is higher than y in sequence)
+function isConsequent(x, y) {
+  const xIndex = SEQUENCE_ORDER_DESC.indexOf(x.rank);
+  const yIndex = SEQUENCE_ORDER_DESC.indexOf(y.rank);
+  
+  // Check if y is the next card after x in descending order
+  return xIndex !== -1 && yIndex !== -1 && yIndex === xIndex + 1;
+}
+
+// Add sequential combination based on length
+function addSequentialCombination(cards, sequences) {
+  if (cards.length === 3) {
+    sequences.push({
+      type: 'tierce',
+      cards: [...cards],
+      points: 20
+    });
+  } else if (cards.length === 4) {
+    sequences.push({
+      type: 'quarte',
+      cards: [...cards],
+      points: 50
+    });
+  } else if (cards.length >= 5) {
+    sequences.push({
+      type: 'quint',
+      cards: [...cards],
+      points: 100
+    });
+  }
+}
+
+// Find sequential combinations for a specific suit
+function findSequentialForColor(suitCards, sequences) {
+  // Sort cards in descending order (A, K, Q, J, 10, 9, 8, 7)
+  const sorted = [...suitCards].sort((a, b) => {
+    const aIndex = SEQUENCE_ORDER_DESC.indexOf(a.rank);
+    const bIndex = SEQUENCE_ORDER_DESC.indexOf(b.rank);
+    return aIndex - bIndex;
+  });
+  
+  const foundCards = [];
+  
+  for (let i = 0; i < sorted.length - 1; i++) {
+    if (isConsequent(sorted[i], sorted[i + 1])) {
+      if (foundCards.length === 0) {
+        foundCards.push(sorted[i]);
+      }
+      foundCards.push(sorted[i + 1]);
+    } else {
+      if (foundCards.length > 0) {
+        addSequentialCombination(foundCards, sequences);
+        foundCards.length = 0; // Clear array
+      }
+    }
+  }
+  
+  // Check if there's a sequence at the end
+  if (foundCards.length > 0) {
+    addSequentialCombination(foundCards, sequences);
+  }
+}
 
 export function findSequences(cards) {
   const sequences = [];
-  const suits = ['clubs', 'diamonds', 'hearts', 'spades'];
+  const suits = ['spades', 'hearts', 'diamonds', 'clubs'];
   
   for (const suit of suits) {
-    const suitCards = cards.filter(c => c.suit === suit).sort((a, b) => {
-      return SEQUENCE_ORDER.indexOf(a.rank) - SEQUENCE_ORDER.indexOf(b.rank);
-    });
+    const suitCards = cards.filter(c => c.suit === suit);
     
-    if (suitCards.length >= 3) {
-      // Find consecutive sequences
-      for (let i = 0; i <= suitCards.length - 3; i++) {
-        for (let len = 5; len >= 3; len--) {
-          if (i + len <= suitCards.length) {
-            const sequence = suitCards.slice(i, i + len);
-            if (isConsecutive(sequence)) {
-              sequences.push({
-                type: len === 3 ? 'tierce' : len === 4 ? 'quarte' : 'quint',
-                cards: sequence,
-                points: len === 3 ? 20 : len === 4 ? 50 : 100
-              });
-              break; // Take longest sequence starting at this position
-            }
-          }
-        }
-      }
+    if (suitCards.length > 2) {
+      findSequentialForColor(suitCards, sequences);
     }
   }
   
   return sequences;
 }
 
-function isConsecutive(cards) {
-  for (let i = 1; i < cards.length; i++) {
-    const prevIndex = SEQUENCE_ORDER.indexOf(cards[i - 1].rank);
-    const currIndex = SEQUENCE_ORDER.indexOf(cards[i].rank);
-    if (currIndex - prevIndex !== 1) {
-      return false;
-    }
-  }
-  return true;
-}
-
 export function findEquals(cards) {
   const equals = [];
-  const rankGroups = {};
   
-  // Group cards by rank
-  cards.forEach(card => {
-    if (!rankGroups[card.rank]) {
-      rankGroups[card.rank] = [];
-    }
-    rankGroups[card.rank].push(card);
-  });
+  // Point values for four equals combinations
+  const fourEqualsPoints = {
+    'J': 200,
+    '9': 150,
+    'A': 100,
+    '10': 100,
+    'K': 100,
+    'Q': 100
+  };
   
-  // Find ranks with 4 cards
-  Object.keys(rankGroups).forEach(rankKey => {
-    if (rankGroups[rankKey].length === 4) {
-      const rank = rankGroups[rankKey][0].rank;
-      const points = COMBINATIONS.equal.points[rank] || 100;
+  // Check each rank that can form a four equals combination
+  const ranksToCheck = ['J', '9', 'A', '10', 'K', 'Q'];
+  
+  for (const rank of ranksToCheck) {
+    const foundCards = cards.filter(c => c.rank === rank);
+    
+    if (foundCards.length === 4) {
       equals.push({
         type: 'equal',
-        cards: rankGroups[rankKey],
-        points: points
+        cards: foundCards,
+        points: fourEqualsPoints[rank] || 100
       });
     }
-  });
+  }
   
   return equals;
 }

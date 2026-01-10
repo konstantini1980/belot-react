@@ -6,30 +6,20 @@
   margin: 10px 20px;
 }
 
-.combination-panel h4 {
-  margin-bottom: 10px;
-  color: #856404;
-}
-
 .combinations-list {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
 
-.combination-button {
-  padding: 8px 16px;
-  background: #ffc107;
-  border: none;
-  border-radius: 6px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s;
+.combination-item {
+  padding: 4px 8px;
   color: #856404;
+  cursor: pointer;
+  transition: opacity 0.2s;
 }
 
-.combination-button:hover {
-  background: #ffb300;
-  transform: translateY(-2px);
+.combination-item:hover {
+  opacity: 0.7;
 }
 
