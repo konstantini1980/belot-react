@@ -1,0 +1,289 @@
+/* Compact "This Round" panel */
+.round-score-panel {
+  background: #2c2c2c;
+  border-radius: 6px;
+  padding: 8px 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  min-width: 110px;
+  height: 80px;
+  color: white;
+}
+
+.round-score-title {
+  text-align: center;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.round-score-values {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  gap: 16px;
+}
+
+.round-score-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.round-score-number {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.round-score-number.round-score-green {
+  color: #4caf50;
+}
+
+.round-score-number.round-score-red {
+  color: #f44336;
+}
+
+.round-score-label {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Full score panel */
+.score-panel {
+  background: #2c2c2c;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  min-width: 220px;
+  color: white;
+}
+
+.score-panel-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.score-panel-full {
+  position: relative;
+  z-index: 1000;
+  min-width: 240px;
+  animation: fadeInScale 0.3s ease-out;
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.score-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.score-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.trophy-icon {
+  font-size: 18px;
+}
+
+.score-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: white;
+}
+
+.score-header-right {
+  color: white;
+  font-size: 11px;
+}
+
+.score-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin-top: 12px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.score-section-title:first-of-type {
+  margin-top: 0;
+}
+
+.score-section-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.2);
+  margin: 12px 0;
+}
+
+.score-section {
+  margin-bottom: 10px;
+}
+
+.score-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.score-row-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.team-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+
+.team-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.team-icon-green {
+  color: #4caf50;
+}
+
+.team-icon-red {
+  color: #f44336;
+}
+
+.team-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.team-name-green {
+  color: #4caf50;
+}
+
+.team-name-red {
+  color: #f44336;
+}
+
+.score-value {
+  font-size: 14px;
+  font-weight: bold;
+  color: white;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: #404040;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 3px;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.progress-fill-green {
+  background: #4caf50;
+}
+
+.progress-fill-red {
+  background: #f44336;
+}
+
+.score-footer {
+  text-align: center;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.contract-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+
+.contract-label-text {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.contract-label-value {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.win-condition {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.next-deal-button {
+  margin-top: 8px;
+  padding: 10px 20px;
+  background: #4caf50;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.next-deal-button:hover {
+  background: #45a049;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.next-deal-button:active {
+  transform: translateY(0);
+}
+

@@ -1,0 +1,74 @@
+.app {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.app-header {
+  text-align: center;
+  margin-bottom: 30px;
+  color: white;
+}
+
+.app-header h1 {
+  font-size: 48px;
+  margin-bottom: 20px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.winner-announcement {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 20px;
+  border-radius: 12px;
+  display: inline-block;
+  margin-top: 20px;
+}
+
+.winner-announcement h2 {
+  color: #4CAF50;
+  margin-bottom: 15px;
+}
+
+.new-game-button {
+  padding: 12px 24px;
+  background: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.new-game-button:hover {
+  background: #1976D2;
+  transform: translateY(-2px);
+}
+
+.game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.game-status {
+  background: white;
+  padding: 15px 30px;
+  border-radius: 8px;
+  margin: 20px;
+  font-size: 18px;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.your-turn {
+  color: #4CAF50;
+}
+
+.waiting {
+  color: #666;
+  font-style: italic;
+}
+

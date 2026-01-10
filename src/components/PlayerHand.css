@@ -1,0 +1,33 @@
+.player-hand {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding: 10px;
+  min-height: 100px;
+  position: relative;
+}
+
+.player-hand .card {
+  margin-left: -7.5px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.player-hand .card:first-child {
+  margin-left: 0;
+}
+
+.player-hand .card:hover {
+  transform: translateY(-15px) scale(1.1);
+  z-index: 100;
+  margin-left: -5px;
+  margin-right: 2.5px;
+}
+
+.player-hand .card.selected {
+  transform: translateY(-20px) scale(1.15);
+  z-index: 101;
+  margin-left: -5px;
+  margin-right: 2.5px;
+}
+
