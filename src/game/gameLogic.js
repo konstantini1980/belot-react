@@ -28,7 +28,7 @@ export class BelotGame {
     this.phase = GAME_PHASES.DEALING;
     this.deck = [];
     this.players = [
-      { id: 0, name: 'Player', hand: [], team: 0 },
+      { id: 0, name: 'You', hand: [], team: 0 },
       { id: 1, name: 'West', hand: [], team: 1 },
       { id: 2, name: 'Partner', hand: [], team: 0 },
       { id: 3, name: 'East', hand: [], team: 1 }

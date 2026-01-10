@@ -87,7 +87,7 @@ export default function BiddingPanel({
   const suitContracts = suitOrder.map(suit => CONTRACTS.find(c => c.value === suit));
   const specialContracts = CONTRACTS.filter(c => ['no-trump', 'all-trump'].includes(c.value));
 
-  const playerNames = ['Player', 'West', 'Partner', 'East'];
+  const playerNames = ['You', 'West', 'Partner', 'East'];
 
   // Calculate initial bidding order (counter-clockwise starting from currentBidder)
   // When no bids exist, show all 4 players in turn order
@@ -101,8 +101,7 @@ export default function BiddingPanel({
     
     // Add players in counter-clockwise order
     for (let i = 0; i < 4; i++) {
-      const playerId = (firstBidder - i) % 4;
-      order.push(playerId);
+      order.push((firstBidder - i) % 4);
     }
     
     return order;
@@ -145,7 +144,7 @@ export default function BiddingPanel({
                       <span className="bid-text">Redouble</span>
                     )}
                   </>
-                ) : isCurrentBidder && !isMyTurn ? (
+                ) : isCurrentBidder ? (
                   <span className="waiting-message-inline">
                     Waiting...
                   </span>
