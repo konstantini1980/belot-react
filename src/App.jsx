@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { BelotGame, GAME_PHASES } from './game/gameLogic';
 import { getAllCombinations } from './game/combinations';
-import { makeAIBid } from './game/aiplayer';
+import { makeAIBid, makeAIPlayCard } from './game/aiplayer';
 import GameBoard from './components/GameBoard';
 import PlayerHand from './components/PlayerHand';
 import BiddingPanel from './components/BiddingPanel';
@@ -225,15 +225,11 @@ export default function App() {
     const newGame = new BelotGame();
     Object.assign(newGame, game);
     const playerId = newGame.currentPlayer;
-    const player = newGame.players[playerId];
     
-    // Find playable cards
-    const playable = player.hand.filter(card => {
-      return newGame.isValidCardPlay(player, card);
-    });
+    // Use AI to select card
+    const cardToPlay = makeAIPlayCard(newGame, playerId);
     
-    if (playable.length > 0) {
-      const cardToPlay = playable[Math.floor(Math.random() * playable.length)];
+    if (cardToPlay) {
       newGame.playCard(playerId, cardToPlay.id);
       setGame(newGame);
     }
