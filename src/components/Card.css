@@ -1,33 +1,32 @@
 .card {
   width: 80px;
-  height: 120px;
-  background: white;
-  border: 2px solid rgba(128, 128, 128, 0.5);
-  border-radius: 8px;
+  height: 108px;
+  background: white;  
+  border-radius: 4px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   margin: 0 4px;
   position: relative;
+  overflow: hidden;
+  padding: 0;
+}
+
+.card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .card.small {
   width: 50px;
-  height: 80px;
+  height: 68px;
   margin: 0;
-}
-
-.card.small .card-rank {
-  font-size: 14px;
-  margin-bottom: 2px;
-}
-
-.card.small .card-suit {
-  font-size: 20px;
 }
 
 /* Only playable cards have hover effects and interactions */
@@ -68,23 +67,6 @@
   border-color: #cc6600;
 }
 
-.card-rank {
-  font-size: 20px;
-  font-weight: bold;
-  margin-bottom: 4px;
-}
-
-.card-suit {
-  font-size: 32px;
-}
-
-.card.red {
-  color: #d32f2f;
-}
-
-.card.black {
-  color: #212121;
-}
 
 /* Disable hover effects for cards in the center (trick cards) */
 .trick-card .card {

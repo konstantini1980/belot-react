@@ -36,8 +36,8 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 400px;
-  height: 300px;
+  width: 360px;
+  height: 260px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -64,7 +64,7 @@
 }
 
 .trick-card.bottom {
-  bottom: 0;
+  bottom: 0px;
   left: 50%;
   transform: translateX(-50%);
 }
@@ -110,7 +110,7 @@
 }
 
 .player-indicator-container.bottom {
-  bottom: 100px;
+  bottom: 120px;
   left: 50%;
   transform: translateX(-50%);
 }

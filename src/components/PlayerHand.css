@@ -8,9 +8,11 @@
 }
 
 .player-hand .card {
-  margin-left: -7.5px;
+  margin-left: -11.25px;
   transition: all 0.3s ease;
   position: relative;
+  width: 75px;
+  height: 102px;
 }
 
 .player-hand .card:first-child {
@@ -20,14 +22,14 @@
 .player-hand .card:hover {
   transform: translateY(-15px) scale(1.1);
   z-index: 100;
-  margin-left: -5px;
-  margin-right: 2.5px;
+  margin-left: -7.5px;
+  margin-right: 3.75px;
 }
 
 .player-hand .card.selected {
   transform: translateY(-20px) scale(1.15);
   z-index: 101;
-  margin-left: -5px;
-  margin-right: 2.5px;
+  margin-left: -7.5px;
+  margin-right: 3.75px;
 }
 
