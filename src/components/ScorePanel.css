@@ -312,12 +312,8 @@
 }
 
 .breakdown-value {
-  color: white;
-  font-weight: 600;
-}
-
-.breakdown-value.breakdown-premium {
   color: #ffc107;
+  font-weight: 600;
 }
 
 .breakdown-combinations {

@@ -5,6 +5,7 @@ import './ScorePanel.css';
 export default function FullScorePanel({ 
   scores, 
   roundScores = null,
+  lastRoundRoundedPoints = null,
   phase,
   round = 1,
   onNextDeal = null,
@@ -93,24 +94,25 @@ export default function FullScorePanel({
                   </svg>
                 </div>
                 <span className="team-name team-name-green">You & Partner</span>
-              </div>              
+              </div>
+              <div className="score-value">{lastRoundRoundedPoints ? lastRoundRoundedPoints[0] : Math.round(playerRoundScore / 10)}</div>
             </div>
             {roundBreakdown && roundBreakdown[0] && (
               <div className="score-breakdown">
                 <div className="breakdown-item">
-                  <span className="breakdown-label">Card Points:</span>
+                  <span className="breakdown-label">Card points:</span>
                   <span className="breakdown-value">{roundBreakdown[0].cardPoints}</span>
                 </div>
                 {roundBreakdown[0].combinationPoints > 0 && (
                   <div className="breakdown-item">
                     <span className="breakdown-label">Combinations:</span>
-                    <span className="breakdown-value breakdown-premium">+{roundBreakdown[0].combinationPoints}</span>
+                    <span className="breakdown-value">+{roundBreakdown[0].combinationPoints}</span>
                   </div>
                 )}
                 {roundBreakdown[0].valatPoints > 0 && (
                   <div className="breakdown-item">
                     <span className="breakdown-label">Valat:</span>
-                    <span className="breakdown-value breakdown-premium">+{roundBreakdown[0].valatPoints}</span>
+                    <span className="breakdown-value">+{roundBreakdown[0].valatPoints}</span>
                   </div>
                 )}
                 {announcedCombinations[0] && announcedCombinations[0].length > 0 && (
@@ -140,23 +142,24 @@ export default function FullScorePanel({
                 </div>
                 <span className="team-name team-name-red">Opponents</span>
               </div>
+              <div className="score-value">{lastRoundRoundedPoints ? lastRoundRoundedPoints[1] : Math.round(opponentRoundScore / 10)}</div>
             </div>
             {roundBreakdown && roundBreakdown[1] && (
               <div className="score-breakdown">
                 <div className="breakdown-item">
-                  <span className="breakdown-label">Card Points:</span>
+                  <span className="breakdown-label">Card points:</span>
                   <span className="breakdown-value">{roundBreakdown[1].cardPoints}</span>
                 </div>
                 {roundBreakdown[1].combinationPoints > 0 && (
                   <div className="breakdown-item">
                     <span className="breakdown-label">Combinations:</span>
-                    <span className="breakdown-value breakdown-premium">+{roundBreakdown[1].combinationPoints}</span>
+                    <span className="breakdown-value">+{roundBreakdown[1].combinationPoints}</span>
                   </div>
                 )}
                 {roundBreakdown[1].valatPoints > 0 && (
                   <div className="breakdown-item">
                     <span className="breakdown-label">Valat:</span>
-                    <span className="breakdown-value breakdown-premium">+{roundBreakdown[1].valatPoints}</span>
+                    <span className="breakdown-value">+{roundBreakdown[1].valatPoints}</span>
                   </div>
                 )}
                 {announcedCombinations[1] && announcedCombinations[1].length > 0 && (

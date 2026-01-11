@@ -397,6 +397,7 @@ export default function App() {
           scores={game.scores}
           roundScores={game.roundScore}
           lastRoundScore={game.lastRoundScore}
+          lastRoundRoundedPoints={game.lastRoundRoundedPoints}
           contract={game.contract}
           trumpSuit={game.trumpSuit}
           phase={game.phase}

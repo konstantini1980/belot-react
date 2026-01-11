@@ -15,6 +15,7 @@ export default function GameBoard({
   scores,
   roundScores,
   lastRoundScore,
+  lastRoundRoundedPoints,
   contract,
   trumpSuit,
   biddingPanel,
@@ -136,6 +137,7 @@ export default function GameBoard({
         <FullScorePanel 
           scores={scores}
           roundScores={isRoundOver ? lastRoundScore : (forceShowScorePanel ? roundScores : null)}
+          lastRoundRoundedPoints={isRoundOver ? lastRoundRoundedPoints : null}
           phase={phase}
           round={1}
           onNextDeal={isRoundOver ? onNextDeal : null}

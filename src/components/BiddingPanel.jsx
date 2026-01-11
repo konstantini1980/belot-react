@@ -100,8 +100,9 @@ export default function BiddingPanel({
     const firstBidder = bids.length > 0 ? bids[0].playerId : currentBidder;
     
     // Add players in counter-clockwise order
+    // Use (firstBidder - i + 4) % 4 to handle negative modulo correctly
     for (let i = 0; i < 4; i++) {
-      order.push((firstBidder - i) % 4);
+      order.push((firstBidder - i + 4) % 4);
     }
     
     return order;
