@@ -6,11 +6,14 @@ import GameBoard from './components/GameBoard';
 import PlayerHand from './components/PlayerHand';
 import BiddingPanel from './components/BiddingPanel';
 import DevPanel from './components/DevPanel';
+import LanguageSwitcher from './components/LanguageSwitcher';
+import { useLanguage } from './contexts/LanguageContext';
 import './App.css';
 
 const PLAYER_ID = 0; // Human player is always player 0
 
 export default function App() {
+  const { t, language } = useLanguage();
   const [game, setGame] = useState(new BelotGame());
   const [selectedCard, setSelectedCard] = useState(null);
   const [playableCards, setPlayableCards] = useState([]);
@@ -374,15 +377,33 @@ export default function App() {
     setForceShowScorePanel(show);
   };
 
+  // Update player names when language changes
+  useEffect(() => {
+    const newGame = new BelotGame();
+    Object.assign(newGame, game);
+    newGame.players[0].name = t('playerYou');
+    newGame.players[1].name = t('playerWest');
+    newGame.players[2].name = t('playerPartner');
+    newGame.players[3].name = t('playerEast');
+    // Only update if names actually changed to avoid unnecessary re-renders
+    if (newGame.players[0].name !== game.players[0].name ||
+        newGame.players[1].name !== game.players[1].name ||
+        newGame.players[2].name !== game.players[2].name ||
+        newGame.players[3].name !== game.players[3].name) {
+      setGame(newGame);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [language]);
+
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Belot Card Game</h1>
+        <h1>{t('appTitle')}</h1>
         {game.phase === GAME_PHASES.FINISHED && (
           <div className="winner-announcement">
-            <h2>Team {game.winner + 1} Wins!</h2>
+            <h2>{t('teamWins', { team: game.winner + 1 })}</h2>
             <button onClick={handleNewGame} className="new-game-button">
-              New Game
+              {t('newGame')}
             </button>
           </div>
         )}
@@ -390,14 +411,16 @@ export default function App() {
 
       <div className="game-container">
         <GameBoard
+          languageSwitcher={<LanguageSwitcher />}
           players={game.players}
           currentTrick={trickComplete ? displayTrick : game.currentTrick}
           currentPlayer={game.currentPlayer}
           tricks={game.tricks}
-          scores={game.scores}
+          scores={game.totalScores}
           roundScores={game.roundScore}
           lastRoundScore={game.lastRoundScore}
           lastRoundRoundedPoints={game.lastRoundRoundedPoints}
+          hangingPoints={game.hangingPoints}
           contract={game.contract}
           trumpSuit={game.trumpSuit}
           phase={game.phase}

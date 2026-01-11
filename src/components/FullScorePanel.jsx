@@ -1,11 +1,13 @@
 import React, { useEffect, useRef } from 'react';
 import { GAME_PHASES } from '../game/gameLogic';
+import { useLanguage } from '../contexts/LanguageContext';
 import './ScorePanel.css';
 
 export default function FullScorePanel({ 
   scores, 
   roundScores = null,
   lastRoundRoundedPoints = null,
+  hangingPoints = 0,
   phase,
   round = 1,
   onNextDeal = null,
@@ -15,6 +17,7 @@ export default function FullScorePanel({
   announcedCombinations = [[], []],
   forceShow = false
 }) {
+  const { t } = useLanguage();
   const maxScore = 151;
   const isRoundOver = phase === GAME_PHASES.SCORING || phase === GAME_PHASES.FINISHED;
   const panelRef = useRef(null);
@@ -73,13 +76,13 @@ export default function FullScorePanel({
       <div className="score-header">
         <div className="score-header-left">
           <span className="trophy-icon">🏆</span>
-          <span className="score-title">Game score</span>
+          <span className="score-title">{t('gameScore')}</span>
         </div>
       </div>
 
       {isRoundOver && roundScores && (
         <>
-          <div className="score-section-title">Last Deal</div>
+          <div className="score-section-title">{t('lastDeal')}</div>
           
           {/* Player Team Breakdown */}
           <div className="score-section">
@@ -93,25 +96,25 @@ export default function FullScorePanel({
                     <path d="M22 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" strokeWidth="2" fill="none"/>
                   </svg>
                 </div>
-                <span className="team-name team-name-green">You & Partner</span>
+                <span className="team-name team-name-green">{t('youAndPartner')}</span>
               </div>
               <div className="score-value">{lastRoundRoundedPoints ? lastRoundRoundedPoints[0] : Math.round(playerRoundScore / 10)}</div>
             </div>
             {roundBreakdown && roundBreakdown[0] && (
               <div className="score-breakdown">
                 <div className="breakdown-item">
-                  <span className="breakdown-label">Card points:</span>
+                  <span className="breakdown-label">{t('cardPoints')}</span>
                   <span className="breakdown-value">{roundBreakdown[0].cardPoints}</span>
                 </div>
                 {roundBreakdown[0].combinationPoints > 0 && (
                   <div className="breakdown-item">
-                    <span className="breakdown-label">Combinations:</span>
+                    <span className="breakdown-label">{t('combinations')}</span>
                     <span className="breakdown-value">+{roundBreakdown[0].combinationPoints}</span>
                   </div>
                 )}
                 {roundBreakdown[0].valatPoints > 0 && (
                   <div className="breakdown-item">
-                    <span className="breakdown-label">Valat:</span>
+                    <span className="breakdown-label">{t('valat')}</span>
                     <span className="breakdown-value">+{roundBreakdown[0].valatPoints}</span>
                   </div>
                 )}
@@ -140,25 +143,25 @@ export default function FullScorePanel({
                     <path d="M22 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" strokeWidth="2" fill="none"/>
                   </svg>
                 </div>
-                <span className="team-name team-name-red">Opponents</span>
+                <span className="team-name team-name-red">{t('opponents')}</span>
               </div>
               <div className="score-value">{lastRoundRoundedPoints ? lastRoundRoundedPoints[1] : Math.round(opponentRoundScore / 10)}</div>
             </div>
             {roundBreakdown && roundBreakdown[1] && (
               <div className="score-breakdown">
                 <div className="breakdown-item">
-                  <span className="breakdown-label">Card points:</span>
+                  <span className="breakdown-label">{t('cardPoints')}</span>
                   <span className="breakdown-value">{roundBreakdown[1].cardPoints}</span>
                 </div>
                 {roundBreakdown[1].combinationPoints > 0 && (
                   <div className="breakdown-item">
-                    <span className="breakdown-label">Combinations:</span>
+                    <span className="breakdown-label">{t('combinations')}</span>
                     <span className="breakdown-value">+{roundBreakdown[1].combinationPoints}</span>
                   </div>
                 )}
                 {roundBreakdown[1].valatPoints > 0 && (
                   <div className="breakdown-item">
-                    <span className="breakdown-label">Valat:</span>
+                    <span className="breakdown-label">{t('valat')}</span>
                     <span className="breakdown-value">+{roundBreakdown[1].valatPoints}</span>
                   </div>
                 )}
@@ -178,9 +181,27 @@ export default function FullScorePanel({
         </>
       )}
 
-      <div className="score-section-title">Total Score</div>
-      {renderScoreSection('You & Partner', 'green', playerTotalScore, playerTotalProgress)}
-      {renderScoreSection('Opponents', 'red', opponentTotalScore, opponentTotalProgress)}
+      {isRoundOver && hangingPoints > 0 && (
+        <>
+          <div className="score-section-title">{t('hangingPoints')}</div>
+          <div className="score-section hanging-points-section">
+            <div className="score-row">
+              <div className="score-row-left">
+                <span className="hanging-points-label">{t('pointsForNextRoundWinner')}</span>
+              </div>
+              <div className="score-value hanging-points-value">{hangingPoints}</div>
+            </div>
+            <div className="hanging-points-description">
+              {t('hangingPointsDescription')}
+            </div>
+          </div>
+          <div className="score-section-divider"></div>
+        </>
+      )}
+
+      <div className="score-section-title">{t('totalScore')}</div>
+      {renderScoreSection(t('youAndPartner'), 'green', playerTotalScore, playerTotalProgress)}
+      {renderScoreSection(t('opponents'), 'red', opponentTotalScore, opponentTotalProgress)}
 
       <div className="score-footer">        
         {onNextDeal && (
@@ -188,10 +209,10 @@ export default function FullScorePanel({
             onClick={onNextDeal}
             className="next-deal-button"
           >
-            Next Deal
+            {t('nextDeal')}
           </button>
         )}
-        <span className="win-condition">First to 151 wins</span>
+        <span className="win-condition">{t('firstTo151Wins')}</span>
       </div>
     </div>
   );

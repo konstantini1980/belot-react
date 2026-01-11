@@ -311,5 +311,130 @@ describe('Announcements', () => {
       expect(tierce.points).toBe(20);
     });
   });
+
+  describe('Sequential combination blocking', () => {
+    it('should not announce tierce if opponent has already announced quint', () => {
+      // Set up opponent team (team 1) with quint - they play first
+      const opponentPlayer = game.players[1];
+      opponentPlayer.hand = [
+        new Card('hearts', 'A'),
+        new Card('hearts', 'K'),
+        new Card('hearts', 'Q'),
+        new Card('hearts', 'J'),
+        new Card('hearts', '10'),
+        new Card('spades', '7')
+      ];
+      
+      // Opponent plays first card in first trick and announces quint
+      game.currentPlayer = 1;
+      game.tricks = [];
+      game.currentTrick = [];
+      game.announcedCombinations[0] = [];
+      game.announcedCombinations[1] = [];
+      game.playCard(1, opponentPlayer.hand[0].id);
+      
+      const opponentQuint = game.announcedCombinations[opponentPlayer.team].find(c => c.type === 'quint');
+      expect(opponentQuint).toBeDefined();
+      
+      // Now player (team 0) has tierce but plays second in the trick
+      // Since combinations only auto-announce on first card, player won't auto-announce
+      // But we verify the logic: if player could announce, tierce should be blocked
+      const player = game.players[0];
+      player.hand = [
+        new Card('spades', 'A'),
+        new Card('spades', 'K'),
+        new Card('spades', 'Q'),
+        new Card('clubs', '7')
+      ];
+      
+      // Player plays second card - won't auto-announce (not first card of first trick)
+      game.playCard(0, player.hand[0].id);
+      
+      // Verify player does NOT have tierce announced
+      const playerTierce = game.announcedCombinations[player.team].find(c => c.type === 'tierce');
+      expect(playerTierce).toBeUndefined();
+    });
+
+    it('should not announce tierce if opponent has already announced quarte', () => {
+      // Set up opponent team (team 1) with quarte - they play first
+      const opponentPlayer = game.players[1];
+      opponentPlayer.hand = [
+        new Card('hearts', 'A'),
+        new Card('hearts', 'K'),
+        new Card('hearts', 'Q'),
+        new Card('hearts', 'J'),
+        new Card('spades', '7')
+      ];
+      
+      // Opponent plays first card in first trick and announces quarte
+      game.currentPlayer = 1;
+      game.tricks = [];
+      game.currentTrick = [];
+      game.announcedCombinations[0] = [];
+      game.announcedCombinations[1] = [];
+      game.playCard(1, opponentPlayer.hand[0].id);
+      
+      const opponentQuarte = game.announcedCombinations[opponentPlayer.team].find(c => c.type === 'quarte');
+      expect(opponentQuarte).toBeDefined();
+      
+      // Now player (team 0) plays second - should not announce tierce
+      const player = game.players[0];
+      player.hand = [
+        new Card('spades', 'A'),
+        new Card('spades', 'K'),
+        new Card('spades', 'Q'),
+        new Card('clubs', '7')
+      ];
+      
+      game.playCard(0, player.hand[0].id);
+      
+      // Player should NOT have tierce announced
+      const playerTierce = game.announcedCombinations[player.team].find(c => c.type === 'tierce');
+      expect(playerTierce).toBeUndefined();
+    });
+
+    it('should allow announcing quarte if opponent has tierce', () => {
+      // Set up opponent team (team 1) with tierce - they play first
+      const opponentPlayer = game.players[1];
+      opponentPlayer.hand = [
+        new Card('hearts', 'A'),
+        new Card('hearts', 'K'),
+        new Card('hearts', 'Q'),
+        new Card('spades', '7')
+      ];
+      
+      // Opponent plays first card in first trick and announces tierce
+      game.currentPlayer = 1;
+      game.tricks = [];
+      game.currentTrick = [];
+      game.announcedCombinations[0] = [];
+      game.announcedCombinations[1] = [];
+      game.playCard(1, opponentPlayer.hand[0].id);
+      
+      const opponentTierce = game.announcedCombinations[opponentPlayer.team].find(c => c.type === 'tierce');
+      expect(opponentTierce).toBeDefined();
+      
+      // Now player (team 0) has quarte and plays in the first trick
+      // Since it's still the first trick, player will auto-announce
+      // Quarte should be allowed because opponent only has tierce (not quint or quarte)
+      const player = game.players[0];
+      player.hand = [
+        new Card('spades', 'A'),
+        new Card('spades', 'K'),
+        new Card('spades', 'Q'),
+        new Card('spades', 'J'),
+        new Card('clubs', '7')
+      ];
+      
+      // Player plays in first trick - will auto-announce quarte
+      game.playCard(0, player.hand[0].id);
+      
+      // Verify player DOES have quarte announced (allowed because opponent only has tierce)
+      const playerQuarte = game.announcedCombinations[player.team].find(c => c.type === 'quarte');
+      expect(playerQuarte).toBeDefined();
+      expect(playerQuarte.points).toBe(50);
+    });
+
+  });
 });
 

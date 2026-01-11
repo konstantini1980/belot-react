@@ -1,15 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { GAME_PHASES } from '../game/gameLogic';
+import { useLanguage } from '../contexts/LanguageContext';
 import './ScorePanel.css';
-
-const CONTRACTS = [
-  { value: 'clubs', label: '♣ Clubs' },
-  { value: 'diamonds', label: '♦ Diamonds' },
-  { value: 'hearts', label: '♥ Hearts' },
-  { value: 'spades', label: '♠ Spades' },
-  { value: 'no-trump', label: 'No Trump' },
-  { value: 'all-trump', label: 'All Trump' }
-];
 
 export default function ScorePanel({ 
   scores, 
@@ -21,10 +13,20 @@ export default function ScorePanel({
   isRedouble = false,
   onNextDeal = null
 }) {
+  const { t } = useLanguage();
   const maxScore = 151;
   const isRoundOver = phase === GAME_PHASES.SCORING || phase === GAME_PHASES.FINISHED;
   const [showFullPanel, setShowFullPanel] = useState(false);
   const panelRef = useRef(null);
+  
+  const CONTRACTS = [
+    { value: 'clubs', label: `♣ ${t('clubs')}` },
+    { value: 'diamonds', label: `♦ ${t('diamonds')}` },
+    { value: 'hearts', label: `♥ ${t('hearts')}` },
+    { value: 'spades', label: `♠ ${t('spades')}` },
+    { value: 'no-trump', label: t('noTrump') },
+    { value: 'all-trump', label: t('allTrump') }
+  ];
   
   // Use round scores during gameplay, total scores when round is over
   const playerScore = isRoundOver ? scores[0] : (roundScores?.[0] || 0);
@@ -59,7 +61,7 @@ export default function ScorePanel({
   if (!isRoundOver) {
     let contractLabel = contract 
       ? CONTRACTS.find(c => c.value === contract)?.label || contract
-      : 'This Round';
+      : t('thisRound');
 
     if (contract) {
       if (isRedouble) {
@@ -80,11 +82,11 @@ export default function ScorePanel({
           <div className="round-score-values">
             <div className="round-score-item">
               <span className="round-score-number round-score-green">{playerScore}</span>
-              <span className="round-score-label">You</span>
+              <span className="round-score-label">{t('you')}</span>
             </div>
             <div className="round-score-item">
               <span className="round-score-number round-score-red">{opponentScore}</span>
-              <span className="round-score-label">Opp</span>
+              <span className="round-score-label">{t('opp')}</span>
             </div>
           </div>
         </div>
@@ -94,7 +96,7 @@ export default function ScorePanel({
               <div className="score-header">
                 <div className="score-header-left">
                   <span className="trophy-icon">🏆</span>
-                  <span className="score-title">Game score</span>
+                  <span className="score-title">{t('gameScore')}</span>
                 </div>
               </div>
 
@@ -109,7 +111,7 @@ export default function ScorePanel({
                         <path d="M22 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" strokeWidth="2" fill="none"/>
                       </svg>
                     </div>
-                    <span className="team-name team-name-green">You & Partner</span>
+                    <span className="team-name team-name-green">{t('youAndPartner')}</span>
                   </div>
                   <div className="score-value">{scores[0]}</div>
                 </div>
@@ -132,7 +134,7 @@ export default function ScorePanel({
                         <path d="M22 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" strokeWidth="2" fill="none"/>
                       </svg>
                     </div>
-                    <span className="team-name team-name-red">Opponents</span>
+                    <span className="team-name team-name-red">{t('opponents')}</span>
                   </div>
                   <div className="score-value">{scores[1]}</div>
                 </div>
@@ -145,7 +147,7 @@ export default function ScorePanel({
               </div>
 
               <div className="score-footer">
-                <span className="win-condition">First to 151 wins</span>
+                <span className="win-condition">{t('firstTo151Wins')}</span>
               </div>
             </div>
           </div>
@@ -160,7 +162,7 @@ export default function ScorePanel({
       <div className="score-header">
         <div className="score-header-left">
           <span className="trophy-icon">🏆</span>
-          <span className="score-title">Score</span>
+          <span className="score-title">{t('gameScore')}</span>
         </div>
         <div className="score-header-right">
           <span className="round-text">Round {round}</span>
@@ -178,7 +180,7 @@ export default function ScorePanel({
                 <path d="M22 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" strokeWidth="2" fill="none"/>
               </svg>
             </div>
-            <span className="team-name team-name-green">You & Partner</span>
+            <span className="team-name team-name-green">{t('youAndPartner')}</span>
           </div>
           <div className="score-value">{playerScore}</div>
         </div>
@@ -201,7 +203,7 @@ export default function ScorePanel({
                 <path d="M22 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" strokeWidth="2" fill="none"/>
               </svg>
             </div>
-            <span className="team-name team-name-red">Opponents</span>
+            <span className="team-name team-name-red">{t('opponents')}</span>
           </div>
           <div className="score-value">{opponentScore}</div>
         </div>
@@ -214,13 +216,13 @@ export default function ScorePanel({
       </div>
 
       <div className="score-footer">
-        <span className="win-condition">First to 151 wins</span>
+        <span className="win-condition">{t('firstTo151Wins')}</span>
         {onNextDeal && (
           <button 
             onClick={onNextDeal}
             className="next-deal-button"
           >
-            Next Deal
+            {t('nextDeal')}
           </button>
         )}
       </div>

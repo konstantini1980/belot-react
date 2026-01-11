@@ -31,6 +31,13 @@
   z-index: 1;
 }
 
+.language-switcher-container {
+  position: absolute;
+  top: 24px;
+  right: 20px;
+  z-index: 100;
+}
+
 .board-center {
   position: absolute;
   top: 50%;

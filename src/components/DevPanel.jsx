@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import './DevPanel.css';
 
 export default function DevPanel({ 
@@ -8,6 +9,7 @@ export default function DevPanel({
   showScorePanel,
   isVisible: externalIsVisible = null
 }) {
+  const { t } = useLanguage();
   const [isVisible, setIsVisible] = useState(false);
 
   // Use external visibility control if provided, otherwise use internal state
@@ -40,18 +42,18 @@ export default function DevPanel({
   return (
     <div className="dev-panel">
       <div className="dev-panel-header">
-        <h3>Dev Panel</h3>
+        <h3>{t('devPanel')}</h3>
         <button 
           className="dev-panel-close"
           onClick={() => setIsVisible(false)}
-          title="Close"
+          title={t('close')}
         >
           ×
         </button>
       </div>
       <div className="dev-panel-content">
         <div className="dev-panel-section">
-          <h4>Panel Controls</h4>
+          <h4>{t('panelControls')}</h4>
           <div className="dev-panel-controls">
             <label className="dev-checkbox-label">
               <input
@@ -60,7 +62,7 @@ export default function DevPanel({
                 onChange={(e) => handleCombinationsToggle(e.target.checked)}
                 className="dev-checkbox"
               />
-              <span>Show Combinations Balloon</span>
+              <span>{t('showCombinationsBalloon')}</span>
             </label>
             <label className="dev-checkbox-label">
               <input
@@ -69,7 +71,7 @@ export default function DevPanel({
                 onChange={(e) => handleScorePanelToggle(e.target.checked)}
                 className="dev-checkbox"
               />
-              <span>Show Score Panel</span>
+              <span>{t('showScorePanel')}</span>
             </label>
           </div>
         </div>

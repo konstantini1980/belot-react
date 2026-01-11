@@ -44,8 +44,8 @@ export class BelotGame {
     this.currentTrick = [];
     this.tricks = [];
     this.trickLeader = 0;
-    this.scores = [0, 0]; // Team scores
-    this.roundScore = [0, 0]; // Points from current round
+    this.totalScores = [0, 0]; // Team scores
+    this.courrenRoundScore = [0, 0]; // Points from current round
     this.lastRoundScore = [0, 0]; // Points from last completed round (for display)
     this.lastRoundBreakdown = [{ cardPoints: 0, combinationPoints: 0, valatPoints: 0 }, { cardPoints: 0, combinationPoints: 0, valatPoints: 0 }]; // Breakdown of last round points
     this.lastRoundRoundedPoints = [0, 0]; // Rounded points added to scores from last round
@@ -80,7 +80,7 @@ export class BelotGame {
     this.currentBidder = (this.dealer + 3) % 4; // Counter-clockwise
     this.bids = [];
     // Reset round scores for new round
-    this.roundScore = [0, 0];
+    this.courrenRoundScore = [0, 0];
     // Clear last round scores when starting new deal
     this.lastRoundScore = [0, 0];
     // Clear last round breakdown when starting new deal
@@ -216,11 +216,46 @@ export class BelotGame {
       const allCombos = getAllCombinations(player.hand, this.trumpSuit);
       if (allCombos.length > 0) {
         const team = player.team;
+        const opponentTeam = 1 - team;
+        
+        // Filter combinations based on opponent's announcements
+        const opponentCombos = this.announcedCombinations[opponentTeam];
+        const opponentHasQuint = opponentCombos.some(c => c.type === 'quint');
+        const opponentHasQuarte = opponentCombos.some(c => c.type === 'quarte');
+        
         allCombos.forEach(combo => {
-          this.announcedCombinations[team].push({
-            ...combo,
-            playerId
-          });
+          // If it's "equals" - add it
+          if (combo.type === 'equal') {
+            this.announcedCombinations[team].push({
+              ...combo,
+              playerId
+            });
+          }
+          // If sequential and is a quint - add it
+          else if (combo.type === 'quint') {
+            this.announcedCombinations[team].push({
+              ...combo,
+              playerId
+            });
+          }
+          // If sequential and is a quarte - check that opponent does not have quints
+          else if (combo.type === 'quarte') {
+            if (!opponentHasQuint) {
+              this.announcedCombinations[team].push({
+                ...combo,
+                playerId
+              });
+            }
+          }
+          // If sequential and is a tierce - check that opponent does not have quints or quartes
+          else if (combo.type === 'tierce') {
+            if (!opponentHasQuint && !opponentHasQuarte) {
+              this.announcedCombinations[team].push({
+                ...combo,
+                playerId
+              });
+            }
+          }
         });
       }
     }
@@ -244,7 +279,7 @@ export class BelotGame {
       // Add points
       this.currentTrick.forEach(({ card }) => {
         const value = card.getValue(this.contract);
-        this.roundScore[this.players[winner.playerId].team] += value;
+        this.courrenRoundScore[this.players[winner.playerId].team] += value;
       });
 
       this.currentPlayer = winner.playerId;
@@ -254,7 +289,7 @@ export class BelotGame {
       // Check if round is over
       if (this.tricks.length === 8) {
       // Add last 10 points
-        this.roundScore[this.players[winner.playerId].team] += 10;
+        this.courrenRoundScore[this.players[winner.playerId].team] += 10;
         this.endRound();
       }
     }
@@ -437,14 +472,14 @@ export class BelotGame {
   endRound() {
     // Calculate breakdown - card points are already in roundScore
     const breakdown = [
-      { cardPoints: this.roundScore[0], combinationPoints: 0, valatPoints: 0 },
-      { cardPoints: this.roundScore[1], combinationPoints: 0, valatPoints: 0 }
+      { cardPoints: this.courrenRoundScore[0], combinationPoints: 0, valatPoints: 0 },
+      { cardPoints: this.courrenRoundScore[1], combinationPoints: 0, valatPoints: 0 }
     ];
         
     if (this.contract === 'no-trump') {
       // Double points in no-trump
-      this.roundScore[0] *= 2;
-      this.roundScore[1] *= 2;
+      this.courrenRoundScore[0] *= 2;
+      this.courrenRoundScore[1] *= 2;
       breakdown[0].cardPoints *= 2;
       breakdown[1].cardPoints *= 2;
     }
@@ -452,11 +487,11 @@ export class BelotGame {
     let isValat = false;
     // Check for valat (winning all tricks)
     if (this.tricks.every(t => {return t.team === 0; })) {
-      this.roundScore[0] += 90;
+      this.courrenRoundScore[0] += 90;
       breakdown[0].valatPoints = 90;
       isValat = true;
     } else if (this.tricks.every(t => {return t.team === 1; })) {
-      this.roundScore[1] += 90;
+      this.courrenRoundScore[1] += 90;
       breakdown[1].valatPoints = 90;
       isValat = true;
     }
@@ -466,23 +501,27 @@ export class BelotGame {
       let comboPoints = 0;
       combos.forEach(combo => {
         comboPoints += combo.points;
-        this.roundScore[team] += combo.points;
+        this.courrenRoundScore[team] += combo.points;
       });
       breakdown[team].combinationPoints = comboPoints;
     });
     
     // Store original round scores and breakdown for display
-    this.lastRoundScore = [...this.roundScore];
+    this.lastRoundScore = [...this.courrenRoundScore];
     this.lastRoundBreakdown = breakdown;
     
     // Calculate rounded points for this round
     const contractTeam = this.players[this.bids.find(b => b.bid === this.contract).playerId].team;
-    const contractPoints = this.roundScore[contractTeam];
-    const opponentPoints = this.roundScore[1 - contractTeam];
+    const contractPoints = this.courrenRoundScore[contractTeam];
+    const opponentPoints = this.courrenRoundScore[1 - contractTeam];
 
+    // Check if it's a hanging situation (equal points)
+    const isHanging = contractPoints === opponentPoints;
+
+    // Multiplier is only applied if game is doubled/redoubled AND not valat AND not hanging
     let multiplier = 1;
-    if (this.redouble && !isValat) multiplier = 4;
-    else if (this.double && !isValat) multiplier = 2;
+    if (this.redouble && !isValat && !isHanging) multiplier = 4;
+    else if (this.double && !isValat && !isHanging) multiplier = 2;
 
     // Initialize rounded points array
     this.lastRoundRoundedPoints = [0, 0];
@@ -490,8 +529,8 @@ export class BelotGame {
     if (contractPoints > opponentPoints) {
       if (!this.double && !this.redouble) {
         // Outside - both teams get their points
-        this.lastRoundRoundedPoints[0] = Math.round(this.roundScore[0] / 10);
-        this.lastRoundRoundedPoints[1] = Math.round(this.roundScore[1] / 10);
+        this.lastRoundRoundedPoints[0] = Math.round(this.courrenRoundScore[0] / 10);
+        this.lastRoundRoundedPoints[1] = Math.round(this.courrenRoundScore[1] / 10);
 
         // Round to the smaller
         if (this.contract === 'all-trump' && opponentPoints%10 === 4) {
@@ -515,7 +554,7 @@ export class BelotGame {
       }      
     } else if (contractPoints < opponentPoints) {
       // Opponent takes it all
-      const totalPoints = this.roundScore[0] + this.roundScore[1];            
+      const totalPoints = this.courrenRoundScore[0] + this.courrenRoundScore[1];            
       this.lastRoundRoundedPoints[1-contractTeam] = Math.round(totalPoints * multiplier / 10);
 
       // Add previously hanging points
@@ -530,19 +569,38 @@ export class BelotGame {
         this.hangingPoints = 0;
       }
 
-      // Hanging - points go to next round winner
-      // For now, we'll give points to opponents
-      const totalPoints = this.roundScore[0] + this.roundScore[1];
-      this.lastRoundRoundedPoints[1 - contractTeam] = Math.round(totalPoints / 10);
-      this.hangingPoints = this.lastRoundRoundedPoints[1 - contractTeam];
+      // Equal points - Hanging situation
+      // Contract team does not receive any points (their rounded points become hanging)
+      // Opponent team gets their points as usual
+      // Calculate rounded points for both teams (normal rounding)
+      this.lastRoundRoundedPoints[0] = Math.round(this.courrenRoundScore[0] / 10);
+      this.lastRoundRoundedPoints[1] = Math.round(this.courrenRoundScore[1] / 10);
+
+      // Apply rounding adjustments if needed (same as outside case)
+      if (this.contract === 'all-trump' && opponentPoints%10 === 4) {
+        // The team with less points (opponent) gets an additional point
+        this.lastRoundRoundedPoints[1 - contractTeam] += 1;
+      } else if (this.contract !== 'no-trump' && opponentPoints%10 === 6) {
+        // Contract team gets rounded down, opponent gets rounded up
+        this.lastRoundRoundedPoints[contractTeam] -= 1;
+      }
+
+      // Contract team's rounded points become hanging (they don't get added to totalScores)
+      // Store the contract team's rounded points as hanging points
+      this.hangingPoints = this.lastRoundRoundedPoints[contractTeam];
+      
+      // Contract team gets 0 points this round (their points are hanging)
+      this.lastRoundRoundedPoints[contractTeam] = 0;
+      
+      // Opponent team keeps their rounded points (already calculated above)
     }
 
     // Add rounded points to total scores
-    this.scores[0] += this.lastRoundRoundedPoints[0];
-    this.scores[1] += this.lastRoundRoundedPoints[1];
+    this.totalScores[0] += this.lastRoundRoundedPoints[0];
+    this.totalScores[1] += this.lastRoundRoundedPoints[1];
     
     // Clear round variables for next round
-    this.roundScore = [0, 0];
+    this.courrenRoundScore = [0, 0];
     this.tricks = [];
     this.currentTrick = [];
     this.trickLeader = 0;
@@ -560,8 +618,8 @@ export class BelotGame {
     this.phase = GAME_PHASES.SCORING;
     
     // Check for game end
-    if (this.scores[0] >= 151 || this.scores[1] >= 151) {
-      this.winner = this.scores[0] >= 151 ? 0 : 1;
+    if (this.totalScores[0] >= 151 || this.totalScores[1] >= 151) {
+      this.winner = this.totalScores[0] >= 151 ? 0 : 1;
       this.phase = GAME_PHASES.FINISHED;
     }
     // Note: New round will start when user clicks or after delay

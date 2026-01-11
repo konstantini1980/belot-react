@@ -16,6 +16,7 @@ export default function GameBoard({
   roundScores,
   lastRoundScore,
   lastRoundRoundedPoints,
+  hangingPoints = 0,
   contract,
   trumpSuit,
   biddingPanel,
@@ -28,6 +29,7 @@ export default function GameBoard({
   announcedCombinations = [[], []],
   roundBreakdown = null,
   bids = [],
+  languageSwitcher = null,
   // Dev/test props
   forceShowScorePanel = false,
   onForceShowScorePanelChange = null
@@ -59,6 +61,11 @@ export default function GameBoard({
 
   return (
     <div className="game-board">
+      {languageSwitcher && (
+        <div className="language-switcher-container">
+          {languageSwitcher}
+        </div>
+      )}
       <div className="board-center">
         {biddingPanel && (
           <div className="bidding-panel-overlay">
@@ -138,6 +145,7 @@ export default function GameBoard({
           scores={scores}
           roundScores={isRoundOver ? lastRoundScore : (forceShowScorePanel ? roundScores : null)}
           lastRoundRoundedPoints={isRoundOver ? lastRoundRoundedPoints : null}
+          hangingPoints={isRoundOver ? hangingPoints : 0}
           phase={phase}
           round={1}
           onNextDeal={isRoundOver ? onNextDeal : null}

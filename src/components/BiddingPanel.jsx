@@ -1,14 +1,6 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import './BiddingPanel.css';
-
-const CONTRACTS = [
-  { value: 'clubs', label: '♣ Clubs' },
-  { value: 'diamonds', label: '♦ Diamonds' },
-  { value: 'hearts', label: '♥ Hearts' },
-  { value: 'spades', label: '♠ Spades' },
-  { value: 'no-trump', label: 'No Trump' },
-  { value: 'all-trump', label: 'All Trump' }
-];
 
 export default function BiddingPanel({ 
   currentBidder, 
@@ -18,6 +10,16 @@ export default function BiddingPanel({
   contract,
   players 
 }) {
+  const { t } = useLanguage();
+  
+  const CONTRACTS = [
+    { value: 'clubs', label: `♣ ${t('clubs')}` },
+    { value: 'diamonds', label: `♦ ${t('diamonds')}` },
+    { value: 'hearts', label: `♥ ${t('hearts')}` },
+    { value: 'spades', label: `♠ ${t('spades')}` },
+    { value: 'no-trump', label: t('noTrump') },
+    { value: 'all-trump', label: t('allTrump') }
+  ];
 
   const isMyTurn = currentBidder === playerId;
   // Find the last winning contract (not pass, double, or redouble)
@@ -67,12 +69,12 @@ export default function BiddingPanel({
 
   const getContractDisplay = (contractValue) => {
     const contractMap = {
-      'hearts': { icon: '♥', label: 'Hearts', iconColor: '#d32f2f', textColor: '#ffffff' },
-      'diamonds': { icon: '♦', label: 'Diamonds', iconColor: '#d32f2f', textColor: '#ffffff' },
-      'clubs': { icon: '♣', label: 'Clubs', iconColor: '#ffffff', textColor: '#ffffff' },
-      'spades': { icon: '♠', label: 'Spades', iconColor: '#ffffff', textColor: '#ffffff' },
-      'no-trump': { icon: 'NT', label: 'No Trumps', iconColor: '#2196F3', textColor: '#2196F3' },
-      'all-trump': { icon: 'AT', label: 'All Trumps', iconColor: '#FFC107', textColor: '#FFC107' }
+      'hearts': { icon: '♥', label: t('hearts'), iconColor: '#d32f2f', textColor: '#ffffff' },
+      'diamonds': { icon: '♦', label: t('diamonds'), iconColor: '#d32f2f', textColor: '#ffffff' },
+      'clubs': { icon: '♣', label: t('clubs'), iconColor: '#ffffff', textColor: '#ffffff' },
+      'spades': { icon: '♠', label: t('spades'), iconColor: '#ffffff', textColor: '#ffffff' },
+      'no-trump': { icon: 'NT', label: t('noTrump'), iconColor: '#2196F3', textColor: '#2196F3' },
+      'all-trump': { icon: 'AT', label: t('allTrump'), iconColor: '#FFC107', textColor: '#FFC107' }
     };
     return contractMap[contractValue] || { icon: '', label: contractValue, iconColor: '#ffffff', textColor: '#ffffff' };
   };
@@ -87,7 +89,7 @@ export default function BiddingPanel({
   const suitContracts = suitOrder.map(suit => CONTRACTS.find(c => c.value === suit));
   const specialContracts = CONTRACTS.filter(c => ['no-trump', 'all-trump'].includes(c.value));
 
-  const playerNames = ['You', 'West', 'Partner', 'East'];
+  const playerNames = [t('playerYou'), t('playerWest'), t('playerPartner'), t('playerEast')];
 
   // Calculate initial bidding order (counter-clockwise starting from currentBidder)
   // When no bids exist, show all 4 players in turn order
@@ -116,7 +118,7 @@ export default function BiddingPanel({
 
   return (
     <div className="bidding-panel">
-      <h3 className="bidding-title">Select your bid</h3>
+      <h3 className="bidding-title">{t('selectYourBid')}</h3>
       
       <div className="bids-list">
         {biddingOrder.map((playerId, idx) => {
@@ -136,18 +138,18 @@ export default function BiddingPanel({
                       </span>
                     )}
                     {bid.bid === 'pass' && (
-                      <span className="bid-text">Pass</span>
+                      <span className="bid-text">{t('pass')}</span>
                     )}
                     {bid.bid === 'double' && (
-                      <span className="bid-text">Double</span>
+                      <span className="bid-text">{t('double')}</span>
                     )}
                     {bid.bid === 'redouble' && (
-                      <span className="bid-text">Redouble</span>
+                      <span className="bid-text">{t('redouble')}</span>
                     )}
                   </>
                 ) : isCurrentBidder ? (
                   <span className="waiting-message-inline">
-                    Waiting...
+                    {t('waiting')}
                   </span>
                 ) : null}
               </div>
@@ -199,7 +201,7 @@ export default function BiddingPanel({
               onClick={() => onBid('pass')}
               className="pass-button-large"
             >
-              Pass
+              {t('pass')}
             </button>
             <button
               onClick={() => canDouble && onBid('double')}

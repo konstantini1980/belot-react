@@ -333,3 +333,30 @@
   font-weight: 600;
 }
 
+.hanging-points-section {
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 12px;
+}
+
+.hanging-points-label {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+.hanging-points-value {
+  color: #ffc107;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.hanging-points-description {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 6px;
+  font-style: italic;
+}
+

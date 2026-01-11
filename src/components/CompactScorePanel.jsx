@@ -1,14 +1,6 @@
 import React from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import './ScorePanel.css';
-
-const CONTRACTS = [
-  { value: 'clubs', label: '♣ Clubs' },
-  { value: 'diamonds', label: '♦ Diamonds' },
-  { value: 'hearts', label: '♥ Hearts' },
-  { value: 'spades', label: '♠ Spades' },
-  { value: 'no-trump', label: 'No Trump' },
-  { value: 'all-trump', label: 'All Trump' }
-];
 
 export default function CompactScorePanel({ 
   roundScores, 
@@ -18,12 +10,22 @@ export default function CompactScorePanel({
   onClick = null,
   contractTeam = null
 }) {
+  const { t } = useLanguage();
+  
+  const CONTRACTS = [
+    { value: 'clubs', label: `♣ ${t('clubs')}` },
+    { value: 'diamonds', label: `♦ ${t('diamonds')}` },
+    { value: 'hearts', label: `♥ ${t('hearts')}` },
+    { value: 'spades', label: `♠ ${t('spades')}` },
+    { value: 'no-trump', label: t('noTrump') },
+    { value: 'all-trump', label: t('allTrump') }
+  ];
   const playerScore = roundScores?.[0] || 0;
   const opponentScore = roundScores?.[1] || 0;
 
   let contractLabel = contract 
     ? CONTRACTS.find(c => c.value === contract)?.label || contract
-    : 'This Round';
+    : t('thisRound');
 
   if (contract) {
     if (isRedouble) {
@@ -44,16 +46,16 @@ export default function CompactScorePanel({
         <div className="round-score-item">
           <span className="round-score-number round-score-green">{playerScore}</span>
           <span className="round-score-label">
-            You            
+            {t('you')}            
           </span>
           {contractTeam === 0 && <span className="contract-indicator"></span>}
         </div>
         <div className="round-score-item">
           <span className="round-score-number round-score-red">{opponentScore}</span>
           <span className="round-score-label">
-            Opp
-            {contractTeam === 1 && <span className="contract-indicator"></span>}
+            {t('opp')}            
           </span>
+          {contractTeam === 1 && <span className="contract-indicator"></span>}
         </div>
       </div>
     </div>
