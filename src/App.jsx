@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { BelotGame, GAME_PHASES } from './game/gameLogic';
-import { getAllCombinations } from './game/combinations';
+import { getAllCombinations, findBelotOnPlay } from './game/combinations';
 import { makeAIBid, makeAIPlayCard } from './game/aiplayer';
 import GameBoard from './components/GameBoard';
 import PlayerHand from './components/PlayerHand';
@@ -201,10 +201,16 @@ export default function App() {
     const wasLastCardInTrick = newGame.currentTrick.length === 3;
     const isFirstTrick = game.tricks.length === 0;
 
-    // Check combinations before playing (on full hand)
+    // Check combinations before playing (on full hand) - for sequences and equals
     let combos = [];
     if (isFirstTrick && game.contract && game.contract !== 'no-trump') {
       combos = getAllCombinations(player.hand, game.trumpSuit);
+    }
+
+    // Check for belot when Q or K is played (before playing the card)
+    let belotCombo = null;
+    if (game.contract && (card.rank === 'Q' || card.rank === 'K')) {
+      belotCombo = findBelotOnPlay(game.contract, card, player.hand);
     }
 
     if (newGame.playCard(PLAYER_ID, card.id)) {
@@ -219,7 +225,7 @@ export default function App() {
         }, 2000);
       }
 
-      // On first card play in first trick, show combinations
+      // On first card play in first trick, show combinations (sequences, equals)
       if (isFirstTrick && combos.length > 0) {
         setPlayerCombinations(prev => ({ ...prev, [PLAYER_ID]: combos }));
         // Auto-dismiss after 4 seconds
@@ -227,6 +233,27 @@ export default function App() {
           setPlayerCombinations(prev => {
             const updated = { ...prev };
             delete updated[PLAYER_ID];
+            return updated;
+          });
+        }, 4000);
+      }
+
+      // Show belot when announced (when Q or K is played)
+      if (belotCombo) {
+        setPlayerCombinations(prev => ({ 
+          ...prev, 
+          [PLAYER_ID]: [...(prev[PLAYER_ID] || []), belotCombo]
+        }));
+        // Auto-dismiss after 4 seconds
+        setTimeout(() => {
+          setPlayerCombinations(prev => {
+            const updated = { ...prev };
+            if (updated[PLAYER_ID]) {
+              updated[PLAYER_ID] = updated[PLAYER_ID].filter(c => c.type !== 'belot');
+              if (updated[PLAYER_ID].length === 0) {
+                delete updated[PLAYER_ID];
+              }
+            }
             return updated;
           });
         }, 4000);
@@ -241,7 +268,7 @@ export default function App() {
     const isFirstTrick = game.tricks.length === 0;
     const player = newGame.players[playerId];
     
-    // Check combinations before playing (on full hand)
+    // Check combinations before playing (on full hand) - for sequences and equals
     let combos = [];
     if (isFirstTrick && game.contract && game.contract !== 'no-trump') {
       combos = getAllCombinations(player.hand, game.trumpSuit);
@@ -250,11 +277,17 @@ export default function App() {
     // Use AI to select card
     const cardToPlay = makeAIPlayCard(newGame, playerId);
     
+    // Check for belot when Q or K is played (before playing the card)
+    let belotCombo = null;
+    if (cardToPlay && game.contract && (cardToPlay.rank === 'Q' || cardToPlay.rank === 'K')) {
+      belotCombo = findBelotOnPlay(game.contract, cardToPlay, player.hand);
+    }
+    
     if (cardToPlay) {
       newGame.playCard(playerId, cardToPlay.id);
       setGame(newGame);
 
-      // On first card play in first trick, show combinations for AI players
+      // On first card play in first trick, show combinations (sequences, equals) for AI players
       if (isFirstTrick && combos.length > 0) {
         setPlayerCombinations(prev => ({ ...prev, [playerId]: combos }));
         // Auto-dismiss after 4 seconds
@@ -262,6 +295,27 @@ export default function App() {
           setPlayerCombinations(prev => {
             const updated = { ...prev };
             delete updated[playerId];
+            return updated;
+          });
+        }, 4000);
+      }
+
+      // Show belot when announced (when Q or K is played) for AI players
+      if (belotCombo) {
+        setPlayerCombinations(prev => ({ 
+          ...prev, 
+          [playerId]: [...(prev[playerId] || []), belotCombo]
+        }));
+        // Auto-dismiss after 4 seconds
+        setTimeout(() => {
+          setPlayerCombinations(prev => {
+            const updated = { ...prev };
+            if (updated[playerId]) {
+              updated[playerId] = updated[playerId].filter(c => c.type !== 'belot');
+              if (updated[playerId].length === 0) {
+                delete updated[playerId];
+              }
+            }
             return updated;
           });
         }, 4000);

@@ -112,9 +112,37 @@ export function findEquals(cards) {
   return equals;
 }
 
-export function findBelot(cards, trumpSuit) {
-  const queen = cards.find(c => c.suit === trumpSuit && c.rank === 'Q');
-  const king = cards.find(c => c.suit === trumpSuit && c.rank === 'K');
+// Check for belot when a specific card (Q or K) is played
+// contract: the game contract ('all-trump', 'no-trump', or a suit)
+// playedCard: the card being played (must be Q or K)
+// playerHand: the player's current hand (including the card being played)
+export function findBelotOnPlay(contract, playedCard, playerHand) {
+  // Belot is not valid in no-trump
+  if (contract === 'no-trump') {
+    return null;
+  }
+  
+  // Belot can only be announced when Q or K is played
+  if (playedCard.rank !== 'Q' && playedCard.rank !== 'K') {
+    return null;
+  }
+  
+  let targetSuit;
+  
+  if (contract === 'all-trump') {
+    // In all-trump, belot can be in any suit
+    targetSuit = playedCard.suit;
+  } else {
+    // In trump suit game, belot must be in the trump suit
+    if (playedCard.suit !== contract) {
+      return null; // Card is not in trump suit
+    }
+    targetSuit = contract;
+  }
+  
+  // Check if player has both Queen and King of the target suit
+  const queen = playerHand.find(c => c.suit === targetSuit && c.rank === 'Q');
+  const king = playerHand.find(c => c.suit === targetSuit && c.rank === 'K');
   
   if (queen && king) {
     return {
@@ -127,13 +155,21 @@ export function findBelot(cards, trumpSuit) {
   return null;
 }
 
+// Legacy function for backward compatibility (used for auto-announce, but belot won't be included)
+export function findBelot(cards, trumpSuit) {
+  // This function is kept for backward compatibility but belot should not be auto-announced
+  // Belot should only be announced when Q or K is actually played
+  return null;
+}
+
 export function getAllCombinations(cards, trumpSuit) {
   const sequences = findSequences(cards);
   const equals = findEquals(cards);
-  const belot = findBelot(cards, trumpSuit);
+  // Note: belot is not included here - it should only be announced when Q or K is played
+  // const belot = findBelot(cards, trumpSuit);
   
   const all = [...sequences, ...equals];
-  if (belot) all.push(belot);
+  // if (belot) all.push(belot);
   
   return all;
 }

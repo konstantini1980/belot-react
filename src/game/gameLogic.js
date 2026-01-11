@@ -1,5 +1,5 @@
 import { createDeck } from './cards';
-import { getAllCombinations } from './combinations';
+import { getAllCombinations, findBelotOnPlay } from './combinations';
 
 export const CONTRACTS = ['clubs', 'diamonds', 'hearts', 'spades', 'no-trump', 'all-trump'];
 export const CONTRACT_RANK = {
@@ -195,7 +195,19 @@ export class BelotGame {
     // Validate card play
     if (!this.isValidCardPlay(player, card)) return false;
     
-    // Auto-announce combinations on first card play in first trick
+    // Check for belot when Q or K is played (before removing card from hand)
+    if (this.contract && (card.rank === 'Q' || card.rank === 'K')) {
+      const belot = findBelotOnPlay(this.contract, card, player.hand);
+      if (belot) {
+        const team = player.team;
+        this.announcedCombinations[team].push({
+          ...belot,
+          playerId
+        });
+      }
+    }
+    
+    // Auto-announce other combinations (sequences, equals) on first card play in first trick
     const isFirstTrick = this.tricks.length === 0;
     if (isFirstTrick && this.contract && this.contract !== 'no-trump') {
       const allCombos = getAllCombinations(player.hand, this.trumpSuit);
