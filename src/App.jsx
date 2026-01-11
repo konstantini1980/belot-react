@@ -5,6 +5,7 @@ import { makeAIBid, makeAIPlayCard } from './game/aiplayer';
 import GameBoard from './components/GameBoard';
 import PlayerHand from './components/PlayerHand';
 import BiddingPanel from './components/BiddingPanel';
+import DevPanel from './components/DevPanel';
 import './App.css';
 
 const PLAYER_ID = 0; // Human player is always player 0
@@ -19,6 +20,8 @@ export default function App() {
   const [playerCombinations, setPlayerCombinations] = useState({}); // { playerId: combinations[] }
   const prevTricksLengthRef = useRef(0);
   const trickTimeoutRef = useRef(null);
+  // Dev panel state
+  const [forceShowScorePanel, setForceShowScorePanel] = useState(false);
 
   useEffect(() => {
     if (game.phase === GAME_PHASES.DEALING) {
@@ -345,6 +348,30 @@ export default function App() {
 
   const player = game.players[PLAYER_ID];
 
+  // Dev panel handlers
+  const handleShowCombinations = () => {
+    // Show test combinations balloon for player 0
+    const mockCombinations = [
+      { type: 'tierce', points: 20, cards: [] },
+      { type: 'quarte', points: 50, cards: [] },
+      { type: 'equal', points: 200, cards: [] },
+      { type: 'belot', points: 20, cards: [] }
+    ];
+    setPlayerCombinations({ [PLAYER_ID]: mockCombinations });
+    // Auto-dismiss after 4 seconds
+    setTimeout(() => {
+      setPlayerCombinations(prev => {
+        const updated = { ...prev };
+        delete updated[PLAYER_ID];
+        return updated;
+      });
+    }, 4000);
+  };
+
+  const handleShowScorePanel = () => {
+    setForceShowScorePanel(true);
+  };
+
   return (
     <div className="app">
       <header className="app-header">
@@ -378,6 +405,8 @@ export default function App() {
           announcedCombinations={game.announcedCombinations}
           roundBreakdown={game.lastRoundBreakdown}
           bids={game.bids}
+          forceShowScorePanel={forceShowScorePanel}
+          onForceShowScorePanelChange={setForceShowScorePanel}
           biddingPanel={game.phase === GAME_PHASES.BIDDING ? (
             <BiddingPanel
               currentBidder={game.currentBidder}
@@ -400,6 +429,11 @@ export default function App() {
           ) : null}
         />
       </div>
+
+      <DevPanel
+        onShowCombinations={handleShowCombinations}
+        onShowScorePanel={handleShowScorePanel}
+      />
     </div>
   );
 }

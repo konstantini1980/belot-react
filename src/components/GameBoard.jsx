@@ -26,7 +26,10 @@ export default function GameBoard({
   playerCombinations = {},
   announcedCombinations = [[], []],
   roundBreakdown = null,
-  bids = []
+  bids = [],
+  // Dev/test props
+  forceShowScorePanel = false,
+  onForceShowScorePanelChange = null
 }) {
   const [showFullScorePanel, setShowFullScorePanel] = useState(false);
   const isRoundOver = phase === GAME_PHASES.SCORING || phase === GAME_PHASES.FINISHED;
@@ -40,10 +43,17 @@ export default function GameBoard({
   React.useEffect(() => {
     if (isRoundOver) {
       setShowFullScorePanel(true);
-    } else {
+    } else if (!forceShowScorePanel) {
       setShowFullScorePanel(false);
     }
-  }, [isRoundOver]);
+  }, [isRoundOver, forceShowScorePanel]);
+
+  // Handle forced score panel display
+  React.useEffect(() => {
+    if (forceShowScorePanel) {
+      setShowFullScorePanel(true);
+    }
+  }, [forceShowScorePanel]);
 
   return (
     <div className="game-board">
@@ -124,15 +134,20 @@ export default function GameBoard({
         {showFullScorePanel && (
         <FullScorePanel 
           scores={scores}
-          roundScores={isRoundOver ? lastRoundScore : null}
+          roundScores={isRoundOver ? lastRoundScore : (forceShowScorePanel ? roundScores : null)}
           phase={phase}
           round={1}
           onNextDeal={isRoundOver ? onNextDeal : null}
-          onClose={!isRoundOver ? () => setShowFullScorePanel(false) : null}
+          onClose={!isRoundOver ? () => {
+            setShowFullScorePanel(false);
+            if (onForceShowScorePanelChange) {
+              onForceShowScorePanelChange(false);
+            }
+          } : null}
           showOverlay={true}
           announcedCombinations={announcedCombinations}
           tricks={tricks}
-          roundBreakdown={isRoundOver ? roundBreakdown : null}
+          roundBreakdown={isRoundOver ? roundBreakdown : (forceShowScorePanel ? roundBreakdown : null)}
         />
       )}
     </div>

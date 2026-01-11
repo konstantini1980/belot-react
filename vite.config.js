@@ -9,5 +9,9 @@ export default defineConfig({
   server: {
     sourcemapIgnoreList: false, // Don't ignore any files in source maps
   },
+  test: {
+    globals: true,
+    environment: 'node',
+  },
 })
 
