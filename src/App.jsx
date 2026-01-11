@@ -22,6 +22,7 @@ export default function App() {
   const trickTimeoutRef = useRef(null);
   // Dev panel state
   const [forceShowScorePanel, setForceShowScorePanel] = useState(false);
+  const [showCombinationsBalloon, setShowCombinationsBalloon] = useState(false);
 
   useEffect(() => {
     if (game.phase === GAME_PHASES.DEALING) {
@@ -229,7 +230,8 @@ export default function App() {
       }
 
       // On first card play in first trick, show combinations (sequences, equals)
-      if (isFirstTrick && combos.length > 0) {
+      // Skip if dev panel is controlling combinations
+      if (!showCombinationsBalloon && isFirstTrick && combos.length > 0) {
         setPlayerCombinations(prev => ({ ...prev, [PLAYER_ID]: combos }));
         // Auto-dismiss after 4 seconds
         setTimeout(() => {
@@ -242,7 +244,8 @@ export default function App() {
       }
 
       // Show belot when announced (when Q or K is played)
-      if (belotCombo) {
+      // Skip if dev panel is controlling combinations
+      if (!showCombinationsBalloon && belotCombo) {
         setPlayerCombinations(prev => ({ 
           ...prev, 
           [PLAYER_ID]: [...(prev[PLAYER_ID] || []), belotCombo]
@@ -291,7 +294,8 @@ export default function App() {
       setGame(newGame);
 
       // On first card play in first trick, show combinations (sequences, equals) for AI players
-      if (isFirstTrick && combos.length > 0) {
+      // Skip if dev panel is controlling combinations
+      if (!showCombinationsBalloon && isFirstTrick && combos.length > 0) {
         setPlayerCombinations(prev => ({ ...prev, [playerId]: combos }));
         // Auto-dismiss after 4 seconds
         setTimeout(() => {
@@ -304,7 +308,8 @@ export default function App() {
       }
 
       // Show belot when announced (when Q or K is played) for AI players
-      if (belotCombo) {
+      // Skip if dev panel is controlling combinations
+      if (!showCombinationsBalloon && belotCombo) {
         setPlayerCombinations(prev => ({ 
           ...prev, 
           [playerId]: [...(prev[playerId] || []), belotCombo]
@@ -349,27 +354,24 @@ export default function App() {
   const player = game.players[PLAYER_ID];
 
   // Dev panel handlers
-  const handleShowCombinations = () => {
-    // Show test combinations balloon for player 0
-    const mockCombinations = [
-      { type: 'tierce', points: 20, cards: [] },
-      { type: 'quarte', points: 50, cards: [] },
-      { type: 'equal', points: 200, cards: [] },
-      { type: 'belot', points: 20, cards: [] }
-    ];
-    setPlayerCombinations({ [PLAYER_ID]: mockCombinations });
-    // Auto-dismiss after 4 seconds
-    setTimeout(() => {
-      setPlayerCombinations(prev => {
-        const updated = { ...prev };
-        delete updated[PLAYER_ID];
-        return updated;
-      });
-    }, 4000);
+  const handleShowCombinations = (show) => {
+    if (show) {
+      // Show a single test combination for all players
+      const mockCombination = { type: 'tierce', points: 20, cards: [] };
+      const allPlayersCombinations = {};
+      for (let i = 0; i < 4; i++) {
+        allPlayersCombinations[i] = [mockCombination];
+      }
+      setPlayerCombinations(allPlayersCombinations);
+    } else {
+      // Clear all combinations when unchecked
+      setPlayerCombinations({});
+    }
+    setShowCombinationsBalloon(show);
   };
 
-  const handleShowScorePanel = () => {
-    setForceShowScorePanel(true);
+  const handleShowScorePanel = (show) => {
+    setForceShowScorePanel(show);
   };
 
   return (
@@ -433,6 +435,8 @@ export default function App() {
       <DevPanel
         onShowCombinations={handleShowCombinations}
         onShowScorePanel={handleShowScorePanel}
+        showCombinations={showCombinationsBalloon}
+        showScorePanel={forceShowScorePanel}
       />
     </div>
   );

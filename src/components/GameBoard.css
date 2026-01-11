@@ -114,6 +114,7 @@
   display: flex;
   align-items: center;
   gap: 0;
+  position: relative;
 }
 
 .player-indicator-container.bottom {
@@ -265,21 +266,35 @@
 }
 
 .combination-balloon-wrapper {
-  position: relative;
+  position: absolute;
   z-index: 101;
   display: flex;
   align-items: center;
-  height: 100%;
+  height: auto;
+  pointer-events: none;
 }
 
-.combination-balloon-wrapper.bottom,
-.combination-balloon-wrapper.left,
+.combination-balloon-wrapper.bottom {
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.combination-balloon-wrapper.left {
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
 .combination-balloon-wrapper.top {
-  margin-left: 25px;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .combination-balloon-wrapper.right {
-  margin-right: 25px;
-  order: -1;
+  right: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
 }
 

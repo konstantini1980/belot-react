@@ -11,7 +11,8 @@ export default function FullScorePanel({
   onClose = null,
   showOverlay = false,
   roundBreakdown = null,
-  announcedCombinations = [[], []]
+  announcedCombinations = [[], []],
+  forceShow = false
 }) {
   const maxScore = 151;
   const isRoundOver = phase === GAME_PHASES.SCORING || phase === GAME_PHASES.FINISHED;
@@ -25,21 +26,21 @@ export default function FullScorePanel({
   const playerRoundScore = roundScores ? (roundScores[0] || 0) : 0;
   const opponentRoundScore = roundScores ? (roundScores[1] || 0) : 0;
 
-  // Close panel when clicking outside (only during gameplay, not when round is over)
+  // Close panel when clicking outside (only during gameplay, not when round is over, and not when force-shown)
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (!isRoundOver && onClose && panelRef.current && !panelRef.current.contains(event.target)) {
+      if (!isRoundOver && !forceShow && onClose && panelRef.current && !panelRef.current.contains(event.target)) {
         onClose();
       }
     };
 
-    if (showOverlay && !isRoundOver && onClose) {
+    if (showOverlay && !isRoundOver && !forceShow && onClose) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => {
         document.removeEventListener('mousedown', handleClickOutside);
       };
     }
-  }, [showOverlay, isRoundOver, onClose]);
+  }, [showOverlay, isRoundOver, onClose, forceShow]);
 
   const renderScoreSection = (teamName, teamColor, score, progress) => (
     <div className="score-section">

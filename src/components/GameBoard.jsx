@@ -44,11 +44,12 @@ export default function GameBoard({
     if (isRoundOver) {
       setShowFullScorePanel(true);
     } else if (!forceShowScorePanel) {
+      // Only auto-close if not force-shown
       setShowFullScorePanel(false);
     }
   }, [isRoundOver, forceShowScorePanel]);
 
-  // Handle forced score panel display
+  // Handle forced score panel display - keep it visible while checkbox is on
   React.useEffect(() => {
     if (forceShowScorePanel) {
       setShowFullScorePanel(true);
@@ -138,7 +139,7 @@ export default function GameBoard({
           phase={phase}
           round={1}
           onNextDeal={isRoundOver ? onNextDeal : null}
-          onClose={!isRoundOver ? () => {
+          onClose={!isRoundOver && !forceShowScorePanel ? () => {
             setShowFullScorePanel(false);
             if (onForceShowScorePanelChange) {
               onForceShowScorePanelChange(false);
@@ -148,6 +149,7 @@ export default function GameBoard({
           announcedCombinations={announcedCombinations}
           tricks={tricks}
           roundBreakdown={isRoundOver ? roundBreakdown : (forceShowScorePanel ? roundBreakdown : null)}
+          forceShow={forceShowScorePanel}
         />
       )}
     </div>
