@@ -1,0 +1,56 @@
+.ai-player-hand {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  margin-top: 8px;
+}
+
+.ai-player-hand .card-back,
+.ai-player-hand .card {
+  margin-left: -7.5px;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.ai-player-hand .card-back:first-child,
+.ai-player-hand .card:first-child {
+  margin-left: 0;
+}
+
+/* Horizontal fanning for bottom and top players */
+.ai-player-hand-north {
+  flex-direction: row;
+}
+
+/* Vertical fanning for left and right players */
+.ai-player-hand-west,
+.ai-player-hand-east {
+  flex-direction: column;
+  align-items: center;
+}
+
+.ai-player-hand-west .card-back,
+.ai-player-hand-west .card {
+  margin-left: 0;
+  margin-top: -35px;
+  position: relative;
+  transform-origin: center center;
+  transform: rotate(90deg);
+}
+
+.ai-player-hand-east .card-back,
+.ai-player-hand-east .card {
+  margin-left: 0;
+  margin-top: -35px;
+  position: relative;
+  transform-origin: center center;
+  transform: rotate(-90deg);
+}
+
+.ai-player-hand-west .card-back:first-child,
+.ai-player-hand-west .card:first-child,
+.ai-player-hand-east .card-back:first-child,
+.ai-player-hand-east .card:first-child {
+  margin-top: 0;
+}

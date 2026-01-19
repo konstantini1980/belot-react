@@ -66,33 +66,98 @@
   justify-content: center;
 }
 
+/* Animation from player positions to center */
+.trick-card.animating-to-center.south {
+  animation: slideFromSouth 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.trick-card.animating-to-center.west {
+  animation: slideFromWest 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.trick-card.animating-to-center.north {
+  animation: slideFromNorth 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.trick-card.animating-to-center.east {
+  animation: slideFromEast 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes slideFromSouth {
+  0% {
+    left: var(--card-source-x, 0);
+    top: var(--card-source-y, 0);
+    width: 75px;
+    height: 102px;
+  }
+  100% {
+    left: var(--card-target-x, 0);
+    top: var(--card-target-y, 0);
+    width: 80px;
+    height: 108px;
+  }
+}
+
+@keyframes slideFromWest {
+  0% {
+    left: var(--card-source-x, 0);
+    top: var(--card-source-y, 0);
+  }
+  100% {
+    left: var(--card-target-x, 0);
+    top: var(--card-target-y, 0);
+  }
+}
+
+@keyframes slideFromNorth {
+  0% {
+    left: var(--card-source-x, 0);
+    top: var(--card-source-y, 0);
+  }
+  100% {
+    left: var(--card-target-x, 0);
+    top: var(--card-target-y, 0);
+  }
+}
+
+@keyframes slideFromEast {
+  0% {
+    left: var(--card-source-x, 0);
+    top: var(--card-source-y, 0);
+  }
+  100% {
+    left: var(--card-target-x, 0);
+    top: var(--card-target-y, 0);
+  }
+}
+
 .trick-card {
-  position: absolute;
-  transition: all 0.3s;
+  position: fixed;
+  z-index: 20;
 }
 
-.trick-card.bottom {
-  bottom: 0px;
+.trick-card.south {
   left: 50%;
-  transform: translateX(-50%);
+  bottom: 0;
+  transform: translate(-50%, 0);
 }
 
-.trick-card.left {
-  left: 0;
+.trick-card.west {
+  left: 0px;
   top: 50%;
-  transform: translateY(-50%);
+  transform: translate(0, -50%);
 }
 
-.trick-card.top {
-  top: 0;
+.trick-card.north {
   left: 50%;
-  transform: translateX(-50%);
+  top: 0px;
+  transform: translate(-50%, 0);
 }
 
-.trick-card.right {
-  right: 0;
+.trick-card.east {
+  right: 0px;
   top: 50%;
-  transform: translateY(-50%);
+  transform: translate(0, -50%);
 }
 
 .trick-count {
@@ -109,7 +174,7 @@
 }
 
 /* Player chip indicators */
-.player-indicator-container {
+.player-container {
   position: absolute;
   display: flex;
   flex-direction: column;
@@ -117,32 +182,32 @@
   gap: 8px;
 }
 
-.player-indicator-container > div:first-child {
+.player-container > div:first-child {
   display: flex;
   align-items: center;
   gap: 0;
   position: relative;
 }
 
-.player-indicator-container.bottom {
-  bottom: 120px;
+.player-container.south {
+  bottom: 0px;
   left: 50%;
   transform: translateX(-50%);
 }
 
-.player-indicator-container.left {
+.player-container.west {
   left: 20px;
   top: 50%;
   transform: translateY(-50%);
 }
 
-.player-indicator-container.top {
+.player-container.north {
   top: 20px;
   left: 50%;
   transform: translateX(-50%);
 }
 
-.player-indicator-container.right {
+.player-container.east {
   right: 20px;
   top: 50%;
   transform: translateY(-50%);
@@ -199,39 +264,42 @@
   }
 }
 
-.player-cards-back {
+/* Player hand panel - unified for all players */
+.player-container .player-hand {
   display: flex;
   justify-content: center;
   align-items: center;
   position: relative;
+  margin-top: 8px;
 }
 
-.player-cards-back .card-back {
+.player-container .player-hand .card-back,
+.player-container .player-hand .card {
   margin-left: -7.5px;
   position: relative;
   transition: all 0.2s;
 }
 
-.player-cards-back .card-back:first-child {
+.player-container .player-hand .card-back:first-child,
+.player-container .player-hand .card:first-child {
   margin-left: 0;
 }
 
 /* Horizontal fanning for bottom and top players */
-.player-indicator-container.bottom .player-cards-back,
-.player-indicator-container.top .player-cards-back {
+.player-container.south .player-hand,
+.player-container.north .player-hand {
   flex-direction: row;
-  margin-top: 8px;
 }
 
 /* Vertical fanning for left and right players */
-.player-indicator-container.left .player-cards-back,
-.player-indicator-container.right .player-cards-back {
+.player-container.west .player-hand,
+.player-container.east .player-hand {
   flex-direction: column;
   align-items: center;
-  margin-top: 8px;
 }
 
-.player-indicator-container.left .player-cards-back .card-back {
+.player-container.west .player-hand .card-back,
+.player-container.west .player-hand .card {
   margin-left: 0;
   margin-top: -35px;
   position: relative;
@@ -239,7 +307,8 @@
   transform: rotate(90deg);
 }
 
-.player-indicator-container.right .player-cards-back .card-back {
+.player-container.east .player-hand .card-back,
+.player-container.east .player-hand .card {
   margin-left: 0;
   margin-top: -35px;
   position: relative;
@@ -247,22 +316,11 @@
   transform: rotate(-90deg);
 }
 
-.player-indicator-container.left .player-cards-back .card-back:first-child,
-.player-indicator-container.right .player-cards-back .card-back:first-child {
+.player-container.west .player-hand .card-back:first-child,
+.player-container.west .player-hand .card:first-child,
+.player-container.east .player-hand .card-back:first-child,
+.player-container.east .player-hand .card:first-child {
   margin-top: 0;
-}
-
-.player-hand-overlay {
-  position: absolute;
-  bottom: 0px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 15;
-  width: 100%;
-  max-width: 900px;
-  height: 100px;
-  display: flex;
-  justify-content: center;
 }
 
 .score-board {
@@ -281,27 +339,299 @@
   pointer-events: none;
 }
 
-.combination-balloon-wrapper.bottom {
+.combination-balloon-wrapper.south {
   left: calc(100% + 10px);
   top: 50%;
   transform: translateY(-50%);
 }
 
-.combination-balloon-wrapper.left {
+.combination-balloon-wrapper.west {
   left: calc(100% + 10px);
   top: 50%;
   transform: translateY(-50%);
 }
 
-.combination-balloon-wrapper.top {
+.combination-balloon-wrapper.north {
   left: calc(100% + 10px);
   top: 50%;
   transform: translateY(-50%);
 }
 
-.combination-balloon-wrapper.right {
+.combination-balloon-wrapper.east {
   right: calc(100% + 10px);
   top: 50%;
   transform: translateY(-50%);
 }
 
+/* Card Holders Container */
+.card-holders-container {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 15;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+/* Card Holder Base Styles */
+.card-holder {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Team 0 (N/S) - Vertical holder */
+.card-holder-team0 {
+  width: 68px; /* Small card width */
+  height: 100px; /* Small card height + some space */
+  flex-direction: column;
+}
+
+/* Team 1 (E/W) - Horizontal holder - aligned to top with vertical holder */
+.card-holder-team1 {
+  width: 100px; /* Small card height + some space */
+  height: 68px; /* Small card width */
+  flex-direction: row;
+  align-self: flex-start; /* Align top with vertical holder */
+}
+
+/* Card Holder Contours */
+.card-holder-contour {
+  position: absolute;
+  border: 2px dashed rgba(255, 255, 255, 0.6);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+}
+
+.card-holder-contour-vertical {
+  width: 50px; /* Small card width */
+  height: 68px; /* Small card height */
+}
+
+.card-holder-contour-horizontal {
+  width: 68px; /* Small card height */
+  height: 50px; /* Small card width */
+}
+
+/* Card Holder Cards */
+.card-holder-card {
+  position: absolute;
+  transform-origin: center;
+  z-index: 16;
+  left: 50%;
+  top: 50%;
+}
+
+/* Team 0 (vertical holder) - cards are vertical */
+.card-holder-team0 .card-holder-card {
+  width: 50px;
+  height: 68px;
+  transform: translate(-50%, calc(-50% + var(--index, 0) * 3px));
+}
+
+/* Team 1 (horizontal holder) - cards are horizontal */
+.card-holder-team1 .card-holder-card {
+  width: 68px;
+  height: 50px;
+  transform: translate(calc(-50% + var(--index, 0) * 3px), -50%);
+}
+
+/* Animation for newly arriving cards */
+.card-holder-card-vertical.arriving {
+  animation: arriveAtHolderVertical 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: 0.3s;
+}
+
+.card-holder-card-horizontal.arriving {
+  animation: arriveAtHolderHorizontal 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: 0.3s;
+}
+
+@keyframes arriveAtHolderVertical {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8) rotate(0deg);
+  }
+  100% {
+    opacity: 0.7;
+    transform: translate(-50%, calc(-50% + var(--index, 0) * 3px)) scale(0.9) rotate(calc(var(--index, 0) * 2deg));
+  }
+}
+
+/* Horizontal holder stacking - cards stack horizontally with slight offset, centered */
+.card-holder-team1 .card-holder-card-horizontal {
+  transform: translate(calc(-50% + var(--index, 0) * 3px), -50%) !important;
+}
+
+@keyframes arriveAtHolderHorizontal {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8) rotate(0deg);
+  }
+  100% {
+    opacity: 0.7;
+    transform: translate(calc(-50% + var(--index, 0) * 3px), -50%) scale(0.9) rotate(calc(var(--index, 0) * 2deg));
+  }
+}
+
+/* Base trick-card styles moved to .trick-card.bottom, etc. */
+.trick-card.moving-to-holder {
+  z-index: 30;
+  pointer-events: none;
+}
+
+/* Calculate position for moving to holder - cards should move from their trick position to holder */
+/* Each card animates independently to the winning team's holder with slight stagger */
+/* Team 0 (N/S) - Vertical holder at bottom right */
+.trick-card.moving-to-holder.moving-to-team-0.south {
+  animation: moveToHolderTeam0FromBottom 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: calc(var(--card-index, 0) * 0.1s);
+  z-index: 30;
+}
+
+.trick-card.moving-to-holder.moving-to-team-0.west {
+  animation: moveToHolderTeam0FromLeft 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: calc(var(--card-index, 0) * 0.1s);
+  z-index: 30;
+}
+
+.trick-card.moving-to-holder.moving-to-team-0.north {
+  animation: moveToHolderTeam0FromTop 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: calc(var(--card-index, 0) * 0.1s);
+  z-index: 30;
+}
+
+.trick-card.moving-to-holder.moving-to-team-0.east {
+  animation: moveToHolderTeam0FromRight 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: calc(var(--card-index, 0) * 0.1s);
+  z-index: 30;
+}
+
+/* Team 1 (E/W) - Horizontal holder at bottom right */
+.trick-card.moving-to-holder.moving-to-team-1.south {
+  animation: moveToHolderTeam1FromBottom 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: calc(var(--card-index, 0) * 0.1s);
+  z-index: 30;
+}
+
+.trick-card.moving-to-holder.moving-to-team-1.west {
+  animation: moveToHolderTeam1FromLeft 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: calc(var(--card-index, 0) * 0.1s);
+  z-index: 30;
+}
+
+.trick-card.moving-to-holder.moving-to-team-1.north {
+  animation: moveToHolderTeam1FromTop 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: calc(var(--card-index, 0) * 0.1s);
+  z-index: 30;
+}
+
+.trick-card.moving-to-holder.moving-to-team-1.east {
+  animation: moveToHolderTeam1FromRight 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: calc(var(--card-index, 0) * 0.1s);
+  z-index: 30;
+}
+
+/* Team 0 animations - move to vertical holder */
+/* Card holders container: bottom: 20px, right: 20px */
+/* Team 0 holder: width 68px, height 100px, center at right: 20px + 34px = 54px from right */
+/* For 1200px board: holder center at 1200px - 54px = 1146px from left, board center at 600px, so +546px right */
+/* Holder center vertically: bottom 20px + 50px = 70px from bottom, so 600px - 70px = 530px from top, board center at 300px, so +230px down */
+@keyframes moveToHolderTeam0FromBottom {
+  0% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(calc(-50% + var(--holder-x, 546px))) translateY(calc(0px + var(--holder-y, 230px))) scale(0.625);
+    visibility: hidden;
+  }
+}
+
+@keyframes moveToHolderTeam0FromLeft {
+  0% {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(calc(50% + var(--holder-x, 546px))) translateY(calc(-50% + var(--holder-y, 230px))) scale(0.625);
+  }
+}
+
+@keyframes moveToHolderTeam0FromTop {
+  0% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(calc(-50% + var(--holder-x, 546px))) translateY(calc(0px + var(--holder-y, 230px))) scale(0.625);
+    visibility: hidden;
+  }
+}
+
+@keyframes moveToHolderTeam0FromRight {
+  0% {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(calc(50% + var(--holder-x, 546px))) translateY(calc(-50% + var(--holder-y, 230px))) scale(0.625);
+  }
+}
+
+/* Team 1 animations - move to horizontal holder */
+@keyframes moveToHolderTeam1FromBottom {
+  0% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(calc(-50% + var(--holder-x, 520px))) translateY(calc(0px + var(--holder-y, 246px))) scale(0.625);
+  }
+}
+
+@keyframes moveToHolderTeam1FromLeft {
+  0% {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(calc(50% + var(--holder-x, 520px))) translateY(calc(-50% + var(--holder-y, 246px))) scale(0.625);
+  }
+}
+
+@keyframes moveToHolderTeam1FromTop {
+  0% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(calc(-50% + var(--holder-x, 520px))) translateY(calc(0px + var(--holder-y, 246px))) scale(0.625);
+  }
+}
+
+@keyframes moveToHolderTeam1FromRight {
+  0% {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(calc(50% + var(--holder-x, 520px))) translateY(calc(-50% + var(--holder-y, 246px))) scale(0.625);
+  }
+}

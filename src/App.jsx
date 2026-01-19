@@ -3,7 +3,6 @@ import { BelotGame, GAME_PHASES } from './game/gameLogic';
 import { getAllCombinations, findBelotOnPlay } from './game/combinations';
 import { makeAIBid, makeAIPlayCard } from './game/aiplayer';
 import GameBoard from './components/GameBoard';
-import PlayerHand from './components/PlayerHand';
 import BiddingPanel from './components/BiddingPanel';
 import DevPanel from './components/DevPanel';
 import LanguageSwitcher from './components/LanguageSwitcher';
@@ -15,17 +14,18 @@ const PLAYER_ID = 0; // Human player is always player 0
 export default function App() {
   const { t, language } = useLanguage();
   const [game, setGame] = useState(new BelotGame());
-  const [selectedCard, setSelectedCard] = useState(null);
   const [playableCards, setPlayableCards] = useState([]);
   const [showEmptyHand, setShowEmptyHand] = useState(false);
-  const [displayTrick, setDisplayTrick] = useState([]);
   const [trickComplete, setTrickComplete] = useState(false);
+  const [winningTeam, setWinningTeam] = useState(null); // Track which team won the trick
   const [playerCombinations, setPlayerCombinations] = useState({}); // { playerId: combinations[] }
-  const prevTricksLengthRef = useRef(0);
   const trickTimeoutRef = useRef(null);
+  const prevTricksLengthRef = useRef(0);
   // Dev panel state
   const [forceShowScorePanel, setForceShowScorePanel] = useState(false);
   const [showCombinationsBalloon, setShowCombinationsBalloon] = useState(false);
+  const [showCards, setShowCards] = useState(false);
+  const [cardPositions, setCardPositions] = useState(new Map()); // Map of cardId -> { x, y }
 
   useEffect(() => {
     if (game.phase === GAME_PHASES.DEALING) {
@@ -35,10 +35,10 @@ export default function App() {
       setPlayerCombinations({});
     }
     
-    // // Clear playable cards in scoring phase
-    // if (game.phase === GAME_PHASES.SCORING) {
-    //   setPlayableCards([]);
-    // }
+    // Clear playable cards in scoring phase
+    if (game.phase === GAME_PHASES.SCORING) {
+      setPlayableCards([]);
+    }
   }, [game.phase]);
 
   // Auto-play for AI players
@@ -74,7 +74,7 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game.phase, game.currentPlayer, game.currentTrick, game.contract]);
 
-  // Handle trick completion delay - keep trick visible for 2 seconds
+  // Handle trick completion - wait 3 seconds after 4th card, then trigger animation to holders
   useEffect(() => {
     // Clear any existing timeout
     if (trickTimeoutRef.current) {
@@ -83,48 +83,39 @@ export default function App() {
     }
 
     if (game.phase === GAME_PHASES.PLAYING) {
-      const prevTricksLength = prevTricksLengthRef.current;
-      const currentTricksLength = game.tricks.length;
       const currentTrickLength = game.currentTrick.length;
+      const tricksLength = game.tricks.length;
+      const prevTricksLength = prevTricksLengthRef.current;
 
-      // Check if a trick was just completed (tricks array increased)
-      if (currentTricksLength > prevTricksLength) {
-        // A trick was just completed, get it from the tricks array
-        const completedTrick = game.tricks[currentTricksLength - 1];
-        if (completedTrick && completedTrick.cards) {
-          // The cards are already in the correct format: [{ playerId, card }, ...]
-          setDisplayTrick([...completedTrick.cards]);
-          setTrickComplete(true);
-          prevTricksLengthRef.current = currentTricksLength;
+      // Detect when a trick was just completed (tricks array increased)
+      if (tricksLength > prevTricksLength) {
+        // Get the most recently completed trick
+        const completedTrick = game.tricks[tricksLength - 1];
+        if (completedTrick && completedTrick.cards && completedTrick.cards.length === 4) {
+          setWinningTeam(completedTrick.team);
           
-          // Keep showing for 2 seconds, then clear
+          // Wait 3 seconds, then mark trick as complete (triggers animation to holders)
           trickTimeoutRef.current = setTimeout(() => {
-            setTrickComplete(false);
-            setDisplayTrick([]);
+            setTrickComplete(true);
             trickTimeoutRef.current = null;
-          }, 2000);
+          }, 3000);
         }
       } 
-      // Normal trick in progress - show current trick
-      else if (currentTrickLength > 0 && currentTrickLength < 4) {
-        if (!trickComplete) {
-          setDisplayTrick([...game.currentTrick]);
-        }
-        prevTricksLengthRef.current = currentTricksLength;
+      // When new trick starts (currentTrick has cards again), reset state
+      else if (currentTrickLength > 0 && trickComplete) {
+        setTrickComplete(false);
+        setWinningTeam(null);
       }
-      // No trick in progress - clear display if not showing completed trick
-      else if (currentTrickLength === 0 && !trickComplete) {
-        setDisplayTrick([]);
-        prevTricksLengthRef.current = currentTricksLength;
-      }
+      
+      prevTricksLengthRef.current = tricksLength;
     } else {
       // Clear timeout and reset state when phase changes
       if (trickTimeoutRef.current) {
         clearTimeout(trickTimeoutRef.current);
         trickTimeoutRef.current = null;
       }
-      setDisplayTrick([]);
       setTrickComplete(false);
+      setWinningTeam(null);
       prevTricksLengthRef.current = 0;
     }
 
@@ -135,7 +126,7 @@ export default function App() {
         trickTimeoutRef.current = null;
       }
     };
-  }, [game.phase, game.currentTrick, game.tricks.length]);
+  }, [game.phase, game.currentTrick.length, game.tricks.length, trickComplete]);
 
   const updatePlayableCards = () => {
     if (game.currentPlayer !== PLAYER_ID) return;
@@ -189,114 +180,82 @@ export default function App() {
     setGame(newGame);
   };
 
-  const handleCardClick = (card) => {
+  const handleCardClick = (card, event) => {
     if (game.phase === GAME_PHASES.PLAYING && game.currentPlayer === PLAYER_ID) {
       if (playableCards.includes(card.id)) {
-        handlePlayCard(card);
-      } else {
-        setSelectedCard(card);
-      }
-    } else {
-      setSelectedCard(card);
+        // Get the card's position before playing (relative to board center for animation)
+        if (event && event.currentTarget) {
+          const cardKey = `${PLAYER_ID}-${card.id}`;
+          storeCardPosition(event.currentTarget, cardKey);         
+        }
+
+        handlePlayCard(PLAYER_ID, card);
+      } 
     }
   };
 
-  const handlePlayCard = (card) => {
-    const newGame = new BelotGame();
-    Object.assign(newGame, game);
-    const player = newGame.players[PLAYER_ID];
-    const wasLastCardInTrick = newGame.currentTrick.length === 3;
-    const isFirstTrick = game.tricks.length === 0;
+  const storeCardPosition = (cardElement, cardKey) => {
+    let cardPosition = null;
+    // Find board center to calculate relative position
+    const gameBoard = cardElement.closest('.game-board');
+    if (gameBoard) {
+      const boardCenter = gameBoard.querySelector('.board-center');
+      if (boardCenter) {
+        const boardCenterRect = boardCenter.getBoundingClientRect();
+        const cardRect = cardElement.getBoundingClientRect();
+        cardPosition = {
+          x: cardRect.left - boardCenterRect.left,
+          y: cardRect.top - boardCenterRect.top
+        };
+      }
+    }
+
+    // Store card position for GameBoard animation (before card is removed from hand)
+    // Use cardKey format: playerId-cardId
+    if (cardPosition) {
+      setCardPositions(prev => {
+        const newMap = new Map(prev);
+        newMap.set(cardKey, cardPosition);
+        return newMap;
+      });
+
+      // Clean up card position after animation completes (1 second)
+      setTimeout(() => {
+        setCardPositions(prev => {
+          const newMap = new Map(prev);
+          newMap.delete(cardKey);
+          return newMap;
+        });
+      }, 1000);
+    }
+  };
+
+  const handleLastCardInTrick = (currentTrick) => {
+    if (currentTrick.length === 3) {
+      setShowEmptyHand(true);
+      setTimeout(() => {
+        setShowEmptyHand(false);
+      }, 1000);
+    }
+  }
+
+  const handleCombinations = (newGame, playerId, card) => {
+    const isFirstTrick = newGame.tricks.length === 0;
+    const player = newGame.players[playerId];
 
     // Check combinations before playing (on full hand) - for sequences and equals
     let combos = [];
-    if (isFirstTrick && game.contract && game.contract !== 'no-trump') {
-      combos = getAllCombinations(player.hand, game.trumpSuit);
+    if (isFirstTrick && newGame.contract && newGame.contract !== 'no-trump') {
+      combos = getAllCombinations(player.hand, newGame.trumpSuit);
     }
 
     // Check for belot when Q or K is played (before playing the card)
     let belotCombo = null;
-    if (game.contract && (card.rank === 'Q' || card.rank === 'K')) {
+    if (newGame.contract && (card.rank === 'Q' || card.rank === 'K')) {
       belotCombo = findBelotOnPlay(game.contract, card, player.hand);
     }
 
-    if (newGame.playCard(PLAYER_ID, card.id)) {
-      setGame(newGame);
-      setSelectedCard(null);
-
-      // If this was the last card in the trick, show empty hand for 2 seconds
-      if (wasLastCardInTrick) {
-        setShowEmptyHand(true);
-        setTimeout(() => {
-          setShowEmptyHand(false);
-        }, 2000);
-      }
-
-      // On first card play in first trick, show combinations (sequences, equals)
-      // Skip if dev panel is controlling combinations
-      if (!showCombinationsBalloon && isFirstTrick && combos.length > 0) {
-        setPlayerCombinations(prev => ({ ...prev, [PLAYER_ID]: combos }));
-        // Auto-dismiss after 4 seconds
-        setTimeout(() => {
-          setPlayerCombinations(prev => {
-            const updated = { ...prev };
-            delete updated[PLAYER_ID];
-            return updated;
-          });
-        }, 4000);
-      }
-
-      // Show belot when announced (when Q or K is played)
-      // Skip if dev panel is controlling combinations
-      if (!showCombinationsBalloon && belotCombo) {
-        setPlayerCombinations(prev => ({ 
-          ...prev, 
-          [PLAYER_ID]: [...(prev[PLAYER_ID] || []), belotCombo]
-        }));
-        // Auto-dismiss after 4 seconds
-        setTimeout(() => {
-          setPlayerCombinations(prev => {
-            const updated = { ...prev };
-            if (updated[PLAYER_ID]) {
-              updated[PLAYER_ID] = updated[PLAYER_ID].filter(c => c.type !== 'belot');
-              if (updated[PLAYER_ID].length === 0) {
-                delete updated[PLAYER_ID];
-              }
-            }
-            return updated;
-          });
-        }, 4000);
-      }
-    }
-  };
-
-  const handleAIPlay = () => {
-    const newGame = new BelotGame();
-    Object.assign(newGame, game);
-    const playerId = newGame.currentPlayer;
-    const isFirstTrick = game.tricks.length === 0;
-    const player = newGame.players[playerId];
-    
-    // Check combinations before playing (on full hand) - for sequences and equals
-    let combos = [];
-    if (isFirstTrick && game.contract && game.contract !== 'no-trump') {
-      combos = getAllCombinations(player.hand, game.trumpSuit);
-    }
-    
-    // Use AI to select card
-    const cardToPlay = makeAIPlayCard(newGame, playerId);
-    
-    // Check for belot when Q or K is played (before playing the card)
-    let belotCombo = null;
-    if (cardToPlay && game.contract && (cardToPlay.rank === 'Q' || cardToPlay.rank === 'K')) {
-      belotCombo = findBelotOnPlay(game.contract, cardToPlay, player.hand);
-    }
-    
-    if (cardToPlay) {
-      newGame.playCard(playerId, cardToPlay.id);
-      setGame(newGame);
-
-      // On first card play in first trick, show combinations (sequences, equals) for AI players
+    // On first card play in first trick, show combinations (sequences, equals)
       // Skip if dev panel is controlling combinations
       if (!showCombinationsBalloon && isFirstTrick && combos.length > 0) {
         setPlayerCombinations(prev => ({ ...prev, [playerId]: combos }));
@@ -310,7 +269,7 @@ export default function App() {
         }, 4000);
       }
 
-      // Show belot when announced (when Q or K is played) for AI players
+      // Show belot when announced (when Q or K is played)
       // Skip if dev panel is controlling combinations
       if (!showCombinationsBalloon && belotCombo) {
         setPlayerCombinations(prev => ({ 
@@ -331,7 +290,42 @@ export default function App() {
           });
         }, 4000);
       }
-    }
+  }
+
+  const handlePlayCard = (playerId, card) => {
+    const newGame = new BelotGame();
+    Object.assign(newGame, game);
+    // Create a new array reference for currentTrick so React detects changes
+    newGame.currentTrick = [...game.currentTrick];
+
+    handleCombinations(newGame, playerId, card);
+    handleLastCardInTrick(newGame.currentTrick);
+
+    newGame.playCard(playerId, card.id);
+    // Create a new array reference after playCard mutates it, so React detects the change
+    newGame.currentTrick = [...newGame.currentTrick];
+    setGame(newGame);
+  };
+
+  const handleAIPlay = () => {
+    const playerId = game.currentPlayer;    
+    const cardToPlay = makeAIPlayCard(game, playerId);
+    
+    if (cardToPlay) {
+      // Capture AI card position before playing (query DOM for card element)
+      const cardKey = `${playerId}-${cardToPlay.id}`;
+      const cardIndex = game.players[playerId].hand.indexOf(cardToPlay);
+      
+      // AI cards have data-card-id like "player-${playerId}-back-${cardIndex}"
+      const gameBoard = document.querySelector('.game-board');
+      const cardElement = gameBoard?.querySelector(`[data-card-id="player-${playerId}-back-${cardIndex}"]`);
+      
+      if (cardElement) {
+        storeCardPosition(cardElement, cardKey);
+      }
+
+      handlePlayCard(playerId,cardToPlay);
+    }    
   };
 
 
@@ -339,7 +333,6 @@ export default function App() {
     const newGame = new BelotGame();
     newGame.deal();
     setGame(newGame);
-    setSelectedCard(null);
     setPlayableCards([]);
   };
 
@@ -349,12 +342,9 @@ export default function App() {
     newGame.dealer = (newGame.dealer + 1) % 4;
     newGame.deal();
     setGame(newGame);
-    setSelectedCard(null);
     setPlayableCards([]);
     setPlayerCombinations({});
   };
-
-  const player = game.players[PLAYER_ID];
 
   // Dev panel handlers
   const handleShowCombinations = (show) => {
@@ -375,6 +365,10 @@ export default function App() {
 
   const handleShowScorePanel = (show) => {
     setForceShowScorePanel(show);
+  };
+
+  const handleShowCards = (show) => {
+    setShowCards(show);
   };
 
   // Update player names when language changes
@@ -413,7 +407,7 @@ export default function App() {
         <GameBoard
           languageSwitcher={<LanguageSwitcher />}
           players={game.players}
-          currentTrick={trickComplete ? displayTrick : game.currentTrick}
+          currentTrick={trickComplete && game.tricks.length > 0 ? game.tricks[game.tricks.length - 1].cards : game.currentTrick}
           currentPlayer={game.currentPlayer}
           tricks={game.tricks}
           scores={game.totalScores}
@@ -431,8 +425,11 @@ export default function App() {
           announcedCombinations={game.announcedCombinations}
           roundBreakdown={game.lastRoundBreakdown}
           bids={game.bids}
+          trickComplete={trickComplete}
+          winningTeam={winningTeam}
           forceShowScorePanel={forceShowScorePanel}
           onForceShowScorePanelChange={setForceShowScorePanel}
+          showCards={showCards}
           biddingPanel={game.phase === GAME_PHASES.BIDDING ? (
             <BiddingPanel
               currentBidder={game.currentBidder}
@@ -443,24 +440,20 @@ export default function App() {
               players={game.players}
             />
           ) : null}
-          playerHand={(game.phase === GAME_PHASES.PLAYING || game.phase === GAME_PHASES.BIDDING || showEmptyHand) ? (
-            <PlayerHand
-              cards={player.hand}
-              onCardClick={handleCardClick}
-              selectedCard={selectedCard}
-              playableCards={playableCards}
-              trumpSuit={game.trumpSuit}
-              contract={game.contract}
-            />
-          ) : null}
+          playableCards={playableCards}
+          onCardClick={handleCardClick}
+          cardPositions={cardPositions}
+          showEmptyHand={showEmptyHand}
         />
       </div>
 
       <DevPanel
         onShowCombinations={handleShowCombinations}
         onShowScorePanel={handleShowScorePanel}
+        onShowCards={handleShowCards}
         showCombinations={showCombinationsBalloon}
         showScorePanel={forceShowScorePanel}
+        showCards={showCards}
       />
     </div>
   );

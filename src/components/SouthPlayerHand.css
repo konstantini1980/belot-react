@@ -1,0 +1,18 @@
+.south-player-hand {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding: 10px;
+  min-height: 100px;
+  position: relative;
+}
+
+.south-player-hand .card:first-child {
+  margin-left: 0;
+}
+
+.south-player-hand .card {
+  margin-left: -20px;
+  transition: all 0.3s ease;
+  position: relative;
+}

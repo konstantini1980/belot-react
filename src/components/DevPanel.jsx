@@ -5,8 +5,10 @@ import './DevPanel.css';
 export default function DevPanel({ 
   onShowCombinations,
   onShowScorePanel,
+  onShowCards,
   showCombinations,
   showScorePanel,
+  showCards,
   isVisible: externalIsVisible = null
 }) {
   const { t } = useLanguage();
@@ -24,6 +26,12 @@ export default function DevPanel({
   const handleScorePanelToggle = (checked) => {
     if (onShowScorePanel) {
       onShowScorePanel(checked);
+    }
+  };
+
+  const handleShowCardsToggle = (checked) => {
+    if (onShowCards) {
+      onShowCards(checked);
     }
   };
 
@@ -72,6 +80,15 @@ export default function DevPanel({
                 className="dev-checkbox"
               />
               <span>{t('showScorePanel')}</span>
+            </label>
+            <label className="dev-checkbox-label">
+              <input
+                type="checkbox"
+                checked={showCards || false}
+                onChange={(e) => handleShowCardsToggle(e.target.checked)}
+                className="dev-checkbox"
+              />
+              <span>{t('showCards')}</span>
             </label>
           </div>
         </div>

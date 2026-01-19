@@ -1,14 +1,11 @@
 import React from 'react';
 import Card from './Card';
-import './PlayerHand.css';
+import './SouthPlayerHand.css';
 
-export default function PlayerHand({ 
+export default function SouthPlayerHand({ 
   cards, 
   onCardClick, 
-  selectedCard, 
-  playableCards,
-  trumpSuit,
-  contract 
+  playableCards
 }) {
   const sortedCards = [...cards].sort((a, b) => {
     // Sort by suit first, then by rank
@@ -20,19 +17,15 @@ export default function PlayerHand({
   });
 
   return (
-    <div className="player-hand">
+    <div className="south-player-hand">
       {sortedCards.map(card => {
-        const isTrump = contract !== 'no-trump' && contract !== 'all-trump' && card.suit === trumpSuit;
         const playable = playableCards && playableCards.includes(card.id);
         return (
           <Card
             key={card.id}
             card={card}
-            onClick={() => onCardClick(card)}
-            selected={selectedCard?.id === card.id}
+            onClick={(e) => onCardClick(card, e)}
             playable={playable}
-            isTrump={isTrump}
-            size="small"
           />
         );
       })}

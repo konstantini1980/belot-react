@@ -34,6 +34,7 @@ import TenClubs from '../assets/tc.bmp';
 import TenDiamonds from '../assets/td.bmp';
 import TenHearts from '../assets/th.bmp';
 import TenSpades from '../assets/ts.bmp';
+import backImage from '../assets/back.bmp';
 
 // Mapping from game rank to rank name
 const RANK_MAP = {
@@ -67,30 +68,46 @@ const CARD_IMAGES = {
   'TenClubs': TenClubs, 'TenDiamonds': TenDiamonds, 'TenHearts': TenHearts, 'TenSpades': TenSpades
 };
 
-export default function Card({ card, onClick, selected, playable, isTrump, size }) {
-  if (!card) return null;
+export default function Card({ card, onClick, selected, playable, showBack = false, cardId }) {
+  // If showing back, card prop is optional
+  if (!showBack && !card) return null;
   
-  // Get the image based on rank and suit
-  const rankName = RANK_MAP[card.rank];
-  const suitName = SUIT_MAP[card.suit];
-  const imageKey = `${rankName}${suitName}`;
-  const imageSrc = CARD_IMAGES[imageKey];
-  
-  const handleClick = () => {
+  const handleClick = (e) => {
     // Only allow clicks on playable cards
     if (playable && onClick) {
-      onClick();
+      onClick(e);
     }
   };
   
+  // Determine image source
+  let imageSrc;
+  let altText;
+  
+  if (showBack) {
+    imageSrc = backImage;
+    altText = 'Card back';
+  } else {
+    // Get the image based on rank and suit
+    const rankName = RANK_MAP[card.rank];
+    const suitName = SUIT_MAP[card.suit];
+    const imageKey = `${rankName}${suitName}`;
+    imageSrc = CARD_IMAGES[imageKey];
+    altText = `${card.rank} of ${card.suit}`;
+  }
+  
+  // Determine card ID: use explicit cardId prop, or card.id
+  // Always ensure we have a valid ID for data-card-id attribute
+  const finalCardId = cardId || card?.id || `card-${Math.random().toString(36).substr(2, 9)}`;
+  
   return (
     <div
-      className={`card ${size === 'small' ? 'small' : ''} ${selected ? 'selected' : ''} ${playable ? 'playable' : ''} ${isTrump ? 'trump' : ''}`}
+      className={`card ${selected ? 'selected' : ''} ${playable ? 'playable' : ''} ${showBack ? 'back' : ''}`}
       onClick={handleClick}
+      data-card-id={finalCardId}
     >
       <img 
         src={imageSrc} 
-        alt={`${card.rank} of ${card.suit}`}
+        alt={altText}
         className="card-image"
       />
     </div>

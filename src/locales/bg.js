@@ -55,6 +55,7 @@ export default {
   panelControls: 'Контроли на панела',
   showCombinationsBalloon: 'Покажи балон с комбинации',
   showScorePanel: 'Покажи панел с резултати',
+  showCards: 'Покажи карти',
   close: 'Затвори',
   
   // Language Switcher
