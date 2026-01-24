@@ -15,12 +15,9 @@ export default function App() {
   const { t, language } = useLanguage();
   const [game, setGame] = useState(new BelotGame());
   const [playableCards, setPlayableCards] = useState([]);
-  const [showEmptyHand, setShowEmptyHand] = useState(false);
   const [trickComplete, setTrickComplete] = useState(false);
   const [winningTeam, setWinningTeam] = useState(null); // Track which team won the trick
   const [playerCombinations, setPlayerCombinations] = useState({}); // { playerId: combinations[] }
-  const trickTimeoutRef = useRef(null);
-  const prevTricksLengthRef = useRef(0);
   // Dev panel state
   const [forceShowScorePanel, setForceShowScorePanel] = useState(false);
   const [showCombinationsBalloon, setShowCombinationsBalloon] = useState(false);
@@ -67,66 +64,42 @@ export default function App() {
       setPlayableCards([]);
     }
     
-    // Reset showEmptyHand when phase changes
-    if (game.phase !== GAME_PHASES.PLAYING) {
-      setShowEmptyHand(false);
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [game.phase, game.currentPlayer, game.currentTrick, game.contract]);
+  }, [game.phase, game.currentPlayer]);
 
   // Handle trick completion - wait 3 seconds after 4th card, then trigger animation to holders
   useEffect(() => {
-    // Clear any existing timeout
-    if (trickTimeoutRef.current) {
-      clearTimeout(trickTimeoutRef.current);
-      trickTimeoutRef.current = null;
-    }
-
     if (game.phase === GAME_PHASES.PLAYING) {
-      const currentTrickLength = game.currentTrick.length;
-      const tricksLength = game.tricks.length;
-      const prevTricksLength = prevTricksLengthRef.current;
-
-      // Detect when a trick was just completed (tricks array increased)
-      if (tricksLength > prevTricksLength) {
-        // Get the most recently completed trick
-        const completedTrick = game.tricks[tricksLength - 1];
-        if (completedTrick && completedTrick.cards && completedTrick.cards.length === 4) {
-          setWinningTeam(completedTrick.team);
-          
-          // Wait 3 seconds, then mark trick as complete (triggers animation to holders)
-          trickTimeoutRef.current = setTimeout(() => {
-            setTrickComplete(true);
-            trickTimeoutRef.current = null;
+      if (game.currentTrick.length === 4) {
+          //Wait 3 seconds, then mark trick as complete (triggers animation to holders)
+          const timer = setTimeout(() => {
+            setWinningTeam(game.players[game.currentPlayer].team);
+            animateToHolders();
           }, 3000);
+          return () => clearTimeout(timer);
         }
       } 
-      // When new trick starts (currentTrick has cards again), reset state
-      else if (currentTrickLength > 0 && trickComplete) {
+      else {
         setTrickComplete(false);
         setWinningTeam(null);
-      }
-      
-      prevTricksLengthRef.current = tricksLength;
-    } else {
-      // Clear timeout and reset state when phase changes
-      if (trickTimeoutRef.current) {
-        clearTimeout(trickTimeoutRef.current);
-        trickTimeoutRef.current = null;
-      }
-      setTrickComplete(false);
-      setWinningTeam(null);
-      prevTricksLengthRef.current = 0;
-    }
+      }      
+  }, [game.phase, game.currentTrick.length]);
 
-    // Cleanup function
-    return () => {
-      if (trickTimeoutRef.current) {
-        clearTimeout(trickTimeoutRef.current);
-        trickTimeoutRef.current = null;
-      }
-    };
-  }, [game.phase, game.currentTrick.length, game.tricks.length, trickComplete]);
+  //Animate cards to holders for 1 second then complete trick
+  const animateToHolders = () => {
+    setTrickComplete(true);
+    
+    const timer = setTimeout(() => {
+      const newGame = new BelotGame();
+      Object.assign(newGame, game);
+
+      newGame.completeTrick();
+
+      setTrickComplete(false);
+      setGame(newGame);
+    }, 1000);
+    return () => clearTimeout(timer);
+  };
 
   const updatePlayableCards = () => {
     if (game.currentPlayer !== PLAYER_ID) return;
@@ -230,15 +203,6 @@ export default function App() {
     }
   };
 
-  const handleLastCardInTrick = (currentTrick) => {
-    if (currentTrick.length === 3) {
-      setShowEmptyHand(true);
-      setTimeout(() => {
-        setShowEmptyHand(false);
-      }, 1000);
-    }
-  }
-
   const handleCombinations = (newGame, playerId, card) => {
     const isFirstTrick = newGame.tricks.length === 0;
     const player = newGame.players[playerId];
@@ -295,15 +259,11 @@ export default function App() {
   const handlePlayCard = (playerId, card) => {
     const newGame = new BelotGame();
     Object.assign(newGame, game);
-    // Create a new array reference for currentTrick so React detects changes
-    newGame.currentTrick = [...game.currentTrick];
 
     handleCombinations(newGame, playerId, card);
-    handleLastCardInTrick(newGame.currentTrick);
-
+    
     newGame.playCard(playerId, card.id);
-    // Create a new array reference after playCard mutates it, so React detects the change
-    newGame.currentTrick = [...newGame.currentTrick];
+
     setGame(newGame);
   };
 
@@ -407,11 +367,11 @@ export default function App() {
         <GameBoard
           languageSwitcher={<LanguageSwitcher />}
           players={game.players}
-          currentTrick={trickComplete && game.tricks.length > 0 ? game.tricks[game.tricks.length - 1].cards : game.currentTrick}
+          currentTrick={game.currentTrick}
           currentPlayer={game.currentPlayer}
           tricks={game.tricks}
           scores={game.totalScores}
-          roundScores={game.roundScore}
+          roundScores={game.currentRoundScore}
           lastRoundScore={game.lastRoundScore}
           lastRoundRoundedPoints={game.lastRoundRoundedPoints}
           hangingPoints={game.hangingPoints}
@@ -443,7 +403,6 @@ export default function App() {
           playableCards={playableCards}
           onCardClick={handleCardClick}
           cardPositions={cardPositions}
-          showEmptyHand={showEmptyHand}
         />
       </div>
 

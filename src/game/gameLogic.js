@@ -45,7 +45,7 @@ export class BelotGame {
     this.tricks = [];
     this.trickLeader = 0;
     this.totalScores = [0, 0]; // Team scores
-    this.courrenRoundScore = [0, 0]; // Points from current round
+    this.currentRoundScore = [0, 0]; // Points from current round
     this.lastRoundScore = [0, 0]; // Points from last completed round (for display)
     this.lastRoundBreakdown = [{ cardPoints: 0, combinationPoints: 0, valatPoints: 0 }, { cardPoints: 0, combinationPoints: 0, valatPoints: 0 }]; // Breakdown of last round points
     this.lastRoundRoundedPoints = [0, 0]; // Rounded points added to scores from last round
@@ -80,7 +80,7 @@ export class BelotGame {
     this.currentBidder = (this.dealer + 3) % 4; // Counter-clockwise
     this.bids = [];
     // Reset round scores for new round
-    this.courrenRoundScore = [0, 0];
+    this.currentRoundScore = [0, 0];
     // Clear last round scores when starting new deal
     this.lastRoundScore = [0, 0];
     // Clear last round breakdown when starting new deal
@@ -263,10 +263,16 @@ export class BelotGame {
     // Remove card from hand
     player.hand.splice(cardIndex, 1);
     this.currentTrick.push({ playerId, card });
-    
-    // Move to next player (counter-clockwise)
-    this.currentPlayer = (this.currentPlayer + 3) % 4;
-    
+
+    if (this.currentTrick.length < 4) {
+      // Move to next player (counter-clockwise)
+      this.currentPlayer = (this.currentPlayer + 3) % 4;
+    }
+    return true;
+  }
+
+  // Should be called from the app after the animation to holders is complete
+  completeTrick() {
     // If trick is complete, determine winner
     if (this.currentTrick.length === 4) {
       const winner = this.determineTrickWinner();
@@ -279,7 +285,7 @@ export class BelotGame {
       // Add points
       this.currentTrick.forEach(({ card }) => {
         const value = card.getValue(this.contract);
-        this.courrenRoundScore[this.players[winner.playerId].team] += value;
+        this.currentRoundScore[this.players[winner.playerId].team] += value;
       });
 
       this.currentPlayer = winner.playerId;
@@ -289,12 +295,10 @@ export class BelotGame {
       // Check if round is over
       if (this.tricks.length === 8) {
       // Add last 10 points
-        this.courrenRoundScore[this.players[winner.playerId].team] += 10;
+        this.currentRoundScore[this.players[winner.playerId].team] += 10;
         this.endRound();
       }
     }
-    
-    return true;
   }
 
   isValidCardPlay(player, card) {
@@ -472,14 +476,14 @@ export class BelotGame {
   endRound() {
     // Calculate breakdown - card points are already in roundScore
     const breakdown = [
-      { cardPoints: this.courrenRoundScore[0], combinationPoints: 0, valatPoints: 0 },
-      { cardPoints: this.courrenRoundScore[1], combinationPoints: 0, valatPoints: 0 }
+      { cardPoints: this.currentRoundScore[0], combinationPoints: 0, valatPoints: 0 },
+      { cardPoints: this.currentRoundScore[1], combinationPoints: 0, valatPoints: 0 }
     ];
         
     if (this.contract === 'no-trump') {
       // Double points in no-trump
-      this.courrenRoundScore[0] *= 2;
-      this.courrenRoundScore[1] *= 2;
+      this.currentRoundScore[0] *= 2;
+      this.currentRoundScore[1] *= 2;
       breakdown[0].cardPoints *= 2;
       breakdown[1].cardPoints *= 2;
     }
@@ -487,11 +491,11 @@ export class BelotGame {
     let isValat = false;
     // Check for valat (winning all tricks)
     if (this.tricks.every(t => {return t.team === 0; })) {
-      this.courrenRoundScore[0] += 90;
+      this.currentRoundScore[0] += 90;
       breakdown[0].valatPoints = 90;
       isValat = true;
     } else if (this.tricks.every(t => {return t.team === 1; })) {
-      this.courrenRoundScore[1] += 90;
+      this.currentRoundScore[1] += 90;
       breakdown[1].valatPoints = 90;
       isValat = true;
     }
@@ -501,19 +505,19 @@ export class BelotGame {
       let comboPoints = 0;
       combos.forEach(combo => {
         comboPoints += combo.points;
-        this.courrenRoundScore[team] += combo.points;
+        this.currentRoundScore[team] += combo.points;
       });
       breakdown[team].combinationPoints = comboPoints;
     });
     
     // Store original round scores and breakdown for display
-    this.lastRoundScore = [...this.courrenRoundScore];
+    this.lastRoundScore = [...this.currentRoundScore];
     this.lastRoundBreakdown = breakdown;
     
     // Calculate rounded points for this round
     const contractTeam = this.players[this.bids.find(b => b.bid === this.contract).playerId].team;
-    const contractPoints = this.courrenRoundScore[contractTeam];
-    const opponentPoints = this.courrenRoundScore[1 - contractTeam];
+    const contractPoints = this.currentRoundScore[contractTeam];
+    const opponentPoints = this.currentRoundScore[1 - contractTeam];
 
     // Check if it's a hanging situation (equal points)
     const isHanging = contractPoints === opponentPoints;
@@ -529,8 +533,8 @@ export class BelotGame {
     if (contractPoints > opponentPoints) {
       if (!this.double && !this.redouble) {
         // Outside - both teams get their points
-        this.lastRoundRoundedPoints[0] = Math.round(this.courrenRoundScore[0] / 10);
-        this.lastRoundRoundedPoints[1] = Math.round(this.courrenRoundScore[1] / 10);
+        this.lastRoundRoundedPoints[0] = Math.round(this.currentRoundScore[0] / 10);
+        this.lastRoundRoundedPoints[1] = Math.round(this.currentRoundScore[1] / 10);
 
         // Round to the smaller
         if (this.contract === 'all-trump' && opponentPoints%10 === 4) {
@@ -554,7 +558,7 @@ export class BelotGame {
       }      
     } else if (contractPoints < opponentPoints) {
       // Opponent takes it all
-      const totalPoints = this.courrenRoundScore[0] + this.courrenRoundScore[1];            
+      const totalPoints = this.currentRoundScore[0] + this.currentRoundScore[1];            
       this.lastRoundRoundedPoints[1-contractTeam] = Math.round(totalPoints * multiplier / 10);
 
       // Add previously hanging points
@@ -573,8 +577,8 @@ export class BelotGame {
       // Contract team does not receive any points (their rounded points become hanging)
       // Opponent team gets their points as usual
       // Calculate rounded points for both teams (normal rounding)
-      this.lastRoundRoundedPoints[0] = Math.round(this.courrenRoundScore[0] / 10);
-      this.lastRoundRoundedPoints[1] = Math.round(this.courrenRoundScore[1] / 10);
+      this.lastRoundRoundedPoints[0] = Math.round(this.currentRoundScore[0] / 10);
+      this.lastRoundRoundedPoints[1] = Math.round(this.currentRoundScore[1] / 10);
 
       // Apply rounding adjustments if needed (same as outside case)
       if (this.contract === 'all-trump' && opponentPoints%10 === 4) {
@@ -600,7 +604,7 @@ export class BelotGame {
     this.totalScores[1] += this.lastRoundRoundedPoints[1];
     
     // Clear round variables for next round
-    this.courrenRoundScore = [0, 0];
+    this.currentRoundScore = [0, 0];
     this.tricks = [];
     this.currentTrick = [];
     this.trickLeader = 0;

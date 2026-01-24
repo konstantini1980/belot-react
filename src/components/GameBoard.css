@@ -66,24 +66,12 @@
   justify-content: center;
 }
 
-/* Animation from player positions to center */
-.trick-card.animating-to-center.south {
-  animation: slideFromSouth 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+/* Animation from player position to board center */
+.trick-card.animating-to-center {
+  animation: slideFromPlayer 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-.trick-card.animating-to-center.west {
-  animation: slideFromWest 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-.trick-card.animating-to-center.north {
-  animation: slideFromNorth 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-.trick-card.animating-to-center.east {
-  animation: slideFromEast 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-@keyframes slideFromSouth {
+@keyframes slideFromPlayer {
   0% {
     left: var(--card-source-x, 0);
     top: var(--card-source-y, 0);
@@ -98,67 +86,16 @@
   }
 }
 
-@keyframes slideFromWest {
-  0% {
-    left: var(--card-source-x, 0);
-    top: var(--card-source-y, 0);
-  }
-  100% {
-    left: var(--card-target-x, 0);
-    top: var(--card-target-y, 0);
-  }
-}
-
-@keyframes slideFromNorth {
-  0% {
-    left: var(--card-source-x, 0);
-    top: var(--card-source-y, 0);
-  }
-  100% {
-    left: var(--card-target-x, 0);
-    top: var(--card-target-y, 0);
-  }
-}
-
-@keyframes slideFromEast {
-  0% {
-    left: var(--card-source-x, 0);
-    top: var(--card-source-y, 0);
-  }
-  100% {
-    left: var(--card-target-x, 0);
-    top: var(--card-target-y, 0);
-  }
-}
-
 .trick-card {
-  position: fixed;
+  /* Trick cards are rendered inside `.board-center`.
+     Keep them in the same coordinate space as App.jsx stored positions
+     (relative to `.board-center`), so animations use consistent left/top. */
+  position: absolute;
   z-index: 20;
 }
 
-.trick-card.south {
-  left: 50%;
-  bottom: 0;
-  transform: translate(-50%, 0);
-}
-
-.trick-card.west {
-  left: 0px;
-  top: 50%;
-  transform: translate(0, -50%);
-}
-
-.trick-card.north {
-  left: 50%;
-  top: 0px;
-  transform: translate(-50%, 0);
-}
-
-.trick-card.east {
-  right: 0px;
-  top: 50%;
-  transform: translate(0, -50%);
-}
+/* NOTE: we intentionally do NOT position trick cards via `.south/.west/.north/.east`.
+   Their positioning comes from inline `left/top` and animation variables. */
 
 .trick-count {
   color: white;
@@ -444,194 +381,17 @@
   transform: translate(calc(-50% + var(--index, 0) * 3px), -50%);
 }
 
-/* Animation for newly arriving cards */
-.card-holder-card-vertical.arriving {
-  animation: arriveAtHolderVertical 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  animation-delay: 0.3s;
+.trick-card.moving-to-holder{
+  animation: moveToHolder 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-.card-holder-card-horizontal.arriving {
-  animation: arriveAtHolderHorizontal 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  animation-delay: 0.3s;
-}
-
-@keyframes arriveAtHolderVertical {
+@keyframes moveToHolder {
   0% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.8) rotate(0deg);
+    left: var(--board-source-x, 0);
+    top: var(--board-source-y, 0);
   }
   100% {
-    opacity: 0.7;
-    transform: translate(-50%, calc(-50% + var(--index, 0) * 3px)) scale(0.9) rotate(calc(var(--index, 0) * 2deg));
-  }
-}
-
-/* Horizontal holder stacking - cards stack horizontally with slight offset, centered */
-.card-holder-team1 .card-holder-card-horizontal {
-  transform: translate(calc(-50% + var(--index, 0) * 3px), -50%) !important;
-}
-
-@keyframes arriveAtHolderHorizontal {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.8) rotate(0deg);
-  }
-  100% {
-    opacity: 0.7;
-    transform: translate(calc(-50% + var(--index, 0) * 3px), -50%) scale(0.9) rotate(calc(var(--index, 0) * 2deg));
-  }
-}
-
-/* Base trick-card styles moved to .trick-card.bottom, etc. */
-.trick-card.moving-to-holder {
-  z-index: 30;
-  pointer-events: none;
-}
-
-/* Calculate position for moving to holder - cards should move from their trick position to holder */
-/* Each card animates independently to the winning team's holder with slight stagger */
-/* Team 0 (N/S) - Vertical holder at bottom right */
-.trick-card.moving-to-holder.moving-to-team-0.south {
-  animation: moveToHolderTeam0FromBottom 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  animation-delay: calc(var(--card-index, 0) * 0.1s);
-  z-index: 30;
-}
-
-.trick-card.moving-to-holder.moving-to-team-0.west {
-  animation: moveToHolderTeam0FromLeft 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  animation-delay: calc(var(--card-index, 0) * 0.1s);
-  z-index: 30;
-}
-
-.trick-card.moving-to-holder.moving-to-team-0.north {
-  animation: moveToHolderTeam0FromTop 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  animation-delay: calc(var(--card-index, 0) * 0.1s);
-  z-index: 30;
-}
-
-.trick-card.moving-to-holder.moving-to-team-0.east {
-  animation: moveToHolderTeam0FromRight 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  animation-delay: calc(var(--card-index, 0) * 0.1s);
-  z-index: 30;
-}
-
-/* Team 1 (E/W) - Horizontal holder at bottom right */
-.trick-card.moving-to-holder.moving-to-team-1.south {
-  animation: moveToHolderTeam1FromBottom 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  animation-delay: calc(var(--card-index, 0) * 0.1s);
-  z-index: 30;
-}
-
-.trick-card.moving-to-holder.moving-to-team-1.west {
-  animation: moveToHolderTeam1FromLeft 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  animation-delay: calc(var(--card-index, 0) * 0.1s);
-  z-index: 30;
-}
-
-.trick-card.moving-to-holder.moving-to-team-1.north {
-  animation: moveToHolderTeam1FromTop 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  animation-delay: calc(var(--card-index, 0) * 0.1s);
-  z-index: 30;
-}
-
-.trick-card.moving-to-holder.moving-to-team-1.east {
-  animation: moveToHolderTeam1FromRight 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  animation-delay: calc(var(--card-index, 0) * 0.1s);
-  z-index: 30;
-}
-
-/* Team 0 animations - move to vertical holder */
-/* Card holders container: bottom: 20px, right: 20px */
-/* Team 0 holder: width 68px, height 100px, center at right: 20px + 34px = 54px from right */
-/* For 1200px board: holder center at 1200px - 54px = 1146px from left, board center at 600px, so +546px right */
-/* Holder center vertically: bottom 20px + 50px = 70px from bottom, so 600px - 70px = 530px from top, board center at 300px, so +230px down */
-@keyframes moveToHolderTeam0FromBottom {
-  0% {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(1);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(calc(-50% + var(--holder-x, 546px))) translateY(calc(0px + var(--holder-y, 230px))) scale(0.625);
-    visibility: hidden;
-  }
-}
-
-@keyframes moveToHolderTeam0FromLeft {
-  0% {
-    opacity: 1;
-    transform: translateY(-50%) translateX(0) scale(1);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(calc(50% + var(--holder-x, 546px))) translateY(calc(-50% + var(--holder-y, 230px))) scale(0.625);
-  }
-}
-
-@keyframes moveToHolderTeam0FromTop {
-  0% {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(1);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(calc(-50% + var(--holder-x, 546px))) translateY(calc(0px + var(--holder-y, 230px))) scale(0.625);
-    visibility: hidden;
-  }
-}
-
-@keyframes moveToHolderTeam0FromRight {
-  0% {
-    opacity: 1;
-    transform: translateY(-50%) translateX(0) scale(1);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(calc(50% + var(--holder-x, 546px))) translateY(calc(-50% + var(--holder-y, 230px))) scale(0.625);
-  }
-}
-
-/* Team 1 animations - move to horizontal holder */
-@keyframes moveToHolderTeam1FromBottom {
-  0% {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(1);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(calc(-50% + var(--holder-x, 520px))) translateY(calc(0px + var(--holder-y, 246px))) scale(0.625);
-  }
-}
-
-@keyframes moveToHolderTeam1FromLeft {
-  0% {
-    opacity: 1;
-    transform: translateY(-50%) translateX(0) scale(1);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(calc(50% + var(--holder-x, 520px))) translateY(calc(-50% + var(--holder-y, 246px))) scale(0.625);
-  }
-}
-
-@keyframes moveToHolderTeam1FromTop {
-  0% {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(1);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(calc(-50% + var(--holder-x, 520px))) translateY(calc(0px + var(--holder-y, 246px))) scale(0.625);
-  }
-}
-
-@keyframes moveToHolderTeam1FromRight {
-  0% {
-    opacity: 1;
-    transform: translateY(-50%) translateX(0) scale(1);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(calc(50% + var(--holder-x, 520px))) translateY(calc(-50% + var(--holder-y, 246px))) scale(0.625);
+    left: var(--holder-target-x, 0);
+    top: var(--holder-target-y, 0);
   }
 }
