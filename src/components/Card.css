@@ -22,8 +22,12 @@
   display: block;
 }
 
+.small {
+  width: 50px;
+  height: 68px;
+}
 /* Card back styles (when showBack prop is true) - backs are always small */
-.card.back {
+.card.back{
   width: 50px;
   height: 68px;
   margin: 0;

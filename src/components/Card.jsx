@@ -68,7 +68,7 @@ const CARD_IMAGES = {
   'TenClubs': TenClubs, 'TenDiamonds': TenDiamonds, 'TenHearts': TenHearts, 'TenSpades': TenSpades
 };
 
-export default function Card({ card, onClick, selected, playable, showBack = false, cardId }) {
+export default function Card({ card, onClick, selected, playable, showBack = false, cardId, className = '' }) {
   // If showing back, card prop is optional
   if (!showBack && !card) return null;
   
@@ -101,7 +101,7 @@ export default function Card({ card, onClick, selected, playable, showBack = fal
   
   return (
     <div
-      className={`card ${selected ? 'selected' : ''} ${playable ? 'playable' : ''} ${showBack ? 'back' : ''}`}
+      className={`card ${selected ? 'selected' : ''} ${playable ? 'playable' : ''} ${showBack ? 'back' : ''} ${className}`.trim()}
       onClick={handleClick}
       data-card-id={finalCardId}
     >

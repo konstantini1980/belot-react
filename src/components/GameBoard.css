@@ -303,8 +303,8 @@
 /* Card Holders Container */
 .card-holders-container {
   position: absolute;
-  bottom: 20px;
-  right: 20px;
+  bottom: 30px;
+  right: 30px;
   z-index: 15;
   display: flex;
   align-items: flex-start;
@@ -395,7 +395,7 @@
   100% {
     left: var(--holder-target-x, 0);
     top: var(--holder-target-y, 0);
-    opacity: 0.5;
+    opacity: 0;
     transform: scale(0.6);
   }
 }

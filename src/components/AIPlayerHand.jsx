@@ -16,6 +16,7 @@ export default function AIPlayerHand({
           <Card
             key={card.id}
             card={card}
+            className="small"
           />
         ))
       ) : (
