@@ -321,15 +321,15 @@
 
 /* Team 0 (N/S) - Vertical holder */
 .card-holder-team0 {
-  width: 68px; /* Small card width */
-  height: 100px; /* Small card height + some space */
+  width: 50px; /* Small card width */
+  height: 68px; /* Small card height */
   flex-direction: column;
 }
 
 /* Team 1 (E/W) - Horizontal holder - aligned to top with vertical holder */
 .card-holder-team1 {
-  width: 100px; /* Small card height + some space */
-  height: 68px; /* Small card width */
+  width: 68px; /* Small card height */
+  height: 50px; /* Small card width */
   flex-direction: row;
   align-self: flex-start; /* Align top with vertical holder */
 }
@@ -371,14 +371,14 @@
 .card-holder-team0 .card-holder-card {
   width: 50px;
   height: 68px;
-  transform: translate(-50%, calc(-50% + var(--index, 0) * 3px));
+  transform: translate(-50%, -50%);
 }
 
 /* Team 1 (horizontal holder) - cards are horizontal */
 .card-holder-team1 .card-holder-card {
-  width: 68px;
-  height: 50px;
-  transform: translate(calc(-50% + var(--index, 0) * 3px), -50%);
+  width: 50px;
+  height: 68px;
+  transform: translate(-50%, -50%) rotate(90deg);
 }
 
 .trick-card.moving-to-holder{
@@ -389,9 +389,13 @@
   0% {
     left: var(--board-source-x, 0);
     top: var(--board-source-y, 0);
+    opacity: 1;
+    transform: scale(1);
   }
   100% {
     left: var(--holder-target-x, 0);
     top: var(--holder-target-y, 0);
+    opacity: 0.5;
+    transform: scale(0.6);
   }
 }

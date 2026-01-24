@@ -59,21 +59,10 @@ export default function GameBoard({
     if (!tricks || !Array.isArray(tricks) || tricks.length === 0) {
       return { team0: 0, team1: 0 };
     }
-    // Filter tricks by team - handle both number and string comparisons
-    const team0Count = tricks.filter(t => {
-      if (!t) return false;
-      // Handle both direct team property and nested structure
-      const team = t.team !== undefined && t.team !== null ? Number(t.team) : null;
-      return team === 0;
-    }).length;
-    const team1Count = tricks.filter(t => {
-      if (!t) return false;
-      // Handle both direct team property and nested structure
-      const team = t.team !== undefined && t.team !== null ? Number(t.team) : null;
-      return team === 1;
-    }).length;
+    const team0Count = tricks.filter(t => t?.team === 0).length;
+    const team1Count = tricks.filter(t => t?.team === 1).length;
     return { team0: team0Count, team1: team1Count };
-  }, [tricks]);
+  }, [tricks.length]);
 
   const getPlayerPosition = (playerId) => {
     const positions = ['south', 'west', 'north', 'east'];
@@ -292,7 +281,6 @@ export default function GameBoard({
                 <div 
                   key={`team0-cardback-${index}`}
                   className="card-holder-card"
-                  style={{ '--index': index }}
                 >
                   <Card showBack cardId={`team0-cardback-${index}`} />
                 </div>
@@ -311,7 +299,6 @@ export default function GameBoard({
               <div 
                 key={`team1-cardback-${index}`}
                 className="card-holder-card"
-                style={{ '--index': index }}
               >
                 <Card showBack cardId={`team1-cardback-${index}`} />
               </div>
