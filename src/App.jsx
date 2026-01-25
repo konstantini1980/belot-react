@@ -312,10 +312,12 @@ export default function App() {
   const handleShowCombinations = (show) => {
     if (show) {
       // Show a single test combination for all players
-      const mockCombination = { type: 'tierce', points: 20, cards: [] };
+      const mockCombination1 = { type: 'tierce', points: 20, cards: [] };
+      const mockCombination2 = { type: 'belot', points: 20, cards: [] };
+      const mockCombination3 = { type: 'quarte', points: 50, cards: [] }; 
       const allPlayersCombinations = {};
       for (let i = 0; i < 4; i++) {
-        allPlayersCombinations[i] = [mockCombination];
+        allPlayersCombinations[i] = [mockCombination1, mockCombination2, mockCombination3 ];
       }
       setPlayerCombinations(allPlayersCombinations);
     } else {
