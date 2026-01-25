@@ -3,13 +3,36 @@ import { GAME_PHASES } from '../game/gameLogic';
 import { useLanguage } from '../contexts/LanguageContext';
 import './ScorePanel.css';
 
+// Suit symbols mapping
+const SUIT_SYMBOLS = {
+  'spades': '♠',
+  'hearts': '♥',
+  'diamonds': '♦',
+  'clubs': '♣'
+};
+
+// Format a card as "A♠" or "9♦"
+function formatCard(card) {
+  if (!card || !card.rank || !card.suit) return '';
+  return `${card.rank}${SUIT_SYMBOLS[card.suit] || ''}`;
+}
+
+// Format combination cards as "A♠ K♠ Q♠" or "9♦ 8♦ 7♦"
+function formatCombinationCards(combo) {
+  if (!combo.cards || !Array.isArray(combo.cards) || combo.cards.length === 0) {
+    return '';
+  }
+  
+  const cardStrings = combo.cards.map(formatCard).filter(Boolean);
+  return cardStrings.join(' ');
+}
+
 export default function FullScorePanel({ 
   scores, 
   roundScores = null,
   lastRoundRoundedPoints = null,
   hangingPoints = 0,
   phase,
-  round = 1,
   onNextDeal = null,
   onClose = null,
   showOverlay = false,
@@ -120,11 +143,14 @@ export default function FullScorePanel({
                 )}
                 {announcedCombinations[0] && announcedCombinations[0].length > 0 && (
                   <div className="breakdown-combinations">
-                    {announcedCombinations[0].map((combo, idx) => (
-                      <span key={idx} className="combination-badge">
-                        {combo.type.toUpperCase()} (+{combo.points})
-                      </span>
-                    ))}
+                    {announcedCombinations[0].map((combo, idx) => {
+                      const cardsDisplay = formatCombinationCards(combo);
+                      return cardsDisplay ? (
+                        <span key={idx} className="combination-badge">
+                          {cardsDisplay}
+                        </span>
+                      ) : null;
+                    })}
                   </div>
                 )}
               </div>
@@ -167,11 +193,14 @@ export default function FullScorePanel({
                 )}
                 {announcedCombinations[1] && announcedCombinations[1].length > 0 && (
                   <div className="breakdown-combinations">
-                    {announcedCombinations[1].map((combo, idx) => (
-                      <span key={idx} className="combination-badge">
-                        {combo.type.toUpperCase()} (+{combo.points})
-                      </span>
-                    ))}
+                    {announcedCombinations[1].map((combo, idx) => {
+                      const cardsDisplay = formatCombinationCards(combo);
+                      return cardsDisplay ? (
+                        <span key={idx} className="combination-badge">
+                          {cardsDisplay}
+                        </span>
+                      ) : null;
+                    })}
                   </div>
                 )}
               </div>

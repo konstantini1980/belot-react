@@ -34,7 +34,6 @@ export default function GameBoard({
   bids = [],
   languageSwitcher = null,
   trickComplete = false,
-  winningTeam = null, // 0 for N/S, 1 for E/W
   // Dev/test props
   forceShowScorePanel = false,
   onForceShowScorePanelChange = null,
@@ -374,7 +373,6 @@ export default function GameBoard({
           lastRoundRoundedPoints={isRoundOver ? lastRoundRoundedPoints : null}
           hangingPoints={isRoundOver ? hangingPoints : 0}
           phase={phase}
-          round={1}
           onNextDeal={isRoundOver ? onNextDeal : null}
           onClose={!isRoundOver && !forceShowScorePanel ? () => {
             setShowFullScorePanel(false);

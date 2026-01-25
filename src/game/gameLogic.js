@@ -78,7 +78,18 @@ export class BelotGame {
     
     this.phase = GAME_PHASES.BIDDING;
     this.currentBidder = (this.dealer + 3) % 4; // Counter-clockwise
+    // Clear round variables for next round
     this.bids = [];
+    this.tricks = [];
+    this.currentTrick = { cards: [], winner: null, team: null };
+    this.trickLeader = 0;
+    this.currentBidder = 0;
+    this.contract = null;
+    this.trumpSuit = null;
+    this.double = false;
+    this.redouble = false;
+    this.announcedCombinations = [[], []];
+    this.winner = null;
     // Reset round scores for new round
     this.currentRoundScore = [0, 0];
     // Clear last round scores when starting new deal
@@ -599,21 +610,6 @@ export class BelotGame {
     // Add rounded points to total scores
     this.totalScores[0] += this.lastRoundRoundedPoints[0];
     this.totalScores[1] += this.lastRoundRoundedPoints[1];
-    
-    // Clear round variables for next round
-    this.currentRoundScore = [0, 0];
-    this.tricks = [];
-    this.currentTrick = { cards: [], winner: null, team: null };
-    this.trickLeader = 0;
-    this.currentBidder = 0;
-    this.bids = [];
-    this.contract = null;
-    this.trumpSuit = null;
-    this.double = false;
-    this.redouble = false;
-    this.announcedCombinations = [[], []];
-    this.winner = null;
-    // Note: lastRoundScore and lastRoundBreakdown are preserved for display
     
     // Set phase to SCORING to show full score panel
     this.phase = GAME_PHASES.SCORING;
