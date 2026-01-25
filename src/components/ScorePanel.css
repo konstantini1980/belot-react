@@ -321,6 +321,7 @@
   flex-wrap: wrap;
   gap: 4px;
   margin-top: 4px;
+  flex-direction: row-reverse;
 }
 
 .combination-badge {
@@ -328,7 +329,7 @@
   border: 1px solid rgba(255, 193, 7, 0.4);
   border-radius: 4px;
   padding: 2px 6px;
-  font-size: 9px;
+  font-size: 11px;
   color: #ffc107;
   font-weight: 600;
 }

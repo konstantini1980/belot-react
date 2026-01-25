@@ -43,7 +43,6 @@ export class BelotGame {
     this.currentPlayer = 0;
     this.currentTrick = { cards: [], winner: null, team: null };
     this.tricks = [];
-    this.trickLeader = 0;
     this.totalScores = [0, 0]; // Team scores
     this.currentRoundScore = [0, 0]; // Points from current round
     this.lastRoundScore = [0, 0]; // Points from last completed round (for display)
@@ -82,7 +81,6 @@ export class BelotGame {
     this.bids = [];
     this.tricks = [];
     this.currentTrick = { cards: [], winner: null, team: null };
-    this.trickLeader = 0;
     this.currentBidder = 0;
     this.contract = null;
     this.trumpSuit = null;
@@ -184,7 +182,6 @@ export class BelotGame {
         }
         this.phase = GAME_PHASES.PLAYING;
         this.currentPlayer = (this.dealer + 3) % 4; // Counter-clockwise
-        this.trickLeader = this.currentPlayer;        
       } 
     } else {
       const lastFour = this.bids.slice(-4);
@@ -289,23 +286,22 @@ export class BelotGame {
 
   // Should be called from the app after the animation to holders is complete
   completeTrick() {
+    // Winner was already determined in playCard() and stored in currentTrick
+    let winnerPlayerId = this.currentTrick.winner;
+    
     this.tricks.push({ ...this.currentTrick });
     
     // Add points
-    const winner = this.determineTrickWinner();
     this.currentTrick.cards.forEach(({ card }) => {
       const value = card.getValue(this.contract);
-      this.currentRoundScore[this.players[winner.playerId].team] += value;
+      this.currentRoundScore[this.players[winnerPlayerId].team] += value;
     });
-
-    this.currentPlayer = winner.playerId;
-    this.trickLeader = winner.playerId;
+    
+    this.currentPlayer = winnerPlayerId;
     this.currentTrick = { cards: [], winner: null, team: null };
 
     // Check if round is over
-    if (this.tricks.length === 8) {
-    // Add last 10 points
-      this.currentRoundScore[this.players[winner.playerId].team] += 10;
+    if (this.tricks.length === 8) {    
       this.endRound();
     }
   }
@@ -482,6 +478,12 @@ export class BelotGame {
   }
 
   endRound() {
+    // Add last 10 points - get winner from the last trick
+    const lastTrick = this.tricks[this.tricks.length - 1];
+    if (lastTrick && lastTrick.winner !== null && lastTrick.winner !== undefined) {
+      this.currentRoundScore[this.players[lastTrick.winner].team] += 10;
+    }
+
     // Calculate breakdown - card points are already in roundScore
     const breakdown = [
       { cardPoints: this.currentRoundScore[0], combinationPoints: 0, valatPoints: 0 },

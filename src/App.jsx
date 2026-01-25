@@ -268,7 +268,7 @@ export default function App() {
   };
 
   const handleAIPlay = () => {
-    const playerId = game.currentPlayer;    
+    const playerId = game.currentPlayer;
     const cardToPlay = makeAIPlayCard(game, playerId);
     
     if (cardToPlay) {
