@@ -90,9 +90,9 @@ export default function GameBoard({
   // Track when cards are added to trick - capture source position and start animation
   // Use useLayoutEffect to capture position synchronously before React removes card from DOM
   useLayoutEffect(() => {
-    if (phase === GAME_PHASES.PLAYING && currentTrick.length > prevTrickLengthRef.current) {
+    if (phase === GAME_PHASES.PLAYING && currentTrick.cards.length > prevTrickLengthRef.current) {
       // A new card was added to the trick - capture source position before it's removed from hand
-      const newCard = currentTrick[currentTrick.length - 1];
+      const newCard = currentTrick.cards[currentTrick.cards.length - 1];
       if (newCard && boardCenterRef.current) {
         const cardKey = `${newCard.playerId}-${newCard.card.id}`;
         
@@ -126,8 +126,8 @@ export default function GameBoard({
         }, 1000); // Match CSS animation duration
       }
     }
-    prevTrickLengthRef.current = currentTrick.length;
-  }, [currentTrick, phase, cardPositions]);
+    prevTrickLengthRef.current = currentTrick.cards.length;
+  }, [currentTrick.cards.length, phase, cardPositions]);
 
   // Calculate fixed card positions within board-center for each player
   const calculateCentralCardPositions = () => {
@@ -200,7 +200,7 @@ export default function GameBoard({
       // Measure synchronously before paint so the animation starts with the correct target.
       calculateHolderPosition();
     }
-  }, [trickComplete, phase, currentTrick.length]);
+  }, [trickComplete, phase, currentTrick.cards.length]);
 
   return (
     <div className="game-board">
@@ -215,7 +215,7 @@ export default function GameBoard({
             {biddingPanel}
           </div>
         )}
-        {!biddingPanel && !trickComplete && currentTrick.map(({ playerId, card }, index) => {
+        {!biddingPanel && !trickComplete && currentTrick.cards.map(({ playerId, card }) => {
           const cardKey = `${playerId}-${card.id}`;
           const isAnimating = animatingCardsToCenter.has(cardKey);
           const position = getPlayerPosition(playerId);
@@ -241,7 +241,7 @@ export default function GameBoard({
           );
         })}
 
-        {trickComplete && currentTrick.map(({ playerId, card }, index) => {
+        {trickComplete && currentTrick.cards.map(({ playerId, card }) => {
           const cardKey = `${playerId}-${card.id}`;
           const position = getPlayerPosition(playerId);
           // Use stored position from cardPositions prop (captured in App.jsx)
@@ -312,10 +312,11 @@ export default function GameBoard({
           const position = getPlayerPosition(idx);
           const combinations = playerCombinations[idx] || [];
           const isSouth = idx === 0;
+          const isTrickWinner = currentTrick.winner === idx;
           return (
             <div key={idx} className={`player-container ${position}`} data-player-id={idx}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-                <div className={`player-chip ${currentPlayer === idx ? 'active' : ''}`}>
+                <div className={`player-chip ${currentPlayer === idx ? 'active' : ''} ${isTrickWinner ? 'won-trick' : ''}` }>
                   <span className="player-chip-name">{player.name}</span>
                   <span className={`player-turn-dot ${currentPlayer === idx ? 'visible' : ''}`}></span>
                 </div>

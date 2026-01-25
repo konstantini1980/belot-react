@@ -11,7 +11,7 @@ describe('Announcements', () => {
     game.contract = 'hearts';
     game.trumpSuit = 'hearts';
     game.currentPlayer = 0;
-    game.currentTrick = [];
+    game.currentTrick = { cards: [] };
     game.tricks = [];
   });
 
@@ -328,7 +328,7 @@ describe('Announcements', () => {
       // Opponent plays first card in first trick and announces quint
       game.currentPlayer = 1;
       game.tricks = [];
-      game.currentTrick = [];
+      game.currentTrick = { cards: [] };
       game.announcedCombinations[0] = [];
       game.announcedCombinations[1] = [];
       game.playCard(1, opponentPlayer.hand[0].id);
@@ -369,7 +369,7 @@ describe('Announcements', () => {
       // Opponent plays first card in first trick and announces quarte
       game.currentPlayer = 1;
       game.tricks = [];
-      game.currentTrick = [];
+      game.currentTrick = { cards: [] };
       game.announcedCombinations[0] = [];
       game.announcedCombinations[1] = [];
       game.playCard(1, opponentPlayer.hand[0].id);
@@ -406,7 +406,7 @@ describe('Announcements', () => {
       // Opponent plays first card in first trick and announces tierce
       game.currentPlayer = 1;
       game.tricks = [];
-      game.currentTrick = [];
+      game.currentTrick = { cards: [] };
       game.announcedCombinations[0] = [];
       game.announcedCombinations[1] = [];
       game.playCard(1, opponentPlayer.hand[0].id);

@@ -11,23 +11,23 @@ describe('Scoring', () => {
     game.contract = 'hearts';
     game.trumpSuit = 'hearts';
     game.currentPlayer = 0;
-    game.currentTrick = [];
+    game.currentTrick = { cards: [] };
     game.tricks = [];
-    game.courrenRoundScore = [0, 0];
+    game.currentRoundScore = [0, 0];
     game.totalScores = [0, 0];
     game.hangingPoints = 0;
-    game.double = false;
-    game.redouble = false;
+    game.isDouble = false;
+    game.isRedouble = false;
   });
 
   describe('Round point calculation', () => {
     it('should round to 25 when cardPoints are 55, combinations are +200, and opponent points end in 6', () => {
       // Set up contract team (team 0) with 55 card points
       // The combination points (200) will be added during endRound
-      game.roundScore[0] = 55; // Card points
+      game.currentRoundScore[0] = 55; // Card points
       
       // Set up opponent team (team 1) with points ending in 6 (e.g., 106)
-      game.roundScore[1] = 106; // Opponent points ending in 6
+      game.currentRoundScore[1] = 106; // Opponent points ending in 6
       
       // Set up contract and bids
       game.contract = 'hearts'; // Regular trump suit (not no-trump or all-trump)
@@ -60,10 +60,10 @@ describe('Scoring', () => {
         });
       }
       
-      // Ensure roundScore is set correctly after all setup
+      // Ensure currentRoundScore is set correctly after all setup
       // Card points: 55, will add 200 combination points in endRound = 255 total
-      game.roundScore[0] = 55;
-      game.roundScore[1] = 106;
+      game.currentRoundScore[0] = 55;
+      game.currentRoundScore[1] = 106;
       
       // End the round
       game.endRound();
@@ -82,18 +82,18 @@ describe('Scoring', () => {
       expect(game.lastRoundBreakdown[1].cardPoints).toBe(106);
       
       // Verify total scores were updated
-      expect(game.scores[0]).toBe(25);
-      expect(game.scores[1]).toBe(11);
+      expect(game.totalScores[0]).toBe(25);
+      expect(game.totalScores[1]).toBe(11);
     });
 
     it('should round up losing team points when they end in 6 in trump suit games', () => {
       // Set up contract team (team 0) with 86 card points
-      game.roundScore[0] = 86; // Card points
+      game.currentRoundScore[0] = 86; // Card points
       
       // Set up opponent team (team 1) with points ending in 6 (e.g., 76)
       // Total points: 86 + 76 = 162 (no combinations or premiums)
       // 76 / 10 = 7.6, which should round to 8 (rounded up)
-      game.roundScore[1] = 76; // Opponent points ending in 6
+      game.currentRoundScore[1] = 76; // Opponent points ending in 6
       
       // Set up contract and bids - trump suit (not no-trump)
       game.contract = 'spades'; // Regular trump suit
@@ -125,9 +125,9 @@ describe('Scoring', () => {
         });
       }
       
-      // Ensure roundScore is set correctly - total should be 162
-      game.roundScore[0] = 86;
-      game.roundScore[1] = 76;
+      // Ensure currentRoundScore is set correctly - total should be 162
+      game.currentRoundScore[0] = 86;
+      game.currentRoundScore[1] = 76;
       
       // End the round
       game.endRound();
@@ -153,8 +153,8 @@ describe('Scoring', () => {
       expect(game.lastRoundBreakdown[1].cardPoints).toBe(76);
       
       // Verify total scores were updated
-      expect(game.scores[0]).toBe(8);
-      expect(game.scores[1]).toBe(8);
+      expect(game.totalScores[0]).toBe(8);
+      expect(game.totalScores[1]).toBe(8);
       
       // Verify total rounded points match total round points / 10
       expect(game.lastRoundRoundedPoints[0] + game.lastRoundRoundedPoints[1]).toBe(16);
@@ -163,8 +163,8 @@ describe('Scoring', () => {
     it('should round up losing team points ending in 6 for different trump suits', () => {
       // Test with clubs trump suit
       // Total points: 86 + 76 = 162 (no combinations or premiums)
-      game.roundScore[0] = 86; // Contract team wins
-      game.roundScore[1] = 76; // Opponent points ending in 6
+      game.currentRoundScore[0] = 86; // Contract team wins
+      game.currentRoundScore[1] = 76; // Opponent points ending in 6
       
       game.contract = 'clubs';
       game.trumpSuit = 'clubs';
@@ -192,9 +192,9 @@ describe('Scoring', () => {
         });
       }
       
-      // Ensure roundScore is set correctly - total should be 162
-      game.roundScore[0] = 86;
-      game.roundScore[1] = 76;
+      // Ensure currentRoundScore is set correctly - total should be 162
+      game.currentRoundScore[0] = 86;
+      game.currentRoundScore[1] = 76;
       
       game.endRound();
       
@@ -224,13 +224,13 @@ describe('Scoring', () => {
 
     it('should round up non-contract team points when they end in 4 in all-trump contract', () => {
       // Set up contract team (team 0) with 204 card points
-      game.roundScore[0] = 204; // Card points
+      game.currentRoundScore[0] = 204; // Card points
       
       // Set up non-contract team (team 1) with points ending in 4 (e.g., 54)
       // Total points: 204 + 54 = 258 (no combinations or premiums)
       // 54 / 10 = 5.4, which should round to 5 normally, but in all-trump when ending in 4, 
       // the contract team gets +1 point (effectively rounding up the opponent)
-      game.roundScore[1] = 54; // Non-contract team points ending in 4
+      game.currentRoundScore[1] = 54; // Non-contract team points ending in 4
       
       // Set up contract and bids - all-trump
       game.contract = 'all-trump';
@@ -262,9 +262,9 @@ describe('Scoring', () => {
         });
       }
       
-      // Ensure roundScore is set correctly - total should be 258
-      game.roundScore[0] = 204;
-      game.roundScore[1] = 54;
+      // Ensure currentRoundScore is set correctly - total should be 258
+      game.currentRoundScore[0] = 204;
+      game.currentRoundScore[1] = 54;
       
       // End the round
       game.endRound();
@@ -293,8 +293,8 @@ describe('Scoring', () => {
       expect(game.lastRoundBreakdown[1].cardPoints).toBe(54);
       
       // Verify total scores were updated
-      expect(game.scores[0]).toBe(20);
-      expect(game.scores[1]).toBe(6);
+      expect(game.totalScores[0]).toBe(20);
+      expect(game.totalScores[1]).toBe(6);
     });
   });
 });

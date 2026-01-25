@@ -11,7 +11,7 @@ describe('Card Validation (isValidCardPlay)', () => {
     game.contract = 'hearts';
     game.trumpSuit = 'hearts';
     game.currentPlayer = 0;
-    game.currentTrick = [];
+    game.currentTrick = { cards: [] };
   });
 
   describe('Leading a trick', () => {
@@ -40,9 +40,11 @@ describe('Card Validation (isValidCardPlay)', () => {
         new Card('spades', '7'),
         new Card('clubs', 'K')
       ];
-      game.currentTrick = [
-        { playerId: 1, card: new Card('hearts', '10') }
-      ];
+      game.currentTrick = {
+        cards: [
+          { playerId: 1, card: new Card('hearts', '10') }
+        ]
+      };
     });
 
     it('should require following suit when player has the lead suit', () => {
@@ -61,9 +63,11 @@ describe('Card Validation (isValidCardPlay)', () => {
         new Card('clubs', 'K'),
         new Card('diamonds', '7')
       ];
-      game.currentTrick = [
-        { playerId: 1, card: new Card('hearts', '10') }
-      ];
+      game.currentTrick = {
+        cards: [
+          { playerId: 1, card: new Card('hearts', '10') }
+        ]
+      };
 
       expect(game.isValidCardPlay(player, player.hand[0])).toBe(true);
       expect(game.isValidCardPlay(player, player.hand[1])).toBe(true);
@@ -85,9 +89,11 @@ describe('Card Validation (isValidCardPlay)', () => {
     });
 
     it('should require playing higher trump when trump is led and player has higher trump', () => {
-      game.currentTrick = [
-        { playerId: 1, card: new Card('hearts', '10') }
-      ];
+      game.currentTrick = {
+        cards: [
+          { playerId: 1, card: new Card('hearts', '10') }
+        ]
+      };
       const player = game.players[0];
       // In trump ranking: J=0, 9=1, A=2, 10=3, K=4, Q=5
       // So A (ranking 2) is actually higher than 10 (ranking 3)
@@ -106,10 +112,12 @@ describe('Card Validation (isValidCardPlay)', () => {
     });
 
     it('should require playing higher trump when opponent has highest trump in trick', () => {
-      game.currentTrick = [
-        { playerId: 1, card: new Card('hearts', 'J') }, // Highest trump
-        { playerId: 2, card: new Card('hearts', '9') }
-      ];
+      game.currentTrick = {
+        cards: [
+          { playerId: 1, card: new Card('hearts', 'J') }, // Highest trump
+          { playerId: 2, card: new Card('hearts', '9') }
+        ]
+      };
       const player = game.players[0];
       const validCard = player.hand[0]; // J (same as highest, but player has it)
       const invalidCard = player.hand[2]; // A (lower than J)
@@ -142,10 +150,12 @@ describe('Card Validation (isValidCardPlay)', () => {
     });
 
     it('should require playing trump when opponent has highest card and player has trump', () => {
-      game.currentTrick = [
-        { playerId: 1, card: new Card('spades', 'A') },
-        { playerId: 2, card: new Card('spades', 'K') }
-      ];
+      game.currentTrick = {
+        cards: [
+          { playerId: 1, card: new Card('spades', 'A') },
+          { playerId: 2, card: new Card('spades', 'K') }
+        ]
+      };
       game.players[1].team = 1; // Opponent
       game.players[2].team = 0; // Teammate
       game.players[0].team = 0; // Current player (teammate of player 2)
@@ -171,10 +181,12 @@ describe('Card Validation (isValidCardPlay)', () => {
     });
 
     it('should require playing higher trump when opponent cut with trump', () => {
-      game.currentTrick = [
-        { playerId: 1, card: new Card('spades', 'A') },
-        { playerId: 2, card: new Card('hearts', '10') } // Opponent cut with trump
-      ];
+      game.currentTrick = {
+        cards: [
+          { playerId: 1, card: new Card('spades', 'A') },
+          { playerId: 2, card: new Card('hearts', '10') } // Opponent cut with trump
+        ]
+      };
       game.players[1].team = 1; // Opponent
       game.players[2].team = 1; // Opponent
       game.players[0].team = 0; // Current player
@@ -214,9 +226,11 @@ describe('Card Validation (isValidCardPlay)', () => {
     });
 
     it('should require following suit when player has the lead suit', () => {
-      game.currentTrick = [
-        { playerId: 1, card: new Card('hearts', '10') }
-      ];
+      game.currentTrick = {
+        cards: [
+          { playerId: 1, card: new Card('hearts', '10') }
+        ]
+      };
       const player = game.players[0];
       const validCard = player.hand[0]; // hearts A
       const invalidCard = player.hand[2]; // spades 7
@@ -232,9 +246,11 @@ describe('Card Validation (isValidCardPlay)', () => {
         new Card('clubs', 'K'),
         new Card('diamonds', '7')
       ];
-      game.currentTrick = [
-        { playerId: 1, card: new Card('hearts', '10') }
-      ];
+      game.currentTrick = {
+        cards: [
+          { playerId: 1, card: new Card('hearts', '10') }
+        ]
+      };
 
       expect(game.isValidCardPlay(player, player.hand[0])).toBe(true);
       expect(game.isValidCardPlay(player, player.hand[1])).toBe(true);
@@ -256,9 +272,11 @@ describe('Card Validation (isValidCardPlay)', () => {
     });
 
     it('should require following suit when player has the lead suit', () => {
-      game.currentTrick = [
-        { playerId: 1, card: new Card('hearts', '10') }
-      ];
+      game.currentTrick = {
+        cards: [
+          { playerId: 1, card: new Card('hearts', '10') }
+        ]
+      };
       const player = game.players[0];
       const validCard = player.hand[0]; // hearts J
       const invalidCard = player.hand[3]; // spades J
@@ -268,9 +286,11 @@ describe('Card Validation (isValidCardPlay)', () => {
     });
 
     it('should require raising when player has higher card of lead suit', () => {
-      game.currentTrick = [
-        { playerId: 1, card: new Card('hearts', '10') }
-      ];
+      game.currentTrick = {
+        cards: [
+          { playerId: 1, card: new Card('hearts', '10') }
+        ]
+      };
       const player = game.players[0];
       // In all-trump ranking: J=0, 9=1, A=2, 10=3, K=4, Q=5
       player.hand = [
@@ -293,9 +313,11 @@ describe('Card Validation (isValidCardPlay)', () => {
         new Card('clubs', 'K'),
         new Card('diamonds', '7')
       ];
-      game.currentTrick = [
-        { playerId: 1, card: new Card('hearts', '10') }
-      ];
+      game.currentTrick = {
+        cards: [
+          { playerId: 1, card: new Card('hearts', '10') }
+        ]
+      };
 
       expect(game.isValidCardPlay(player, player.hand[0])).toBe(true);
       expect(game.isValidCardPlay(player, player.hand[1])).toBe(true);

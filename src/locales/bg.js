@@ -5,7 +5,7 @@ export default {
   newGame: 'Нова Игра',
   
   // Players
-  playerYou: 'Вие',
+  playerYou: 'Играч',
   playerWest: 'Запад',
   playerPartner: 'Партньор',
   playerEast: 'Изток',

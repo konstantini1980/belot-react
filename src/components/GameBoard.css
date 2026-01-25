@@ -169,6 +169,22 @@
   box-shadow: 0 0 12px rgba(76, 175, 80, 0.6);
 }
 
+.player-chip.won-trick {
+  box-shadow: 0 0 12px rgba(76, 175, 80, 0.6);
+  animation: blinkChip 2s infinite;
+}
+
+@keyframes blinkChip {
+  0%, 100% {
+    background: #2c2c2c;
+  }
+  50% {
+    border: 1px solid #00BFFF;
+    background: #00BFFF;
+    box-shadow: 0 0 8px rgba(0, 191, 255, 0.8);
+  }
+}
+
 .player-chip-name {
   white-space: nowrap;
 }

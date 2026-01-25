@@ -119,7 +119,7 @@ describe('Setting Cards for Players', () => {
       game.contract = 'hearts';
       game.trumpSuit = 'hearts';
       game.currentPlayer = 0;
-      game.currentTrick = [];
+      game.currentTrick = { cards: [] };
       game.tricks = [];
 
       const cards = [
@@ -147,7 +147,7 @@ describe('Setting Cards for Players', () => {
       game.contract = 'hearts';
       game.trumpSuit = 'hearts';
       game.currentPlayer = 0;
-      game.currentTrick = [];
+      game.currentTrick = { cards: [] };
 
       const cards = [
         new Card('hearts', 'A'),
@@ -163,9 +163,11 @@ describe('Setting Cards for Players', () => {
       expect(game.isValidCardPlay(player, player.hand[2])).toBe(true);
 
       // Set up trick with lead suit
-      game.currentTrick = [
-        { playerId: 1, card: new Card('hearts', '10') }
-      ];
+      game.currentTrick = {
+        cards: [
+          { playerId: 1, card: new Card('hearts', '10') }
+        ]
+      };
 
       // Must follow suit
       // In trump ranking: J=0, 9=1, A=2, 10=3, K=4, Q=5
@@ -247,9 +249,11 @@ describe('Setting Cards for Players', () => {
         new Card('clubs', '8')
       ];
 
-      game.currentTrick = [
-        { playerId: 1, card: new Card('hearts', '10') }
-      ];
+      game.currentTrick = {
+        cards: [
+          { playerId: 1, card: new Card('hearts', '10') }
+        ]
+      };
 
       // Player has hearts, so must play hearts
       const heartsCards = player.hand.filter(c => c.suit === 'hearts');

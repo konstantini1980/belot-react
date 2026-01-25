@@ -153,7 +153,7 @@ function getRemainingCards(game) {
 
 // Helper: Get current hand (current trick cards)
 function getCurrentHand(game) {
-    return game.currentTrick.map(({ card }) => card);
+    return game.currentTrick.cards.map(({ card }) => card);
 }
 
 // Helper: Get the current max card in a color (from remaining cards and current hand)
@@ -335,10 +335,10 @@ function evaluatePointsOnTrumpColor(card, contract) {
 
 // Helper: Get the biggest card in the current trick
 function getBiggestCardInTrick(game) {
-    if (game.currentTrick.length === 0) return null;
+    if (game.currentTrick.cards.length === 0) return null;
     
-    let biggest = game.currentTrick[0];
-    game.currentTrick.forEach(({ playerId, card }) => {
+    let biggest = game.currentTrick.cards[0];
+    game.currentTrick.cards.forEach(({ playerId, card }) => {
         if (card.isHigherThan(biggest.card, game.contract, game.trumpSuit)) {
             biggest = { playerId, card };
         }
@@ -350,7 +350,7 @@ function getBiggestCardInTrick(game) {
 // Helper: Get which player played a card
 function getPlayerWhoPlayedCard(game, card) {
     // Check current trick
-    const inCurrentTrick = game.currentTrick.find(({ card: c }) => c.id === card.id);
+    const inCurrentTrick = game.currentTrick.cards.find(({ card: c }) => c.id === card.id);
     if (inCurrentTrick) return inCurrentTrick.playerId;
     
     // Check completed tricks
@@ -397,13 +397,13 @@ function findZeroEvaluatedColor(validCards, contract, trumpSuit, remainingCards,
 
 // Helper: Get the requested suit (lead suit or trump if trumped)
 function getRequestedSuit(game) {
-    if (game.currentTrick.length === 0) return null;
+    if (game.currentTrick.cards.length === 0) return null;
     
-    const leadCard = game.currentTrick[0].card;
+    const leadCard = game.currentTrick.cards[0].card;
     const leadSuit = leadCard.suit;
     
     // Check if suit was trumped
-    const hasTrump = game.currentTrick.some(({ card }) => 
+    const hasTrump = game.currentTrick.cards.some(({ card }) => 
         card.suit === game.trumpSuit && card.suit !== leadSuit
     );
     
@@ -431,7 +431,7 @@ export function makeAIPlayCard(game, playerId) {
     const playedCards = getPlayedCards(game);
     const remainingCards = getRemainingCards(game);
     const currentHand = getCurrentHand(game);
-    const isLeading = game.currentTrick.length === 0;
+    const isLeading = game.currentTrick.cards.length === 0;
     
     let selectedCard = null;
     

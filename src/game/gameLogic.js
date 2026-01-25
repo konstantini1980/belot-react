@@ -41,7 +41,7 @@ export class BelotGame {
     this.double = false;
     this.redouble = false;
     this.currentPlayer = 0;
-    this.currentTrick = [];
+    this.currentTrick = { cards: [], winner: null, team: null };
     this.tricks = [];
     this.trickLeader = 0;
     this.totalScores = [0, 0]; // Team scores
@@ -262,51 +262,49 @@ export class BelotGame {
     
     // Remove card from hand
     player.hand.splice(cardIndex, 1);
-    this.currentTrick.push({ playerId, card });
+    this.currentTrick.cards.push({ playerId, card });
 
-    if (this.currentTrick.length < 4) {
+    if (this.currentTrick.cards.length < 4) {
       // Move to next player (counter-clockwise)
       this.currentPlayer = (this.currentPlayer + 3) % 4;
+    } else {
+      // If trick is complete, determine winner
+      const winner = this.determineTrickWinner();
+      this.currentTrick.winner = winner.playerId;
+      this.currentTrick.team = this.players[winner.playerId].team;
     }
     return true;
   }
 
   // Should be called from the app after the animation to holders is complete
   completeTrick() {
-    // If trick is complete, determine winner
-    if (this.currentTrick.length === 4) {
-      const winner = this.determineTrickWinner();
-      this.tricks.push({
-        cards: [...this.currentTrick],
-        winner: winner.playerId,
-        team: this.players[winner.playerId].team
-      });
-      
-      // Add points
-      this.currentTrick.forEach(({ card }) => {
-        const value = card.getValue(this.contract);
-        this.currentRoundScore[this.players[winner.playerId].team] += value;
-      });
+    this.tricks.push({ ...this.currentTrick });
+    
+    // Add points
+    const winner = this.determineTrickWinner();
+    this.currentTrick.cards.forEach(({ card }) => {
+      const value = card.getValue(this.contract);
+      this.currentRoundScore[this.players[winner.playerId].team] += value;
+    });
 
-      this.currentPlayer = winner.playerId;
-      this.trickLeader = winner.playerId;
-      this.currentTrick = [];
+    this.currentPlayer = winner.playerId;
+    this.trickLeader = winner.playerId;
+    this.currentTrick = { cards: [], winner: null, team: null };
 
-      // Check if round is over
-      if (this.tricks.length === 8) {
-      // Add last 10 points
-        this.currentRoundScore[this.players[winner.playerId].team] += 10;
-        this.endRound();
-      }
+    // Check if round is over
+    if (this.tricks.length === 8) {
+    // Add last 10 points
+      this.currentRoundScore[this.players[winner.playerId].team] += 10;
+      this.endRound();
     }
   }
 
   isValidCardPlay(player, card) {
-    if (this.currentTrick.length === 0) {
+    if (this.currentTrick.cards.length === 0) {
       return true; // Can play any card when leading
     }
     
-    const leadCard = this.currentTrick[0].card;
+    const leadCard = this.currentTrick.cards[0].card;
     const leadSuit = leadCard.suit;
     const hasLeadSuit = player.hand.some(c => c.suit === leadSuit);
     
@@ -325,7 +323,7 @@ export class BelotGame {
       let highestCard = leadCard;
       let highestRanking = highestCard.getRanking(this.contract, this.trumpSuit);
       
-      this.currentTrick.forEach(({ card: trickCard }) => {
+      this.currentTrick.cards.forEach(({ card: trickCard }) => {
         // Only consider cards of the lead suit
         if (trickCard.suit === leadSuit) {
           const trickRanking = trickCard.getRanking(this.contract, this.trumpSuit);
@@ -369,7 +367,7 @@ export class BelotGame {
         let winningCard = leadCard;
         let winningRanking = winningCard.getRanking(this.contract, this.trumpSuit);
         
-        this.currentTrick.forEach(({ card: trickCard }) => {
+        this.currentTrick.cards.forEach(({ card: trickCard }) => {
           // Only consider trump cards
           if (trickCard.suit === this.trumpSuit) {
             const trickRanking = trickCard.getRanking(this.contract, this.trumpSuit);
@@ -401,7 +399,7 @@ export class BelotGame {
     // Check if opponents played a trump card
     let highestOpponentTrump = null;
     let highestOpponentTrumpRanking = Infinity;
-    this.currentTrick.forEach(({ playerId, card: trickCard }) => {
+    this.currentTrick.cards.forEach(({ playerId, card: trickCard }) => {
       if (this.players[playerId].team !== player.team && 
           trickCard.suit === this.trumpSuit) {
         const trickRanking = trickCard.getRanking(this.contract, this.trumpSuit);
@@ -441,16 +439,15 @@ export class BelotGame {
   }
 
   opponentHasHighestCard() {
-    if (this.currentTrick.length === 0) return false;
+    if (this.currentTrick.cards.length === 0) return false;
     
-    const leadCard = this.currentTrick[0].card;
-    const leadPlayer = this.currentTrick[0].playerId;
-    const leadTeam = this.players[leadPlayer].team;
+    const leadCard = this.currentTrick.cards[0].card;
+    const leadPlayer = this.currentTrick.cards[0].playerId;
     
     let highestCard = leadCard;
     let highestPlayer = leadPlayer;
     
-    this.currentTrick.forEach(({ playerId, card }) => {
+    this.currentTrick.cards.forEach(({ playerId, card }) => {
       if (card.isHigherThan(highestCard, this.contract, this.trumpSuit, leadCard.suit)) {
         highestCard = card;
         highestPlayer = playerId;
@@ -461,10 +458,10 @@ export class BelotGame {
   }
 
   determineTrickWinner() {
-    if (this.currentTrick.length === 0) return null;
+    if (this.currentTrick.cards.length === 0) return null;
     
-    let winner = this.currentTrick[0];
-    this.currentTrick.forEach(p => {
+    let winner = this.currentTrick.cards[0];
+    this.currentTrick.cards.forEach(p => {
       if (p.card.isHigherThan(winner.card, this.contract, this.trumpSuit)) {
         winner = p;
       }
@@ -606,7 +603,7 @@ export class BelotGame {
     // Clear round variables for next round
     this.currentRoundScore = [0, 0];
     this.tricks = [];
-    this.currentTrick = [];
+    this.currentTrick = { cards: [], winner: null, team: null };
     this.trickLeader = 0;
     this.currentBidder = 0;
     this.bids = [];

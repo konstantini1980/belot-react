@@ -70,7 +70,7 @@ export default function App() {
   // Handle trick completion - wait 3 seconds after 4th card, then trigger animation to holders
   useEffect(() => {
     if (game.phase === GAME_PHASES.PLAYING) {
-      if (game.currentTrick.length === 4) {
+      if (game.currentTrick.cards.length === 4) {
           //Wait 3 seconds, then mark trick as complete (triggers animation to holders)
           const timer = setTimeout(() => {
             setWinningTeam(game.players[game.currentPlayer].team);
@@ -83,7 +83,7 @@ export default function App() {
         setTrickComplete(false);
         setWinningTeam(null);
       }      
-  }, [game.phase, game.currentTrick.length]);
+  }, [game.phase, game.currentTrick.cards.length]);
 
   //Animate cards to holders for 1 second then complete trick
   const animateToHolders = () => {
@@ -109,7 +109,7 @@ export default function App() {
     const testGame = new BelotGame();
     Object.assign(testGame, game);
     // Copy currentTrick array (shallow copy is fine since we're not modifying cards)
-    testGame.currentTrick = [...game.currentTrick];
+    testGame.currentTrick = { ...game.currentTrick, cards: [...game.currentTrick.cards] };
     
     const playable = player.hand.filter(card => {
       return testGame.isValidCardPlay(player, card);
