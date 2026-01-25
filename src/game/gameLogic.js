@@ -276,7 +276,7 @@ export class BelotGame {
       // Move to next player (counter-clockwise)
       this.currentPlayer = (this.currentPlayer + 3) % 4;
     } else {
-      // If trick is complete, determine winner
+      // If trick is complete, determine winner and store it
       const winner = this.determineTrickWinner();
       this.currentTrick.winner = winner.playerId;
       this.currentTrick.team = this.players[winner.playerId].team;
@@ -286,7 +286,6 @@ export class BelotGame {
 
   // Should be called from the app after the animation to holders is complete
   completeTrick() {
-    // Winner was already determined in playCard() and stored in currentTrick
     let winnerPlayerId = this.currentTrick.winner;
     
     this.tricks.push({ ...this.currentTrick });
@@ -296,7 +295,7 @@ export class BelotGame {
       const value = card.getValue(this.contract);
       this.currentRoundScore[this.players[winnerPlayerId].team] += value;
     });
-    
+
     this.currentPlayer = winnerPlayerId;
     this.currentTrick = { cards: [], winner: null, team: null };
 
@@ -510,13 +509,130 @@ export class BelotGame {
       isValat = true;
     }
     
-    // Add combination points
+    // Add combination points with sequence comparison logic
+    // Sequence type hierarchy: quint (100) > quarte (50) > tierce (20)
+    // For same type, compare highest card: A > K > Q > J > 10 > 9 > 8 > 7
+    
+    // Helper function to get sequence type order (higher number = bigger sequence)
+    const getSequenceTypeOrder = (type) => {
+      if (type === 'quint') return 3;
+      if (type === 'quarte') return 2;
+      if (type === 'tierce') return 1;
+      return 0; // non-sequences (equals, belot) don't participate in sequence comparison
+    };
+    
+    // Helper function to get highest card rank in a sequence (for same-type comparison)
+    const getHighestCardRank = (cards) => {
+      if (!cards || cards.length === 0) return -1;
+      const SEQUENCE_ORDER = ['7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+      let highestIndex = -1;
+      cards.forEach(card => {
+        const index = SEQUENCE_ORDER.indexOf(card.rank);
+        if (index > highestIndex) {
+          highestIndex = index;
+        }
+      });
+      return highestIndex;
+    };
+    
+    // Find highest sequence from each team
+    const getHighestSequence = (combos) => {
+      const sequences = combos.filter(c => c.type === 'tierce' || c.type === 'quarte' || c.type === 'quint');
+      if (sequences.length === 0) return null;
+      
+      // Sort by type order (descending), then by highest card (descending)
+      sequences.sort((a, b) => {
+        const typeOrderA = getSequenceTypeOrder(a.type);
+        const typeOrderB = getSequenceTypeOrder(b.type);
+        if (typeOrderA !== typeOrderB) {
+          return typeOrderB - typeOrderA; // Higher type order first
+        }
+        // Same type - compare highest card
+        const highestA = getHighestCardRank(a.cards);
+        const highestB = getHighestCardRank(b.cards);
+        return highestB - highestA; // Higher card first
+      });
+      
+      return sequences[0];
+    };
+    
+    const team0Highest = getHighestSequence(this.announcedCombinations[0]);
+    const team1Highest = getHighestSequence(this.announcedCombinations[1]);
+    
+    // Compare sequences
+    let team0Wins = false;
+    let team1Wins = false;
+    let sequencesCancel = false;
+    
+    if (team0Highest && team1Highest) {
+      // Both teams have sequences - compare them
+      const typeOrder0 = getSequenceTypeOrder(team0Highest.type);
+      const typeOrder1 = getSequenceTypeOrder(team1Highest.type);
+      
+      if (typeOrder0 > typeOrder1) {
+        team0Wins = true;
+      } else if (typeOrder1 > typeOrder0) {
+        team1Wins = true;
+      } else {
+        // Same type - compare highest card
+        const highest0 = getHighestCardRank(team0Highest.cards);
+        const highest1 = getHighestCardRank(team1Highest.cards);
+        
+        if (highest0 > highest1) {
+          team0Wins = true;
+        } else if (highest1 > highest0) {
+          team1Wins = true;
+        } else {
+          // Same highest sequence - all sequences are dropped
+          sequencesCancel = true;
+        }
+      }
+    } else if (team0Highest) {
+      // Only team 0 has sequences
+      team0Wins = true;
+    } else if (team1Highest) {
+      // Only team 1 has sequences
+      team1Wins = true;
+    }
+    
+    // Add combination points based on sequence comparison
+    // Mark each combination as valid or canceled
     this.announcedCombinations.forEach((combos, team) => {
       let comboPoints = 0;
+      
       combos.forEach(combo => {
-        comboPoints += combo.points;
-        this.currentRoundScore[team] += combo.points;
+        // Non-sequence combinations (equals, belot) always count
+        if (combo.type !== 'tierce' && combo.type !== 'quarte' && combo.type !== 'quint') {
+          combo.valid = true; // Always valid
+          comboPoints += combo.points;
+          this.currentRoundScore[team] += combo.points;
+        } else {
+          // Sequence combinations - only count if team wins or if no sequence comparison
+          if (sequencesCancel) {
+            // All sequences are dropped - mark as canceled
+            combo.valid = false;
+          } else if (team === 0 && team0Wins) {
+            // Team 0 wins - count their sequences
+            combo.valid = true;
+            comboPoints += combo.points;
+            this.currentRoundScore[team] += combo.points;
+          } else if (team === 1 && team1Wins) {
+            // Team 1 wins - count their sequences
+            combo.valid = true;
+            comboPoints += combo.points;
+            this.currentRoundScore[team] += combo.points;
+          } else if (!team0Highest && !team1Highest) {
+            // No sequences from either team - count all (shouldn't happen for sequences, but safe)
+            combo.valid = true;
+            comboPoints += combo.points;
+            this.currentRoundScore[team] += combo.points;
+          } else {
+            // Losing team - sequence doesn't count, mark as canceled
+            combo.valid = false;
+          }
+        }
       });
+      
       breakdown[team].combinationPoints = comboPoints;
     });
     

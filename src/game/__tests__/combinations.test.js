@@ -180,12 +180,25 @@ describe('Combination Discovery', () => {
       ];
 
       const combinations = getAllCombinations(cards, 'hearts');
-      expect(combinations.length).toBeGreaterThan(0);
-      // Should have either sequences or equals
-      const hasSequence = combinations.some(c => c.type === 'tierce' || c.type === 'quarte' || c.type === 'quint');
-      const hasEqual = combinations.some(c => c.type === 'equal');
-      expect(hasSequence || hasEqual).toBe(true);
-      expect(hasEqual).toBe(true); // Should definitely have four Jacks
+      expect(combinations.length).toEqual(2);
+      const sequences = combinations.filter(c => c.type === 'tierce' || c.type === 'quarte' || c.type === 'quint');
+      expect(sequences.length).toEqual(1);
+      expect(sequences[0].type).toEqual('tierce');
+      expect(sequences[0].cards).toEqual([
+        new Card('hearts', 'A'),
+        new Card('hearts', 'K'),
+        new Card('hearts', 'Q')
+      ]);
+
+      const equals = combinations.filter(c => c.type === 'equal');
+      expect(equals.length).toEqual(1);
+      expect(equals[0].type).toEqual('equal');
+      expect(equals[0].cards).toEqual([
+        new Card('spades', 'J'),
+        new Card('diamonds', 'J'),
+        new Card('clubs', 'J'),
+        new Card('hearts', 'J')
+      ]);
     });
 
     it('should return empty array when no combinations exist', () => {

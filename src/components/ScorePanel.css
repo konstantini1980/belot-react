@@ -334,6 +334,13 @@
   font-weight: 600;
 }
 
+.combination-badge.canceled {
+  text-decoration: line-through;
+  color: #888888;
+  border-color: #666666;
+  background: rgba(136, 136, 136, 0.1);
+}
+
 .hanging-points-section {
   background: rgba(255, 193, 7, 0.1);
   border: 1px solid rgba(255, 193, 7, 0.3);

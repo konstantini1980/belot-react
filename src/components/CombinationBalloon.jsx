@@ -22,14 +22,13 @@ export default function CombinationBalloon({ combinations, playerName, onClose }
     if (!combination) return '';
     return formatCombinationType(combination.type);
   };
-  // Show only the first combination
-  const combination = combinations && combinations.length > 0 ? combinations[0] : null;
 
-  if (!combination) {
+  if (!combinations || combinations.length === 0) {
     return null;
   }
 
-  const text = formatCombinationText(combination);
+  // Format all combinations separated by commas
+  const text = combinations.map(formatCombinationText).filter(Boolean).join(', ');
 
   return (
     <div className="combination-balloon visible">

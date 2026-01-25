@@ -88,6 +88,8 @@ export default function App() {
   //Animate cards to holders for 1 second then complete trick
   const animateToHolders = () => {
     setTrickComplete(true);
+
+    game.currentPlayer = null;
     
     const timer = setTimeout(() => {
       const newGame = new BelotGame();

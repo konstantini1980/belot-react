@@ -145,8 +145,9 @@ export default function FullScorePanel({
                   <div className="breakdown-combinations">
                     {announcedCombinations[0].map((combo, idx) => {
                       const cardsDisplay = formatCombinationCards(combo);
+                      const isValid = combo.valid !== false; // Default to true if not set
                       return cardsDisplay ? (
-                        <span key={idx} className="combination-badge">
+                        <span key={idx} className={`combination-badge ${!isValid ? 'canceled' : ''}`}>
                           {cardsDisplay}
                         </span>
                       ) : null;
@@ -195,8 +196,9 @@ export default function FullScorePanel({
                   <div className="breakdown-combinations">
                     {announcedCombinations[1].map((combo, idx) => {
                       const cardsDisplay = formatCombinationCards(combo);
+                      const isValid = combo.valid !== false; // Default to true if not set
                       return cardsDisplay ? (
-                        <span key={idx} className="combination-badge">
+                        <span key={idx} className={`combination-badge ${!isValid ? 'canceled' : ''}`}>
                           {cardsDisplay}
                         </span>
                       ) : null;

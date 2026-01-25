@@ -66,8 +66,8 @@ describe('Announcements', () => {
       game.playCard(0, player.hand[0].id);
 
       const combinations = game.announcedCombinations[player.team];
-      expect(combinations.length).toBeGreaterThan(1);
-      expect(combinations.some(c => c.type === 'quarte')).toBe(true);
+      expect(combinations.length).toEqual(2);
+      expect(combinations.some(c => c.type === 'tierce')).toBe(true);
       expect(combinations.some(c => c.type === 'equal')).toBe(true);
     });
 

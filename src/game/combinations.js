@@ -163,14 +163,16 @@ export function findBelot(cards, trumpSuit) {
 }
 
 export function getAllCombinations(cards, trumpSuit) {
-  const sequences = findSequences(cards);
   const equals = findEquals(cards);
-  // Note: belot is not included here - it should only be announced when Q or K is played
-  // const belot = findBelot(cards, trumpSuit);
-  
-  const all = [...sequences, ...equals];
-  // if (belot) all.push(belot);
-  
-  return all;
+  if (equals.length > 0) {
+    const remainingCards = cards.filter(c => !equals.some(e => e.cards.includes(c)));
+    const sequences = findSequences(remainingCards);
+    
+    return [...equals, ...sequences];
+  } else {
+    const sequences = findSequences(cards);
+    
+    return [...sequences];
+  }
 }
 

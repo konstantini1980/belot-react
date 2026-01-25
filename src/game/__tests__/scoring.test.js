@@ -296,6 +296,186 @@ describe('Scoring', () => {
       expect(game.totalScores[0]).toBe(20);
       expect(game.totalScores[1]).toBe(6);
     });
+
+    it('should not count sequences of losing team when both teams have sequences and one has bigger sequence', () => {
+      // Set up card points
+      game.currentRoundScore[0] = 100; // Contract team
+      game.currentRoundScore[1] = 58; // Opponent team
+      
+      game.contract = 'hearts';
+      game.trumpSuit = 'hearts';
+      game.bids = [
+        { playerId: 0, bid: 'hearts' },
+        { playerId: 1, bid: 'pass' },
+        { playerId: 2, bid: 'pass' },
+        { playerId: 3, bid: 'pass' }
+      ];
+      
+      // Team 0 has AKQ tierce (20 points) and 987 tierce (20 points)
+      // AKQ is bigger than Team 1's KQJ, so Team 0 wins and keeps ALL sequences
+      game.announcedCombinations[0] = [
+        { type: 'tierce', points: 20, cards: [new Card('hearts', 'A'), new Card('hearts', 'K'), new Card('hearts', 'Q')] },
+        { type: 'tierce', points: 20, cards: [new Card('hearts', '9'), new Card('hearts', '8'), new Card('hearts', '7')] }
+      ];
+      
+      // Team 1 has KQJ tierce (20 points) - smaller than Team 0's AKQ, should not count
+      game.announcedCombinations[1] = [
+        { type: 'tierce', points: 20, cards: [new Card('spades', 'K'), new Card('spades', 'Q'), new Card('spades', 'J')] }
+      ];
+      
+      // Complete all tricks (8 tricks total)
+      for (let i = 0; i < 8; i++) {
+        const team = i < 7 ? 0 : 1;
+        game.tricks.push({
+          cards: [
+            { playerId: 0, card: new Card('hearts', 'A') },
+            { playerId: 1, card: new Card('spades', '7') },
+            { playerId: 2, card: new Card('clubs', '7') },
+            { playerId: 3, card: new Card('diamonds', '7') }
+          ],
+          team: team
+        });
+      }
+      
+      // End the round
+      game.endRound();
+      
+      // Verify: Team 0's sequences should ALL count (20 + 20 = 40 points)
+      // because Team 0's AKQ beats Team 1's KQJ
+      // Team 1's sequence should NOT count (0 points) because they lost the comparison
+      expect(game.lastRoundBreakdown[0].combinationPoints).toBe(40); // Both tierces count
+      expect(game.lastRoundBreakdown[1].combinationPoints).toBe(0); // KQJ doesn't count
+      
+      // Verify total points: 100 (card) + 40 (both sequences) = 140 for team 0
+      // 58 (card) + 0 (no combinations) = 58 for team 1
+      expect(game.lastRoundScore[0]).toBe(140);
+      expect(game.lastRoundScore[1]).toBe(58);
+      
+      // Verify breakdown
+      expect(game.lastRoundBreakdown[0].cardPoints).toBe(100);
+      expect(game.lastRoundBreakdown[1].cardPoints).toBe(58);
+    });
+
+    it('should drop all sequences from both teams when they have the same highest sequence', () => {
+      // Set up card points
+      game.currentRoundScore[0] = 100; // Contract team
+      game.currentRoundScore[1] = 58; // Opponent team
+      
+      game.contract = 'hearts';
+      game.trumpSuit = 'hearts';
+      game.bids = [
+        { playerId: 0, bid: 'hearts' },
+        { playerId: 1, bid: 'pass' },
+        { playerId: 2, bid: 'pass' },
+        { playerId: 3, bid: 'pass' }
+      ];
+      
+      // Team 0 has KQJ tierce (20 points) and 987 tierce (20 points)
+      // KQJ is the highest sequence for Team 0
+      game.announcedCombinations[0] = [
+        { type: 'tierce', points: 20, cards: [new Card('hearts', 'K'), new Card('hearts', 'Q'), new Card('hearts', 'J')] },
+        { type: 'tierce', points: 20, cards: [new Card('hearts', '9'), new Card('hearts', '8'), new Card('hearts', '7')] }
+      ];
+      
+      // Team 1 has KQJ tierce (20 points) - same highest sequence as Team 0
+      // Since both teams have the same highest sequence, ALL sequences are dropped
+      game.announcedCombinations[1] = [
+        { type: 'tierce', points: 20, cards: [new Card('spades', 'K'), new Card('spades', 'Q'), new Card('spades', 'J')] }
+      ];
+      
+      // Complete all tricks (8 tricks total)
+      for (let i = 0; i < 8; i++) {
+        const team = i < 7 ? 0 : 1;
+        game.tricks.push({
+          cards: [
+            { playerId: 0, card: new Card('hearts', 'A') },
+            { playerId: 1, card: new Card('spades', '7') },
+            { playerId: 2, card: new Card('clubs', '7') },
+            { playerId: 3, card: new Card('diamonds', '7') }
+          ],
+          team: team
+        });
+      }
+      
+      // End the round
+      game.endRound();
+      
+      // Verify: Since both teams have the same highest sequence (KQJ), ALL sequences are dropped
+      // Team 0's sequences (KQJ + 987) don't count
+      // Team 1's sequence (KQJ) doesn't count
+      expect(game.lastRoundBreakdown[0].combinationPoints).toBe(0); // All sequences dropped
+      expect(game.lastRoundBreakdown[1].combinationPoints).toBe(0); // All sequences dropped
+      
+      // Verify total points: 100 (card) + 0 (no combinations) = 100 for team 0
+      // 58 (card) + 0 (no combinations) = 58 for team 1
+      expect(game.lastRoundScore[0]).toBe(100);
+      expect(game.lastRoundScore[1]).toBe(58);
+      
+      // Verify breakdown
+      expect(game.lastRoundBreakdown[0].cardPoints).toBe(100);
+      expect(game.lastRoundBreakdown[1].cardPoints).toBe(58);
+    });
+
+    it('should not count lower order sequences when opponent has higher order sequence', () => {
+      // Set up card points
+      game.currentRoundScore[0] = 100; // Contract team
+      game.currentRoundScore[1] = 58; // Opponent team
+      
+      game.contract = 'hearts';
+      game.trumpSuit = 'hearts';
+      game.bids = [
+        { playerId: 0, bid: 'hearts' },
+        { playerId: 1, bid: 'pass' },
+        { playerId: 2, bid: 'pass' },
+        { playerId: 3, bid: 'pass' }
+      ];
+      
+      // Team 0 has quint (higher order sequence - 5+ cards, 100 points)
+      // This should "beat" any lower order sequences from Team 1
+      game.announcedCombinations[0] = [
+        { type: 'quint', points: 100, cards: [
+          new Card('hearts', 'A'), new Card('hearts', 'K'), new Card('hearts', 'Q'),
+          new Card('hearts', 'J'), new Card('hearts', '10')
+        ]}
+      ];
+      
+      // Team 1 has tierce (lower order sequence - 3 cards, 20 points)
+      // This should NOT count because Team 0 has a higher order sequence (quint)
+      game.announcedCombinations[1] = [
+        { type: 'tierce', points: 20, cards: [new Card('spades', 'K'), new Card('spades', 'Q'), new Card('spades', 'J')] }
+      ];
+      
+      // Complete all tricks (8 tricks total)
+      for (let i = 0; i < 8; i++) {
+        const team = i < 7 ? 0 : 1;
+        game.tricks.push({
+          cards: [
+            { playerId: 0, card: new Card('hearts', 'A') },
+            { playerId: 1, card: new Card('spades', '7') },
+            { playerId: 2, card: new Card('clubs', '7') },
+            { playerId: 3, card: new Card('diamonds', '7') }
+          ],
+          team: team
+        });
+      }
+      
+      // End the round
+      game.endRound();
+      
+      // Verify: Team 0's quint should count (100 points)
+      // Team 1's tierce should NOT count (0 points) because quint > tierce
+      expect(game.lastRoundBreakdown[0].combinationPoints).toBe(100);
+      expect(game.lastRoundBreakdown[1].combinationPoints).toBe(0);
+      
+      // Verify total points: 100 (card) + 100 (quint) = 200 for team 0
+      // 58 (card) + 0 (no combinations) = 58 for team 1
+      expect(game.lastRoundScore[0]).toBe(200);
+      expect(game.lastRoundScore[1]).toBe(58);
+      
+      // Verify breakdown
+      expect(game.lastRoundBreakdown[0].cardPoints).toBe(100);
+      expect(game.lastRoundBreakdown[1].cardPoints).toBe(58);
+    });
   });
 });
 
