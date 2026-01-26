@@ -97,11 +97,11 @@ export default function Card({ card, onClick, selected, playable, showBack = fal
   
   // Determine card ID: use explicit cardId prop, or card.id
   // Always ensure we have a valid ID for data-card-id attribute
-  const finalCardId = cardId || card?.id || `card-${Math.random().toString(36).substr(2, 9)}`;
+  const finalCardId = cardId || card?.id;
   
   return (
     <div
-      className={`card ${selected ? 'selected' : ''} ${playable ? 'playable' : ''} ${showBack ? 'back' : ''} ${className}`.trim()}
+      className={`card ${selected ? 'selected' : ''} ${playable ? 'playable' : ''} ${showBack ? 'back' : ''} ${className}`}
       onClick={handleClick}
       data-card-id={finalCardId}
     >

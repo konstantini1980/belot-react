@@ -230,8 +230,8 @@ function isCurrentMaxCardInPlayingColor(card, playingColor, contract, trumpSuit,
     return !foundBigger;
 }
 
-// Rule 1.1: Rank Proximity Rule (EvalutePointsOnRemaining)
-function evaluatePointsOnRemaining(card, contract, trumpSuit, remainingCards, currentHand, playerHand, playedCards) {
+// Rule 1.1: Rank Proximity Rule (EvalutePointsOnRemaining) - Original implementation
+function evaluatePointsOnRemainingOriginal(card, contract, trumpSuit, remainingCards, currentHand, playerHand, playedCards) {
     const POINTS_TO_ADD = 20;
     let points = POINTS_TO_ADD;
     
@@ -265,6 +265,62 @@ function evaluatePointsOnRemaining(card, contract, trumpSuit, remainingCards, cu
     }
     
     return points;
+}
+
+// Rule 1.1: Rank Proximity Rule (EvalutePointsOnRemaining) - Improved implementation
+function evaluatePointsOnRemaining(card, contract, trumpSuit, remainingCards, currentHand, playerHand, playedCards) {
+    // Get current max card in color
+    const maxCard = getCurrentMaxCardInColor(card.suit, contract, trumpSuit, remainingCards, currentHand);
+    if (!maxCard) return 0;
+    
+    // Calculate distance
+    const distance = getDistance(card, maxCard, contract, trumpSuit);
+    
+    // Count remaining cards in suit (excluding target card)
+    let remainingCardsInSuit = 0;
+    for (const c of playerHand) {
+        if (c.suit === card.suit && c.id !== card.id) {
+            remainingCardsInSuit++;
+        }
+    }
+    
+    // Count passed cards (played cards in that suit)
+    let passedCards = 0;
+    for (const c of playedCards) {
+        if (c.suit === card.suit) {
+            passedCards++;
+        }
+    }
+    
+    // If not enough cards to cover distance, return 0
+    if (remainingCardsInSuit < distance) {
+        return 0;
+    }
+    
+    // Base score incorporates card's intrinsic value
+    const cardValue = card.getValue(contract);
+    const baseScore = Math.max(10, cardValue * 2); // At least 10, scales with card value
+    
+    // Distance penalty: exponential decay (closer = much better)
+    // distance 0 = no penalty, distance 1 = small penalty, distance 5+ = huge penalty
+    const distancePenalty = distance === 0 ? 0 : Math.pow(2, distance - 1) * 5;
+    
+    // Bonus for being close to max (distance 0 or 1 gets big bonus)
+    const proximityBonus = distance === 0 ? 50 : (distance === 1 ? 30 : 0);
+    
+    // Remaining cards bonus: more cards = more flexibility
+    // But diminishing returns (logarithmic)
+    const remainingBonus = Math.log(remainingCardsInSuit + 1) * 15;
+    
+    // Passed cards penalty: more passed = less chance, but not linear
+    // Early passed cards matter less than recent ones
+    const passedPenalty = passedCards * 3; // Reduced from linear 1:1
+    
+    // Calculate final score
+    let points = baseScore + proximityBonus + remainingBonus - distancePenalty - passedPenalty;
+    
+    // Ensure non-negative (though 0 is already handled above)
+    return Math.max(0, points);
 }
 
 // Helper: Get card color from announcement type

@@ -334,6 +334,8 @@ export default function GameBoard({
                   cards={player.hand}
                   onCardClick={onCardClick}
                   playableCards={playableCards}
+                  contract={contract}
+                  trumpSuit={trumpSuit}
                 />
               ) : (
                 <AIPlayerHand
