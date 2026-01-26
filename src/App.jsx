@@ -281,7 +281,8 @@ export default function App() {
       
       // AI cards have data-card-id like "player-${playerId}-back-${cardIndex}"
       const gameBoard = document.querySelector('.game-board');
-      const cardElement = gameBoard?.querySelector(`[data-card-id="player-${playerId}-back-${cardIndex}"]`);
+      const dataCardId = showCards ? cardToPlay.id : `player-${playerId}-back-${cardIndex}`;
+      const cardElement = gameBoard?.querySelector(`[data-card-id="${dataCardId}"]`);
       
       if (cardElement) {
         storeCardPosition(cardElement, cardKey);

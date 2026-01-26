@@ -101,7 +101,7 @@ export default function Card({ card, onClick, selected, playable, showBack = fal
   
   return (
     <div
-      className={`card ${selected ? 'selected' : ''} ${playable ? 'playable' : ''} ${showBack ? 'back' : ''} ${className}`}
+      className={`card ${selected ? 'selected' : ''} ${playable ? 'playable' : ''} ${showBack ? 'back' : ''} ${className}`.trim()}
       onClick={handleClick}
       data-card-id={finalCardId}
     >
