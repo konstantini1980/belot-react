@@ -133,7 +133,7 @@ export default function App() {
     const newGame = new BelotGame();
     Object.assign(newGame, game);
     const playerId = newGame.currentBidder;
-    const bid = makeAIBid(newGame.players[playerId].hand);
+    const bid = makeAIBid(newGame.players[playerId].hand, newGame.bids, newGame.players, playerId);
     
     const lastBid = newGame.bids.filter(b => b.bid !== 'pass').pop();
     if (lastBid) {      

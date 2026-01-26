@@ -46,7 +46,7 @@
 import { CARD_RANKINGS } from './cards';
 
 const MIN_FOR_TRUMP = 34;
-const MIN_FOR_NOTRUMPS = 34;
+const MIN_FOR_NOTRUMPS = 40;
 const MIN_FOR_ALLTRUMPS = 60;
 
 function evaluateCardPoints(hand, contract) {
@@ -57,7 +57,49 @@ function evaluateCardPoints(hand, contract) {
 }
 
 // Make an AI announcement based on card evaluation
-export function makeAIBid(hand) {        
+export function makeAIBid(hand, bids = [], players = [], playerId = null) {
+    // Helper: Check if a bid is a trump suit bid
+    const isTrumpSuitBid = (bid) => {
+        return bid === 'clubs' || bid === 'diamonds' || bid === 'hearts' || bid === 'spades';
+    };
+    
+    // Helper: Get partner's bids
+    const getPartnerBids = () => {
+        if (!playerId || !players || players.length === 0) return [];
+        const player = players[playerId];
+        if (!player) return [];
+        const partner = players.find(p => p.team === player.team && p.id !== playerId);
+        if (!partner) return [];
+        
+        return bids.filter(b => b.playerId === partner.id && b.bid !== 'pass' && b.bid !== 'double' && b.bid !== 'redouble')
+                   .map(b => b.bid);
+    };
+    
+    // Helper: Get player's own bids
+    const getPlayerBids = () => {
+        if (!playerId || !bids) return [];
+        return bids.filter(b => b.playerId === playerId && b.bid !== 'pass' && b.bid !== 'double' && b.bid !== 'redouble')
+                   .map(b => b.bid);
+    };
+    
+    // Check if partner has bid trump suits on their own
+    const partnerBids = getPartnerBids();
+    const partnerTrumpBids = partnerBids.filter(isTrumpSuitBid);
+    
+    // If partner has bid trump suits, evaluate all-trump points
+    if (partnerTrumpBids.length > 0) {
+        // Evaluate points for all-trump game
+        const allTrumpPoints = evaluateCardPoints(hand, 'all-trump');
+        const threshold75Percent = MIN_FOR_ALLTRUMPS * 0.75;
+        
+        // If points are >= 75% of MIN_FOR_ALLTRUMPS threshold, bid all-trump
+        if (allTrumpPoints >= threshold75Percent) {
+            return 'all-trump';
+        }
+        // Otherwise, fall through to original logic
+    }
+    
+    // Original logic: evaluate trump suits and contracts
     if (evaluateCardPoints(hand, 'clubs') >= MIN_FOR_TRUMP && hand.filter(card => card.suit === 'clubs').length > 2) {
         return 'clubs';
     }
@@ -76,9 +118,8 @@ export function makeAIBid(hand) {
     else if (evaluateCardPoints(hand, 'all-trump') >= MIN_FOR_ALLTRUMPS) {
         return 'all-trump';
     }
-    else {
-        return 'pass';
-    }
+    
+    return 'pass';
 }
 
 // Helper: Get ranking array based on contract and suit
