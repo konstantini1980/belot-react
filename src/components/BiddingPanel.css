@@ -43,6 +43,23 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 4px;
+}
+
+.bid-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.bid-display.historical {
+  opacity: 0.6;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.bid-display.active {
+  color: rgba(255, 255, 255, 1);
+  opacity: 1;
 }
 
 .bid-item-row:last-child {
@@ -61,7 +78,7 @@
 }
 
 .bid-text {
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.8);
   font-size: 15px;
 }
 

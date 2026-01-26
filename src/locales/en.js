@@ -56,6 +56,7 @@ export default {
   showCombinationsBalloon: 'Show Combinations Balloon',
   showScorePanel: 'Show Score Panel',
   showCards: 'Show Cards',
+  showBiddingPanel: 'Show Bidding Panel',
   close: 'Close',
   
   // Language Switcher

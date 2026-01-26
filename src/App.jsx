@@ -22,6 +22,7 @@ export default function App() {
   const [forceShowScorePanel, setForceShowScorePanel] = useState(false);
   const [showCombinationsBalloon, setShowCombinationsBalloon] = useState(false);
   const [showCards, setShowCards] = useState(false);
+  const [forceShowBiddingPanel, setForceShowBiddingPanel] = useState(false);
   const [cardPositions, setCardPositions] = useState(new Map()); // Map of cardId -> { x, y }
 
   useEffect(() => {
@@ -335,6 +336,10 @@ export default function App() {
     setShowCards(show);
   };
 
+  const handleShowBiddingPanel = (show) => {
+    setForceShowBiddingPanel(show);
+  };
+
   // Update player names when language changes
   useEffect(() => {
     const newGame = new BelotGame();
@@ -394,7 +399,7 @@ export default function App() {
           forceShowScorePanel={forceShowScorePanel}
           onForceShowScorePanelChange={setForceShowScorePanel}
           showCards={showCards}
-          biddingPanel={game.phase === GAME_PHASES.BIDDING ? (
+          biddingPanel={(game.phase === GAME_PHASES.BIDDING || forceShowBiddingPanel) ? (
             <BiddingPanel
               currentBidder={game.currentBidder}
               playerId={PLAYER_ID}
@@ -414,9 +419,11 @@ export default function App() {
         onShowCombinations={handleShowCombinations}
         onShowScorePanel={handleShowScorePanel}
         onShowCards={handleShowCards}
+        onShowBiddingPanel={handleShowBiddingPanel}
         showCombinations={showCombinationsBalloon}
         showScorePanel={forceShowScorePanel}
         showCards={showCards}
+        showBiddingPanel={forceShowBiddingPanel}
       />
     </div>
   );

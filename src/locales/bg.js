@@ -56,6 +56,7 @@ export default {
   showCombinationsBalloon: 'Покажи балон с комбинации',
   showScorePanel: 'Покажи панел с резултати',
   showCards: 'Покажи карти',
+  showBiddingPanel: 'Покажи панел с обяви',
   close: 'Затвори',
   
   // Language Switcher

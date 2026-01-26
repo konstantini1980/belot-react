@@ -6,9 +6,11 @@ export default function DevPanel({
   onShowCombinations,
   onShowScorePanel,
   onShowCards,
+  onShowBiddingPanel,
   showCombinations,
   showScorePanel,
   showCards,
+  showBiddingPanel,
   isVisible: externalIsVisible = null
 }) {
   const { t } = useLanguage();
@@ -32,6 +34,12 @@ export default function DevPanel({
   const handleShowCardsToggle = (checked) => {
     if (onShowCards) {
       onShowCards(checked);
+    }
+  };
+
+  const handleShowBiddingPanelToggle = (checked) => {
+    if (onShowBiddingPanel) {
+      onShowBiddingPanel(checked);
     }
   };
 
@@ -89,6 +97,15 @@ export default function DevPanel({
                 className="dev-checkbox"
               />
               <span>{t('showCards')}</span>
+            </label>
+            <label className="dev-checkbox-label">
+              <input
+                type="checkbox"
+                checked={showBiddingPanel || false}
+                onChange={(e) => handleShowBiddingPanelToggle(e.target.checked)}
+                className="dev-checkbox"
+              />
+              <span>{t('showBiddingPanel')}</span>
             </label>
           </div>
         </div>

@@ -111,10 +111,8 @@ export default function BiddingPanel({
   };
 
   const biddingOrder = getBiddingOrder();
-  const bidsByPlayer = {};
-  bids.forEach(bid => {
-    bidsByPlayer[bid.playerId] = bid;
-  });
+  // Array of all bids in chronological order
+  const bidsByPlayer = bids;
 
   return (
     <div className="bidding-panel">
@@ -122,30 +120,40 @@ export default function BiddingPanel({
       
       <div className="bids-list">
         {biddingOrder.map((playerId, idx) => {
-          const bid = bidsByPlayer[playerId];
+          // Find all bids for this player in chronological order
+          const playerBids = bidsByPlayer.filter(bid => bid.playerId === playerId);
           const isCurrentBidder = playerId === currentBidder;
-          const display = bid ? getContractDisplay(bid.bid) : null;
           
           return (
             <div key={idx} className="bid-item-row">
               <span className="bid-player-name">{playerNames[playerId]}</span>
               <div className="bid-right-side">
-                {bid ? (
+                {playerBids.length > 0 ? (
                   <>
-                    {bid.bid !== 'pass' && bid.bid !== 'double' && bid.bid !== 'redouble' && (
-                      <span className="bid-suit-icon" style={{ color: display.iconColor }}>
-                        {display.icon}
-                      </span>
-                    )}
-                    {bid.bid === 'pass' && (
-                      <span className="bid-text">{t('pass')}</span>
-                    )}
-                    {bid.bid === 'double' && (
-                      <span className="bid-text">{t('double')}</span>
-                    )}
-                    {bid.bid === 'redouble' && (
-                      <span className="bid-text">{t('redouble')}</span>
-                    )}
+                    {playerBids.reverse().map((bid, bidIdx) => {
+                      const display = getContractDisplay(bid.bid);
+                      // Last bid in the array is active, previous ones are historical
+                      const isHistorical = bidIdx !== 0;
+                      
+                      return (
+                        <span key={bidIdx} className={`bid-display ${isHistorical ? 'historical' : 'active'}`}>
+                          {bid.bid !== 'pass' && bid.bid !== 'double' && bid.bid !== 'redouble' && (
+                            <span className="bid-suit-icon" style={{ color: display.iconColor }}>
+                              {isHistorical ? '(' + display.icon + ')' : display.icon}
+                            </span>
+                          )}
+                          {bid.bid === 'pass' && (
+                            <span className="bid-text">{isHistorical ? '(' + t('pass') + ')' : t('pass')}</span>
+                          )}
+                          {bid.bid === 'double' && (
+                            <span className="bid-text">{isHistorical ? '(' + t('double') + ')' : t('double')}</span>
+                          )}
+                          {bid.bid === 'redouble' && (
+                            <span className="bid-text">{isHistorical ? '(' + t('redouble') + ')' : t('redouble')}</span>
+                          )}
+                        </span>
+                      );
+                    })}
                   </>
                 ) : isCurrentBidder ? (
                   <span className="waiting-message-inline">
