@@ -658,18 +658,53 @@ export class BelotGame {
 
     if (contractPoints > opponentPoints) {
       if (!this.double && !this.redouble) {
-        // Outside - both teams get their points
-        this.lastRoundRoundedPoints[0] = Math.round(this.currentRoundScore[0] / 10);
-        this.lastRoundRoundedPoints[1] = Math.round(this.currentRoundScore[1] / 10);
+        
 
-        // Round to the smaller
-        if (this.contract === 'all-trump' && opponentPoints%10 === 4) {
-          // The team with less points (opponent) gets an additional point
-          this.lastRoundRoundedPoints[1 - contractTeam] += 1;
-        } else if (this.contract !== 'no-trump' && opponentPoints%10 === 6) {
-          // Contract team gets rounded down, opponent gets rounded up
-          // This ensures total rounded points match total round points / 10
-          this.lastRoundRoundedPoints[contractTeam] -= 1;
+        // Specific rounding logic - adjustments
+        if (this.contract === 'all-trump') {
+          
+          // Adjusted rounding logic - Plus 1 point for proper rounding
+          // We do that for opponent only. Contract team gets remaining points.
+          const opponentRounded = Math.round((opponentPoints + 1) / 10);
+          this.lastRoundRoundedPoints[1 - contractTeam] = opponentRounded;
+          
+          const totalPoints = contractPoints + opponentPoints;
+          const totalRounded = Math.round(totalPoints / 10);
+          
+          this.lastRoundRoundedPoints[contractTeam] = totalRounded - opponentRounded;  
+
+        } else if (this.contract == 'no-trump') {
+          // Standard rounding logic - no adjustments
+          this.lastRoundRoundedPoints[0] = Math.round(this.currentRoundScore[0] / 10);
+          this.lastRoundRoundedPoints[1] = Math.round(this.currentRoundScore[1] / 10);
+        } else { // For a trump suit game
+
+          // Example 1: 86 + 76 = 162
+          // Initial rounded points: 9 + 8 = 17
+          // Total / 10 = 16.2, so we want sum = 16 (not 17)
+          // Adjustment: contract team gets rounded down -1
+          // Final rounded points: 8 + 8 = 16
+
+          // Example 2: 85 + 77 = 162
+          // Initial rounded points: 9 + 8 = 17
+          // Total / 10 = 16.2, so we want sum = 16 (not 17)
+          // Adjustment: contract team gets rounded down -1
+          // Final rounded points: 8 + 8 = 16
+
+          // Example 3: 87 + 75 = 162
+          // Initial rounded points: 9 + 8 = 17
+          // Total / 10 = 16.2, so we want sum = 16 (not 17)          
+          // Final rounded points: 8 + 8 = 16
+
+          // Adjusted rounding logic - Minus 1 point for proper rounding
+          // We do that for opponent only. Contract team gets remaining points.
+          const opponentRounded = Math.round((opponentPoints - 1) / 10);
+          this.lastRoundRoundedPoints[1 - contractTeam] = opponentRounded;
+          
+          const totalPoints = contractPoints + opponentPoints;
+          const totalRounded = Math.round(totalPoints / 10);
+          
+          this.lastRoundRoundedPoints[contractTeam] = totalRounded - opponentRounded;          
         }
       } else {
         // Doubled or redoubled - winner takes it all

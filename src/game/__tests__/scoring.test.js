@@ -21,72 +21,66 @@ describe('Scoring', () => {
   });
 
   describe('Round point calculation', () => {
-    it('should round to 25 when cardPoints are 55, combinations are +200, and opponent points end in 6', () => {
-      // Set up contract team (team 0) with 55 card points
-      // The combination points (200) will be added during endRound
-      game.currentRoundScore[0] = 55; // Card points
+    it('Trump game - should do rounding at 6', () => {
+      // Test with clubs trump suit
+      // Total points: 85 + 77 = 162 (no combinations or premiums)
+      game.currentRoundScore[0] = 85; // Contract team wins
+      game.currentRoundScore[1] = 77; // Opponent points ending in 6
       
-      // Set up opponent team (team 1) with points ending in 6 (e.g., 106)
-      game.currentRoundScore[1] = 106; // Opponent points ending in 6
-      
-      // Set up contract and bids
-      game.contract = 'hearts'; // Regular trump suit (not no-trump or all-trump)
-      game.trumpSuit = 'hearts';
+      game.contract = 'clubs';
+      game.trumpSuit = 'clubs';
       game.bids = [
-        { playerId: 0, bid: 'hearts' },
+        { playerId: 0, bid: 'clubs' },
         { playerId: 1, bid: 'pass' },
         { playerId: 2, bid: 'pass' },
         { playerId: 3, bid: 'pass' }
       ];
       
-      // Add combination points (200) - these will be added to roundScore during endRound
-      game.announcedCombinations[0] = [
-        { type: 'equal', points: 200, cards: [] }
-      ];
+      game.announcedCombinations[0] = [];
+      game.announcedCombinations[1] = [];
       
-      // Complete all tricks (8 tricks total) - needed for endRound to work
-      // Make sure not all tricks are won by same team to avoid valat
+      // Complete tricks
       for (let i = 0; i < 8; i++) {
-        // Alternate teams to avoid valat (7 tricks for team 0, 1 trick for team 1)
         const team = i < 7 ? 0 : 1;
         game.tricks.push({
           cards: [
-            { playerId: 0, card: new Card('hearts', 'A') },
-            { playerId: 1, card: new Card('spades', '7') },
-            { playerId: 2, card: new Card('clubs', '7') },
+            { playerId: 0, card: new Card('clubs', 'A') },
+            { playerId: 1, card: new Card('hearts', '7') },
+            { playerId: 2, card: new Card('spades', '7') },
             { playerId: 3, card: new Card('diamonds', '7') }
           ],
           team: team
         });
       }
       
-      // Ensure currentRoundScore is set correctly after all setup
-      // Card points: 55, will add 200 combination points in endRound = 255 total
-      game.currentRoundScore[0] = 55;
-      game.currentRoundScore[1] = 106;
+      // Ensure currentRoundScore is set correctly - total should be 162
+      game.currentRoundScore[0] = 85;
+      game.currentRoundScore[1] = 77;
       
-      // End the round
       game.endRound();
       
-      // Verify: 55 + 200 = 255, 255/10 = 25.5 rounds to 26
-      // Team 0: 255 / 10 = 25.5 rounds to 26, but in trump suit when opponent points end in 6,
-      // contract team gets rounded down: 26 - 1 = 25
-      // Team 1: 106 / 10 = 10.6 rounds to 11 (rounded up)
-      // Total: 25 + 11 = 36, which matches 361 / 10 = 36.1 → 36
-      expect(game.lastRoundRoundedPoints[0]).toBe(25);
-      expect(game.lastRoundRoundedPoints[1]).toBe(11); // 106 / 10 = 10.6 rounds to 11
+      // Verify total points in round: 85 + 77 = 162
+      expect(game.lastRoundScore[0] + game.lastRoundScore[1]).toBe(162);
+      expect(game.lastRoundBreakdown[0].cardPoints + game.lastRoundBreakdown[1].cardPoints).toBe(162);
+      expect(game.lastRoundBreakdown[0].combinationPoints).toBe(0);
+      expect(game.lastRoundBreakdown[1].combinationPoints).toBe(0);
+      expect(game.lastRoundBreakdown[0].valatPoints).toBe(0);
+      expect(game.lastRoundBreakdown[1].valatPoints).toBe(0);
       
-      // Verify breakdown - cardPoints should be 55, combinationPoints should be 200
-      expect(game.lastRoundBreakdown[0].cardPoints).toBe(55);
-      expect(game.lastRoundBreakdown[0].combinationPoints).toBe(200);
-      expect(game.lastRoundBreakdown[1].cardPoints).toBe(106);
+      // Verify: 
+      // Rounding happens at 6 on trump suit game
+      expect(game.lastRoundRoundedPoints[0]).toBe(8); // 85 / 10 = 8.5 rounds to 8
+      expect(game.lastRoundRoundedPoints[1]).toBe(8); // 77 / 10 = 7.6 rounds to 8
       
-      // Verify total scores were updated
-      expect(game.totalScores[0]).toBe(25);
-      expect(game.totalScores[1]).toBe(11);
+      // Verify total rounded points match total round points / 10
+      expect(game.lastRoundRoundedPoints[0] + game.lastRoundRoundedPoints[1]).toBe(16);
+      
+      // Verify breakdown
+      expect(game.lastRoundBreakdown[0].cardPoints).toBe(85);
+      expect(game.lastRoundBreakdown[1].cardPoints).toBe(77);
     });
-
-    it('should round up losing team points when they end in 6 in trump suit games', () => {
+  
+    it('Trump game - should round up losing team points when both team points end in 6', () => {
       // Set up contract team (team 0) with 86 card points
       game.currentRoundScore[0] = 86; // Card points
       
@@ -141,8 +135,8 @@ describe('Scoring', () => {
       expect(game.lastRoundBreakdown[1].valatPoints).toBe(0);
       
       // Verify: 
-      // Team 0: 86 / 10 = 8.6 rounds to 9, but in trump suit when opponent points end in 6,
-      // contract team gets rounded down: 9 - 1 = 8
+      // Points for both teams end up in 6 and it is a trump suit game, so the team with less points 
+      // gets rounded up and the other team gets rounded down
       // Team 1: 76 / 10 = 7.6 rounds to 8 (rounded up)
       // Total: 8 + 8 = 16, which matches 162 / 10 = 16.2 → 16
       expect(game.lastRoundRoundedPoints[0]).toBe(8);
@@ -160,69 +154,7 @@ describe('Scoring', () => {
       expect(game.lastRoundRoundedPoints[0] + game.lastRoundRoundedPoints[1]).toBe(16);
     });
 
-    it('should round up losing team points ending in 6 for different trump suits', () => {
-      // Test with clubs trump suit
-      // Total points: 86 + 76 = 162 (no combinations or premiums)
-      game.currentRoundScore[0] = 86; // Contract team wins
-      game.currentRoundScore[1] = 76; // Opponent points ending in 6
-      
-      game.contract = 'clubs';
-      game.trumpSuit = 'clubs';
-      game.bids = [
-        { playerId: 0, bid: 'clubs' },
-        { playerId: 1, bid: 'pass' },
-        { playerId: 2, bid: 'pass' },
-        { playerId: 3, bid: 'pass' }
-      ];
-      
-      game.announcedCombinations[0] = [];
-      game.announcedCombinations[1] = [];
-      
-      // Complete tricks
-      for (let i = 0; i < 8; i++) {
-        const team = i < 7 ? 0 : 1;
-        game.tricks.push({
-          cards: [
-            { playerId: 0, card: new Card('clubs', 'A') },
-            { playerId: 1, card: new Card('hearts', '7') },
-            { playerId: 2, card: new Card('spades', '7') },
-            { playerId: 3, card: new Card('diamonds', '7') }
-          ],
-          team: team
-        });
-      }
-      
-      // Ensure currentRoundScore is set correctly - total should be 162
-      game.currentRoundScore[0] = 86;
-      game.currentRoundScore[1] = 76;
-      
-      game.endRound();
-      
-      // Verify total points in round: 86 + 76 = 162
-      expect(game.lastRoundScore[0] + game.lastRoundScore[1]).toBe(162);
-      expect(game.lastRoundBreakdown[0].cardPoints + game.lastRoundBreakdown[1].cardPoints).toBe(162);
-      expect(game.lastRoundBreakdown[0].combinationPoints).toBe(0);
-      expect(game.lastRoundBreakdown[1].combinationPoints).toBe(0);
-      expect(game.lastRoundBreakdown[0].valatPoints).toBe(0);
-      expect(game.lastRoundBreakdown[1].valatPoints).toBe(0);
-      
-      // Verify:
-      // Team 0: 86 / 10 = 8.6 rounds to 9, but in trump suit when opponent points end in 6,
-      // contract team gets rounded down: 9 - 1 = 8
-      // Team 1: 76 / 10 = 7.6 rounds to 8 (rounded up)
-      // Total: 8 + 8 = 16, which matches 162 / 10 = 16.2 → 16
-      expect(game.lastRoundRoundedPoints[0]).toBe(8);
-      expect(game.lastRoundRoundedPoints[1]).toBe(8); // 76 / 10 = 7.6 rounds to 8
-      
-      // Verify total rounded points match total round points / 10
-      expect(game.lastRoundRoundedPoints[0] + game.lastRoundRoundedPoints[1]).toBe(16);
-      
-      // Verify breakdown
-      expect(game.lastRoundBreakdown[0].cardPoints).toBe(86);
-      expect(game.lastRoundBreakdown[1].cardPoints).toBe(76);
-    });
-
-    it('should round up non-contract team points when they end in 4 in all-trump contract', () => {
+    it('All trumps - should round up losing team points when both team points end in 4', () => {
       // Set up contract team (team 0) with 204 card points
       game.currentRoundScore[0] = 204; // Card points
       
@@ -278,15 +210,10 @@ describe('Scoring', () => {
       expect(game.lastRoundBreakdown[1].valatPoints).toBe(0);
       
       // Verify: 
-      // Team 0: 204 / 10 = 20.4 rounds to 20 (normal rounding)
-      // Team 1: 54 / 10 = 5.4 rounds to 5, but in all-trump when points end in 4, 
-      // the team with less points (non-contract team) gets +1: 5 + 1 = 6
-      // Total: 20 + 6 = 26, which matches 258 / 10 = 25.8 → 26
+      // Points for both teams end up in 4 and it is a all-trump game, so the team with less points 
+      // gets rounded up and the other team gets rounded down
       expect(game.lastRoundRoundedPoints[0]).toBe(20);
-      expect(game.lastRoundRoundedPoints[1]).toBe(6); // 54 / 10 = 5.4 rounds to 5, then +1 = 6
-      
-      // Verify total rounded points match total round points / 10
-      expect(game.lastRoundRoundedPoints[0] + game.lastRoundRoundedPoints[1]).toBe(26);
+      expect(game.lastRoundRoundedPoints[1]).toBe(6);
       
       // Verify breakdown
       expect(game.lastRoundBreakdown[0].cardPoints).toBe(204);
@@ -297,7 +224,64 @@ describe('Scoring', () => {
       expect(game.totalScores[1]).toBe(6);
     });
 
-    it('should not count sequences of losing team when both teams have sequences and one has bigger sequence', () => {
+    it('Trump game - should not lose game with fewer points but with a large premium', () => {
+      // The combination points (200) will be added during endRound
+      game.currentRoundScore[0] = 55; // Card points
+      game.currentRoundScore[1] = 107; // Opponent points
+      
+      // Set up contract and bids
+      game.contract = 'hearts'; // Regular trump suit (not no-trump or all-trump)
+      game.trumpSuit = 'hearts';
+      game.bids = [
+        { playerId: 0, bid: 'hearts' },
+        { playerId: 1, bid: 'pass' },
+        { playerId: 2, bid: 'pass' },
+        { playerId: 3, bid: 'pass' }
+      ];
+      
+      // Add combination points (200) - these will be added to roundScore during endRound
+      game.announcedCombinations[0] = [
+        { type: 'equal', points: 200, cards: [] }
+      ];
+      
+      // Complete all tricks (8 tricks total) - needed for endRound to work
+      // Make sure not all tricks are won by same team to avoid valat
+      for (let i = 0; i < 8; i++) {
+        // Alternate teams to avoid valat (7 tricks for team 0, 1 trick for team 1)
+        const team = i < 7 ? 0 : 1;
+        game.tricks.push({
+          cards: [
+            { playerId: 0, card: new Card('hearts', 'A') },
+            { playerId: 1, card: new Card('spades', '7') },
+            { playerId: 2, card: new Card('clubs', '7') },
+            { playerId: 3, card: new Card('diamonds', '7') }
+          ],
+          team: team
+        });
+      }
+      
+      // Ensure currentRoundScore is set correctly after all setup
+      // Card points: 55, will add 200 combination points in endRound = 255 total
+      game.currentRoundScore[0] = 55;
+      game.currentRoundScore[1] = 107;
+      
+      // End the round
+      game.endRound();
+      
+      expect(game.lastRoundRoundedPoints[0]).toBe(25);
+      expect(game.lastRoundRoundedPoints[1]).toBe(11);
+      
+      // Verify breakdown - cardPoints should be 55, combinationPoints should be 200
+      expect(game.lastRoundBreakdown[0].cardPoints).toBe(55);
+      expect(game.lastRoundBreakdown[0].combinationPoints).toBe(200);
+      expect(game.lastRoundBreakdown[1].cardPoints).toBe(107);
+      
+      // Verify total scores were updated
+      expect(game.totalScores[0]).toBe(25);
+      expect(game.totalScores[1]).toBe(11);
+    });
+
+    it('Trump game - should not count sequences of losing team when both teams have sequences and one has bigger sequence', () => {
       // Set up card points
       game.currentRoundScore[0] = 100; // Contract team
       game.currentRoundScore[1] = 58; // Opponent team
@@ -356,7 +340,7 @@ describe('Scoring', () => {
       expect(game.lastRoundBreakdown[1].cardPoints).toBe(58);
     });
 
-    it('should drop all sequences from both teams when they have the same highest sequence', () => {
+    it('Trump game - should drop all sequences from both teams when they have the same highest sequence', () => {
       // Set up card points
       game.currentRoundScore[0] = 100; // Contract team
       game.currentRoundScore[1] = 58; // Opponent team
@@ -416,7 +400,7 @@ describe('Scoring', () => {
       expect(game.lastRoundBreakdown[1].cardPoints).toBe(58);
     });
 
-    it('should not count lower order sequences when opponent has higher order sequence', () => {
+    it('Trump game - should not count lower order sequences when opponent has higher order sequence', () => {
       // Set up card points
       game.currentRoundScore[0] = 100; // Contract team
       game.currentRoundScore[1] = 58; // Opponent team
@@ -476,6 +460,221 @@ describe('Scoring', () => {
       expect(game.lastRoundBreakdown[0].cardPoints).toBe(100);
       expect(game.lastRoundBreakdown[1].cardPoints).toBe(58);
     });
+
+    it('Trump game - another test for rounding at 6', () => {
+      
+      game.contract = 'clubs';
+      game.trumpSuit = 'clubs';
+      game.bids = [
+        { playerId: 0, bid: 'clubs' },
+        { playerId: 1, bid: 'pass' },
+        { playerId: 2, bid: 'pass' },
+        { playerId: 3, bid: 'pass' }
+      ];
+      
+      game.announcedCombinations[0] = [];
+      game.announcedCombinations[1] = [];
+      
+      // Complete tricks
+      for (let i = 0; i < 8; i++) {
+        const team = i < 7 ? 0 : 1;
+        game.tricks.push({
+          cards: [
+            { playerId: 0, card: new Card('clubs', 'A') },
+            { playerId: 1, card: new Card('hearts', '7') },
+            { playerId: 2, card: new Card('spades', '7') },
+            { playerId: 3, card: new Card('diamonds', '7') }
+          ],
+          team: team
+        });
+      }
+      
+      // Ensure currentRoundScore is set correctly - total should be 162
+      game.currentRoundScore[0] = 87;
+      game.currentRoundScore[1] = 75;
+      
+      game.endRound();
+      
+      // Verify total points in round: 85 + 77 = 162
+      expect(game.lastRoundScore[0] + game.lastRoundScore[1]).toBe(162);
+      expect(game.lastRoundBreakdown[0].cardPoints + game.lastRoundBreakdown[1].cardPoints).toBe(162);
+      
+      // Verify: 
+      expect(game.lastRoundRoundedPoints[0]).toBe(9); // 87 / 10 = 8.7 rounds to 9
+      expect(game.lastRoundRoundedPoints[1]).toBe(7); // 75 / 10 = 7.5 rounds to 8
+      
+      // Verify total rounded points match total round points / 10
+      expect(game.lastRoundRoundedPoints[0] + game.lastRoundRoundedPoints[1]).toBe(16);
+      
+    });
+
+    it('Trump game - should create hanging points when both teams have equal round points including premiums', () => {
+            
+      game.contract = 'hearts';
+      game.trumpSuit = 'hearts';
+      game.bids = [
+        { playerId: 0, bid: 'hearts' },
+        { playerId: 1, bid: 'pass' },
+        { playerId: 2, bid: 'pass' },
+        { playerId: 3, bid: 'pass' }
+      ];
+      
+      // Contract team has a tierce (20 points) - will make total equal to opponent
+      game.announcedCombinations[0] = [
+        { type: 'tierce', points: 20, cards: [new Card('hearts', 'K'), new Card('hearts', 'Q'), new Card('hearts', 'J')] }
+      ];
+      
+      // Opponent team has no combinations
+      game.announcedCombinations[1] = [];
+      
+      // Complete all tricks (8 tricks total) - needed for endRound to work
+      // Make sure not all tricks are won by same team to avoid valat
+      for (let i = 0; i < 8; i++) {
+        // Alternate teams to avoid valat (4 tricks each)
+        const team = i < 4 ? 0 : 1;
+        game.tricks.push({
+          cards: [
+            { playerId: 0, card: new Card('hearts', 'A') },
+            { playerId: 1, card: new Card('spades', '7') },
+            { playerId: 2, card: new Card('clubs', '7') },
+            { playerId: 3, card: new Card('diamonds', '7') }
+          ],
+          team: team
+        });
+      }
+      
+      // Set up equal points scenario: contract team has card points + combinations = opponent card points
+      // Contract team: 71 card points + 20 combination points = 91 total
+      // Opponent team: 91 card points + 0 combination points = 91 total
+      game.currentRoundScore[0] = 71; // Contract team card points
+      game.currentRoundScore[1] = 91; // Opponent team card points
+      
+      // Set initial total scores
+      game.totalScores[0] = 50;
+      game.totalScores[1] = 30;
+      
+      // End the round
+      game.endRound();
+      
+      // Verify total points in round: 71 + 20 (combination) = 91 for team 0, 91 for team 1
+      expect(game.lastRoundScore[0]).toBe(91); 
+      expect(game.lastRoundScore[1]).toBe(91); 
+      expect(game.lastRoundScore[0]).toBe(game.lastRoundScore[1]); // Equal points
+      
+      // Verify breakdown
+      expect(game.lastRoundBreakdown[0].cardPoints).toBe(71);
+      expect(game.lastRoundBreakdown[0].combinationPoints).toBe(20);
+      expect(game.lastRoundBreakdown[1].cardPoints).toBe(91);
+      expect(game.lastRoundBreakdown[1].combinationPoints).toBe(0);
+      
+      // Verify hanging points: contract team's rounded points should become hanging
+      // Contract team is team 0 (player 0 bid hearts)
+      // After equal points, contract team's rounded points become hanging and are set to 0
+      expect(game.hangingPoints).toBe(9); // Contract team's 9 points are hanging
+      
+      // Verify that contract team's points are NOT added to totalScores (they're hanging)
+      // Opponent team's points ARE added to totalScores
+      expect(game.lastRoundRoundedPoints[0]).toBe(0); // Contract team gets 0 (points are hanging)
+      expect(game.lastRoundRoundedPoints[1]).toBe(9); // Opponent team gets their points
+      
+      // Verify total scores: only opponent team's points were added
+      expect(game.totalScores[0]).toBe(50); // Contract team: no change (points hanging)
+      expect(game.totalScores[1]).toBe(39); // Opponent team: 30 + 9 = 39
+    });
+
+    it('Trump game - winner of next round should receive hanging points from previous round', () => {
+      // First, set up a round with equal points to create hanging points
+      game.contract = 'hearts';
+      game.trumpSuit = 'hearts';
+      game.bids = [
+        { playerId: 0, bid: 'hearts' },
+        { playerId: 1, bid: 'pass' },
+        { playerId: 2, bid: 'pass' },
+        { playerId: 3, bid: 'pass' }
+      ];
+      
+      // Contract team has a tierce (20 points) - will make total equal to opponent
+      game.announcedCombinations[0] = [
+        { type: 'tierce', points: 20, cards: [new Card('hearts', 'K'), new Card('hearts', 'Q'), new Card('hearts', 'J')] }
+      ];
+      game.announcedCombinations[1] = [];
+      
+      // Complete all tricks (8 tricks total)
+      for (let i = 0; i < 8; i++) {
+        const team = i < 4 ? 0 : 1;
+        game.tricks.push({
+          cards: [
+            { playerId: 0, card: new Card('hearts', 'A') },
+            { playerId: 1, card: new Card('spades', '7') },
+            { playerId: 2, card: new Card('clubs', '7') },
+            { playerId: 3, card: new Card('diamonds', '7') }
+          ],
+          team: team
+        });
+      }
+      
+      // Set up equal points to create hanging points
+      game.currentRoundScore[0] = 71; // Contract team card points
+      game.currentRoundScore[1] = 91; // Opponent team card points
+      game.totalScores[0] = 50;
+      game.totalScores[1] = 30;
+      
+      // End first round - creates hanging points
+      game.endRound();
+      
+      // Verify hanging points were created
+      expect(game.hangingPoints).toBe(9);
+      expect(game.totalScores[0]).toBe(50); // Contract team: no change (points hanging)
+      expect(game.totalScores[1]).toBe(39); // Opponent team: 30 + 9 = 39
+      
+      // Now set up a second round where contract team wins
+      // Reset round state for new round
+      game.phase = 'playing';
+      game.contract = 'spades';
+      game.trumpSuit = 'spades';
+      game.bids = [
+        { playerId: 0, bid: 'spades' },
+        { playerId: 1, bid: 'pass' },
+        { playerId: 2, bid: 'pass' },
+        { playerId: 3, bid: 'pass' }
+      ];
+      
+      game.announcedCombinations[0] = [];
+      game.announcedCombinations[1] = [];
+      game.tricks = [];
+      
+      // Complete all tricks - contract team wins 7 tricks
+      for (let i = 0; i < 8; i++) {
+        const team = i < 7 ? 0 : 1; // Contract team wins 7 tricks
+        game.tricks.push({
+          cards: [
+            { playerId: 0, card: new Card('spades', 'A') },
+            { playerId: 1, card: new Card('hearts', '7') },
+            { playerId: 2, card: new Card('clubs', '7') },
+            { playerId: 3, card: new Card('diamonds', '7') }
+          ],
+          team: team
+        });
+      }
+      
+      // Set up scores for second round - contract team wins
+      game.currentRoundScore[0] = 100; // Contract team wins
+      game.currentRoundScore[1] = 62; // Opponent team
+      
+      // End second round
+      game.endRound();
+      
+      // Verify hanging points were added to the winner (contract team)
+      // Contract team should get: their rounded points (10) + hanging points (9) = 19
+      expect(game.hangingPoints).toBe(0); // Hanging points should be cleared
+      expect(game.lastRoundRoundedPoints[0]).toBe(19); // Contract team: 10 (this round) + 9 (hanging) = 19
+      expect(game.lastRoundRoundedPoints[1]).toBe(6); // Opponent team: 6 rounded points
+      
+      // Verify total scores were updated correctly
+      expect(game.totalScores[0]).toBe(69); // Contract team: 50 + 19 = 69
+      expect(game.totalScores[1]).toBe(45); // Opponent team: 39 + 6 = 45
+    });
+    
   });
 });
 
