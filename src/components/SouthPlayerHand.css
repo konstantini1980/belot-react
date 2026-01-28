@@ -16,3 +16,15 @@
   transition: all 0.3s ease;
   position: relative;
 }
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .south-player-hand {
+    padding: 8px 4px;
+    min-height: 80px;
+  }
+
+  .south-player-hand .card {
+    margin-left: -12px;
+  }
+}

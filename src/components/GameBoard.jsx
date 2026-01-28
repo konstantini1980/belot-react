@@ -208,12 +208,12 @@ export default function GameBoard({
           {languageSwitcher}
         </div>
       )}
+      {biddingPanel && (
+        <div className="bidding-panel-overlay">
+          {biddingPanel}
+        </div>
+      )}
       <div className="board-center" ref={boardCenterRef}>
-        {biddingPanel && (
-          <div className="bidding-panel-overlay">
-            {biddingPanel}
-          </div>
-        )}
         {!biddingPanel && !trickComplete && currentTrick.cards.map(({ playerId, card }) => {
           const cardKey = `${playerId}-${card.id}`;
           const isAnimating = animatingCardsToCenter.has(cardKey);
