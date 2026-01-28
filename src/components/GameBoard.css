@@ -17,6 +17,52 @@
   position: relative;
 }
 
+/* Hide all board elements when showing start button */
+.game-board.show-start-button-only > *:not(.mobile-start-button-overlay) {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.mobile-start-button-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.mobile-start-button-overlay .mobile-start-button {
+  min-width: 200px;
+  flex: 0 0 auto;
+  padding: 14px;
+  background: #3a3a3a;
+  border: 1px solid #4a4a4a;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mobile-start-button-overlay .mobile-start-button:hover {
+  background: #4a4a4a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Hide start button on desktop/high resolutions */
+@media (min-width: 1025px) {
+  .mobile-start-button-overlay {
+    display: none;
+  }
+}
+
 /* Mobile responsive styles - covers both portrait and landscape */
 @media (max-width: 768px), ((max-width: 1024px) and (max-height: 768px)) {
   .game-board {

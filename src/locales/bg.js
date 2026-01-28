@@ -3,6 +3,7 @@ export default {
   appTitle: 'Игра Белот',
   teamWins: 'Отбор {team} Печели!',
   newGame: 'Нова Игра',
+  startBelotGame: 'Старт на белот',
   
   // Players
   playerYou: 'Играч',

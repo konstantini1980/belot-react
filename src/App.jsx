@@ -18,6 +18,8 @@ export default function App() {
   const [trickComplete, setTrickComplete] = useState(false);
   const [winningTeam, setWinningTeam] = useState(null); // Track which team won the trick
   const [playerCombinations, setPlayerCombinations] = useState({}); // { playerId: combinations[] }
+  const [isMobile, setIsMobile] = useState(false);
+  const [isMobileGameStarted, setIsMobileGameStarted] = useState(false);
   // Dev panel state
   const [forceShowScorePanel, setForceShowScorePanel] = useState(false);
   const [showCombinationsBalloon, setShowCombinationsBalloon] = useState(false);
@@ -26,6 +28,20 @@ export default function App() {
   const [cardPositions, setCardPositions] = useState(new Map()); // Map of cardId -> { x, y }
 
   useEffect(() => {
+    // Detect "mobile" using the same breakpoint logic we use in CSS
+    const mq = window.matchMedia('(max-width: 768px), ((max-width: 1024px) and (max-height: 768px))');
+    const update = () => setIsMobile(!!mq.matches);
+    update();
+    mq.addEventListener?.('change', update);
+    return () => mq.removeEventListener?.('change', update);
+  }, []);
+
+  useEffect(() => {
+    // On mobile, don't auto-deal until the user enters immersive mode via the start button
+    if (isMobile && !isMobileGameStarted) {
+      return;
+    }
+
     if (game.phase === GAME_PHASES.DEALING) {
       game.deal();
       setGame({ ...game });
@@ -37,7 +53,7 @@ export default function App() {
     if (game.phase === GAME_PHASES.SCORING) {
       setPlayableCards([]);
     }
-  }, [game.phase]);
+  }, [game.phase, isMobile, isMobileGameStarted]);
 
   // Auto-play for AI players
   useEffect(() => {
@@ -296,8 +312,14 @@ export default function App() {
 
   const handleNewGame = () => {
     const newGame = new BelotGame();
-    newGame.deal();
-    setGame(newGame);
+    // On mobile, show the "Start belot game" screen first
+    if (isMobile) {
+      setIsMobileGameStarted(false);
+      setGame(newGame);
+    } else {
+      newGame.deal();
+      setGame(newGame);
+    }
     setPlayableCards([]);
   };
 
@@ -309,6 +331,19 @@ export default function App() {
     setGame(newGame);
     setPlayableCards([]);
     setPlayerCombinations({});
+  };
+
+  const handleStartMobileGame = async () => {
+    // Must be called from a user gesture
+    try {
+      if (!document.fullscreenElement && document.documentElement?.requestFullscreen) {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch {
+      // Some browsers/devices (notably iOS Safari) may not support fullscreen;
+      // still proceed to start the game.
+    }
+    setIsMobileGameStarted(true);
   };
 
   // Dev panel handlers
@@ -401,6 +436,10 @@ export default function App() {
           forceShowScorePanel={forceShowScorePanel}
           onForceShowScorePanelChange={setForceShowScorePanel}
           showCards={showCards}
+          isMobile={isMobile}
+          isMobileGameStarted={isMobileGameStarted}
+          onStartMobileGame={handleStartMobileGame}
+          startButtonText={t('startBelotGame')}
           biddingPanel={(game.phase === GAME_PHASES.BIDDING || forceShowBiddingPanel) ? (
             <BiddingPanel
               currentBidder={game.currentBidder}

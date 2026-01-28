@@ -3,6 +3,7 @@ export default {
   appTitle: 'Belot Card Game',
   teamWins: 'Team {team} Wins!',
   newGame: 'New Game',
+  startBelotGame: 'Start belot game',
   
   // Players
   playerYou: 'You',

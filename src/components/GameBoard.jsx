@@ -38,6 +38,11 @@ export default function GameBoard({
   forceShowScorePanel = false,
   onForceShowScorePanelChange = null,
   showCards = false,
+  // Mobile start button props
+  isMobile = false,
+  isMobileGameStarted = true,
+  onStartMobileGame = null,
+  startButtonText = '',
 }) {
   const [showFullScorePanel, setShowFullScorePanel] = useState(false);
   const [animatingCardsToCenter, setAnimatingCardsToCenter] = useState(new Map()); // Track cards animating to board
@@ -201,11 +206,20 @@ export default function GameBoard({
     }
   }, [trickComplete, phase, currentTrick.cards.length]);
 
+  const showStartButton = isMobile && !isMobileGameStarted && onStartMobileGame;
+  
   return (
-    <div className="game-board">
+    <div className={`game-board ${showStartButton ? 'show-start-button-only' : ''}`}>
       {languageSwitcher && (
         <div className="language-switcher-container">
           {languageSwitcher}
+        </div>
+      )}
+      {isMobile && !isMobileGameStarted && onStartMobileGame && (
+        <div className="mobile-start-button-overlay">
+          <button className="mobile-start-button pass-button-large" onClick={onStartMobileGame}>
+            {startButtonText}
+          </button>
         </div>
       )}
       {biddingPanel && (
