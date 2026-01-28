@@ -278,12 +278,12 @@
 
   .player-container.north {
     top: 8px;
-    transform: translate(-50%, 100%);
+    transform: translateX(-50%);
   }
 
   .player-container.south {
     bottom: 8px;
-    transform: translate(-50%, -100%);
+    transform: translateX(-50%);
   }
 
   .player-chip {
@@ -293,6 +293,30 @@
 
   .player-chip-name {
     font-size: 11px;
+  }
+}
+
+/* Mobile landscape when height is below 451px: position at edges */
+@media (max-width: 1024px) and (max-height: 450px) and (orientation: landscape) {
+  .player-container.north {
+    top: 8px;
+    transform: translateX(-50%);
+  }
+
+  .player-container.south {
+    bottom: 8px;
+    transform: translateX(-50%);
+  }
+}
+
+/* Mobile portrait when width is insufficient: translate inward */
+@media (max-width: 768px) and (orientation: portrait) {
+  .player-container.north {
+    transform: translate(-50%, 75%);
+  }
+
+  .player-container.south {
+    transform: translate(-50%, -75%);
   }
 }
 
