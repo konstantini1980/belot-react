@@ -88,7 +88,7 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, 0); /* Default: center horizontally only */
   z-index: 20;
   width: 630px; /* 590px panel + 40px padding */
   height: 390px; /* 350px panel + 40px padding */
@@ -98,6 +98,13 @@
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+/* Desktop - center vertically */
+@media (min-width: 1025px) {
+  .bidding-panel-overlay {
+    transform: translate(-50%, -50%);
+  }
 }
 
 /* Mobile responsive styles - covers both portrait and landscape */
@@ -124,7 +131,7 @@
 @media (max-width: 768px) and (orientation: portrait) {
   .bidding-panel-overlay {
     top: 50%;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%); /* Center vertically and horizontally */
     max-height: calc(100vh - 200px); /* Ensure space for cards at bottom */
   }
 }

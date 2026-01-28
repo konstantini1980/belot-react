@@ -21,7 +21,7 @@
     max-width: 95vw;
     min-width: 0; /* override desktop min-width so it can shrink on small screens */
     height: auto;
-    min-height: 300px;
+    min-height: 0px;
     max-width: 95vw;
     max-height: 80vh;
     padding: 12px 12px;
@@ -66,9 +66,9 @@
   }
 
   .trump-button {
-    height: 50px !important;
-    min-height: 50px !important;
-    max-height: 50px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    max-height: 40px !important;
     width: auto !important;
     min-width: 50px !important;
     max-width: none !important;
@@ -79,7 +79,7 @@
   }
 
   .suit-icon {
-    font-size: 20px;
+    font-size: 20px !important; 
   }
 
   .suit-label {
@@ -87,8 +87,8 @@
   }
 
   .special-icon {
-    font-size: 16px;
-    line-height: 18px;
+    font-size: 16px !important;
+    line-height: 18px !important;
   }
 
   .special-label {
@@ -96,13 +96,17 @@
   }
 
   .pass-button-large {
-    padding: 8px;
+    padding: 8px !important;
     font-size: 13px;
+    max-height: 40px;
+    height: 40px;
   }
 
   .double-button-x2 {
-    padding: 8px 12px;
+    padding: 8px 12px!important;
     font-size: 13px;
+    max-height: 40px;
+    height: 40px;
   }
 }
 
