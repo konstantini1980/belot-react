@@ -50,10 +50,23 @@ const MIN_FOR_NOTRUMPS = 40;
 const MIN_FOR_ALLTRUMPS = 60;
 
 function evaluateCardPoints(hand, contract) {
-    const cardPoints = hand.reduce((total, card) => {
+    const isTop3Rank = (card) => {
+        let rankingArray;
+        if (contract === 'all-trump') {
+            rankingArray = CARD_RANKINGS.trump;
+        } else if (contract === 'no-trump') {
+            rankingArray = CARD_RANKINGS.nonTrump;
+        } else {
+            // Suit contract: trump ranking applies only to trump suit
+            rankingArray = (card.suit === contract) ? CARD_RANKINGS.trump : CARD_RANKINGS.nonTrump;
+        }
+        return rankingArray.indexOf(card.rank) >= 0 && rankingArray.indexOf(card.rank) < 3;
+    };
+
+    return hand.reduce((total, card) => {
+        if (!isTop3Rank(card)) return total;
         return total + card.getValue(contract);
     }, 0);
-    return cardPoints;
 }
 
 // Make an AI announcement based on card evaluation
@@ -384,31 +397,63 @@ function getTrumpColor(contract) {
 }
 
 // Rule 1.2 part 1: Partner Announce (EvalutePointsOnPartnerAnnounce)
-function evaluatePointsOnPartnerAnnounce(card, announcedCombinations, playerId, players) {
+function evaluatePointsOnPartnerAnnounce(card, announcedCombinations, bids, playerId, players) {
     const POINTS_TO_ADD = 10;
     let points = 0;
     
     const player = players[playerId];
     const partner = players.find(p => p.team === player.team && p.id !== playerId);
     
-    // Check all announcements from all teams
-    for (let team = 0; team < announcedCombinations.length; team++) {
-        for (const combo of announcedCombinations[team]) {
-            // Check if announcement is a suit announcement (not sequence, etc.)
-            const announcementType = combo.type;
-            if (announcementType === 'spades' || announcementType === 'hearts' || 
-                announcementType === 'diamonds' || announcementType === 'clubs') {
-                
-                const cardColor = getCardColorFromAnnouncement(announcementType);
-                if (card.suit === cardColor) {
-                    const announcingPlayer = players[combo.playerId];
+    if (!partner) return 0;
+    
+    // Check partner's bids during bidding phase
+    if (bids && Array.isArray(bids)) {
+        const partnerBids = bids.filter(b => b.playerId === partner.id && b.bid !== 'pass' && b.bid !== 'double' && b.bid !== 'redouble');
+        for (const bidObj of partnerBids) {
+            const bidSuit = bidObj.bid;
+            // Check if bid is a suit bid (clubs, diamonds, hearts, spades)
+            if (bidSuit === 'spades' || bidSuit === 'hearts' || bidSuit === 'diamonds' || bidSuit === 'clubs') {
+                if (card.suit === bidSuit) {
+                    points += POINTS_TO_ADD;
+                }
+            }
+        }
+        
+        // Check opponent bids (punish playing cards in suits opponents bid)
+        const opponentBids = bids.filter(b => {
+            const bidder = players[b.playerId];
+            return bidder && bidder.team !== player.team && b.bid !== 'pass' && b.bid !== 'double' && b.bid !== 'redouble';
+        });
+        for (const bidObj of opponentBids) {
+            const bidSuit = bidObj.bid;
+            if (bidSuit === 'spades' || bidSuit === 'hearts' || bidSuit === 'diamonds' || bidSuit === 'clubs') {
+                if (card.suit === bidSuit) {
+                    points -= POINTS_TO_ADD;
+                }
+            }
+        }
+    }
+    
+    // Check all announcements from all teams (sequences, equals, belot)
+    if (announcedCombinations && Array.isArray(announcedCombinations)) {
+        for (let team = 0; team < announcedCombinations.length; team++) {
+            for (const combo of announcedCombinations[team]) {
+                // Check if announcement is a suit announcement (not sequence, etc.)
+                const announcementType = combo.type;
+                if (announcementType === 'spades' || announcementType === 'hearts' || 
+                    announcementType === 'diamonds' || announcementType === 'clubs') {
                     
-                    if (announcingPlayer && announcingPlayer.id === partner.id) {
-                        points += POINTS_TO_ADD;
-                    }
-                    
-                    if (announcingPlayer && announcingPlayer.id !== playerId && announcingPlayer.id !== partner.id) {
-                        points -= POINTS_TO_ADD;
+                    const cardColor = getCardColorFromAnnouncement(announcementType);
+                    if (card.suit === cardColor) {
+                        const announcingPlayer = players[combo.playerId];
+                        
+                        if (announcingPlayer && announcingPlayer.id === partner.id) {
+                            points += POINTS_TO_ADD;
+                        }
+                        
+                        if (announcingPlayer && announcingPlayer.id !== playerId && announcingPlayer.id !== partner.id) {
+                            points -= POINTS_TO_ADD;
+                        }
                     }
                 }
             }
@@ -418,16 +463,71 @@ function evaluatePointsOnPartnerAnnounce(card, announcedCombinations, playerId, 
     return points;
 }
 
-// Rule 1.2 part 2: Trump Color (EvalutePointsOnTrumpColor)
-function evaluatePointsOnTrumpColor(card, contract) {
-    const POINTS_TO_ADD = 10;
-    const trumpColor = getTrumpColor(contract);
+// Rule 1.2 part 3: Eliminate Opponent Trumps (EvaluatePointsOnEliminatingOpponentTrumps)
+function evaluatePointsOnEliminatingOpponentTrumps(card, game, playerId, playedCards, currentHand, playerHand) {
+    const MAX_BONUS = 25; // Higher reward than regular trump color
+    const trumpSuit = getTrumpColor(game.contract);
     
-    if (trumpColor && card.suit === trumpColor) {
-        return POINTS_TO_ADD;
+    // Only applies to trump suit contracts (not 'all-trump' or 'no-trump')
+    if (!trumpSuit || card.suit !== trumpSuit) {
+        return 0;
     }
     
-    return 0;
+    // Check if our team called the contract
+    const contractBid = game.bids.find(b => b.bid === game.contract);
+    if (!contractBid) return 0;
+    
+    const contractTeam = game.players[contractBid.playerId].team;
+    const playerTeam = game.players[playerId].team;
+    
+    // Only reward if our team called the contract
+    if (contractTeam !== playerTeam) return 0;
+    
+    // --- Inference (no peeking at opponent hands) ---
+    // Total trumps in Belot deck (32 cards, 8 per suit)
+    const TOTAL_TRUMPS = 8;
+    
+    // Visible trumps: already played tricks + cards in current trick (visible on table) + our own hand
+    const playedTrumpCount = playedCards.filter(c => c.suit === trumpSuit).length;
+    const currentTrickTrumpCount = currentHand.filter(c => c.suit === trumpSuit).length;
+    const ourTrumpCount = playerHand.filter(c => c.suit === trumpSuit).length;
+    
+    const unseenTrumps = TOTAL_TRUMPS - playedTrumpCount - currentTrickTrumpCount - ourTrumpCount;
+    if (unseenTrumps <= 0) return 0; // opponents cannot have any trumps left
+    
+    // Strong signal: if a player fails to follow on a trump-led trick, they have no trumps.
+    // (We only use information from completed/current tricks, which is visible.)
+    const opponents = game.players.filter(p => p.team !== playerTeam).map(p => p.id);
+    const opponentOutOfTrumps = new Set();
+    
+    const considerTrick = (trickCards) => {
+        if (!trickCards || trickCards.length === 0) return;
+        const leadSuit = trickCards[0].card.suit;
+        if (leadSuit !== trumpSuit) return;
+        
+        for (const { playerId: pid, card: c } of trickCards) {
+            if (pid == null) continue;
+            if (game.players[pid]?.team === playerTeam) continue;
+            if (c.suit !== trumpSuit) opponentOutOfTrumps.add(pid);
+        }
+    };
+    
+    for (const trick of game.tricks) {
+        considerTrick(trick.cards);
+    }
+    considerTrick(game.currentTrick.cards);
+    
+    const opponentsPossiblyHaveTrumps = opponents.filter(pid => !opponentOutOfTrumps.has(pid));
+    if (opponentsPossiblyHaveTrumps.length === 0) return 0;
+    
+    // Likelihood heuristic:
+    // - More unseen trumps => more likely opponents still have trumps
+    // - Fewer opponents "possibly having" trumps => higher concentration => more likely they still have them
+    // Clamp to [0, 1] and convert to a bonus.
+    const denom = Math.max(1, opponentsPossiblyHaveTrumps.length * 3); // 3 is a soft scaling factor
+    const likelihood = Math.max(0, Math.min(1, unseenTrumps / denom));
+    
+    return Math.max(1, Math.round(MAX_BONUS * likelihood));
 }
 
 // Helper: Get the biggest card in the current trick
@@ -540,9 +640,9 @@ export function makeAIPlayCard(game, playerId) {
         // Evaluate all valid cards
         for (const card of validCards) {
             const points = evaluatePointsOnRemaining(card, game.contract, game.trumpSuit, remainingCards, currentHand, playerHand, playedCards);
-            const pointsOnPartnerAnnounce = evaluatePointsOnPartnerAnnounce(card, game.announcedCombinations, playerId, game.players);
-            const pointsOnTrumpColor = evaluatePointsOnTrumpColor(card, game.contract);
-            const totalPoints = points + pointsOnPartnerAnnounce + pointsOnTrumpColor;
+            const pointsOnPartnerAnnounce = evaluatePointsOnPartnerAnnounce(card, game.announcedCombinations, game.bids, playerId, game.players);
+            const pointsOnEliminatingOpponentTrumps = evaluatePointsOnEliminatingOpponentTrumps(card, game, playerId, playedCards, currentHand, playerHand);
+            const totalPoints = points + pointsOnPartnerAnnounce + pointsOnEliminatingOpponentTrumps;
             
             if (totalPoints > maxEvaluated) {
                 maxEvaluated = totalPoints;
@@ -675,8 +775,9 @@ export function makeAIPlayCard(game, playerId) {
                     
                     for (const card of validCards) {
                         const pointsOnRemaining = evaluatePointsOnRemaining(card, game.contract, game.trumpSuit, remainingCards, currentHand, playerHand, playedCards);
-                        const pointsOnPartnerAnnounce = evaluatePointsOnPartnerAnnounce(card, game.announcedCombinations, playerId, game.players);
-                        const totalOnRemaining = pointsOnRemaining + pointsOnPartnerAnnounce;
+                        const pointsOnPartnerAnnounce = evaluatePointsOnPartnerAnnounce(card, game.announcedCombinations, game.bids, playerId, game.players);
+                        const pointsOnEliminatingOpponentTrumps = evaluatePointsOnEliminatingOpponentTrumps(card, game, playerId, playedCards, currentHand, playerHand);
+                        const totalOnRemaining = pointsOnRemaining + pointsOnPartnerAnnounce + pointsOnEliminatingOpponentTrumps;
                         
                         const points = card.getValue(game.contract);
                         if (points < minPlayingPoints) {
@@ -684,7 +785,10 @@ export function makeAIPlayCard(game, playerId) {
                             minPlayingPointsCard = card;
                         }
                         
-                        if (totalOnRemaining <= 0 && points < minOnRemainingPoints) {
+                        // If we're trying to eliminate opponent trumps, prioritize trump cards even if they have slightly positive points
+                        // Otherwise, prefer cards with totalOnRemaining <= 0
+                        const isEliminatingTrump = pointsOnEliminatingOpponentTrumps > 0;
+                        if ((totalOnRemaining <= 0 || isEliminatingTrump) && points < minOnRemainingPoints) {
                             minOnRemainingPoints = points;
                             minOnRemainingCard = card;
                         }

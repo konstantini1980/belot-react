@@ -218,13 +218,14 @@ describe('Combination Discovery', () => {
     it('should find belot when Queen is played in trump suit', () => {
       const contract = 'hearts';
       const playedCard = new Card('hearts', 'Q');
+      const leadSuit = 'hearts';
       const playerHand = [
         new Card('hearts', 'Q'),
         new Card('hearts', 'K'),
         new Card('spades', 'A')
       ];
 
-      const belot = findBelotOnPlay(contract, playedCard, playerHand);
+      const belot = findBelotOnPlay(contract, playedCard, playerHand, leadSuit);
       expect(belot).not.toBeNull();
       expect(belot.type).toBe('belot');
       expect(belot.cards).toHaveLength(2);
@@ -234,13 +235,14 @@ describe('Combination Discovery', () => {
     it('should find belot when King is played in trump suit', () => {
       const contract = 'hearts';
       const playedCard = new Card('hearts', 'K');
+      const leadSuit = 'hearts';
       const playerHand = [
         new Card('hearts', 'Q'),
         new Card('hearts', 'K'),
         new Card('spades', 'A')
       ];
 
-      const belot = findBelotOnPlay(contract, playedCard, playerHand);
+      const belot = findBelotOnPlay(contract, playedCard, playerHand, leadSuit);
       expect(belot).not.toBeNull();
       expect(belot.type).toBe('belot');
     });
@@ -248,39 +250,42 @@ describe('Combination Discovery', () => {
     it('should not find belot when Queen is played but King is missing', () => {
       const contract = 'hearts';
       const playedCard = new Card('hearts', 'Q');
+      const leadSuit = 'hearts';
       const playerHand = [
         new Card('hearts', 'Q'),
         new Card('spades', 'K'),
         new Card('spades', 'A')
       ];
 
-      const belot = findBelotOnPlay(contract, playedCard, playerHand);
+      const belot = findBelotOnPlay(contract, playedCard, playerHand, leadSuit);
       expect(belot).toBeNull();
     });
 
     it('should not find belot in no-trump contract', () => {
       const contract = 'no-trump';
       const playedCard = new Card('hearts', 'Q');
+      const leadSuit = 'hearts';
       const playerHand = [
         new Card('hearts', 'Q'),
         new Card('hearts', 'K'),
         new Card('spades', 'A')
       ];
 
-      const belot = findBelotOnPlay(contract, playedCard, playerHand);
+      const belot = findBelotOnPlay(contract, playedCard, playerHand, leadSuit);
       expect(belot).toBeNull();
     });
 
     it('should find belot in all-trump contract', () => {
       const contract = 'all-trump';
       const playedCard = new Card('hearts', 'Q');
+      const leadSuit = 'hearts';
       const playerHand = [
         new Card('hearts', 'Q'),
         new Card('hearts', 'K'),
         new Card('spades', 'A')
       ];
 
-      const belot = findBelotOnPlay(contract, playedCard, playerHand);
+      const belot = findBelotOnPlay(contract, playedCard, playerHand, leadSuit);
       expect(belot).not.toBeNull();
       expect(belot.type).toBe('belot');
     });
@@ -288,26 +293,42 @@ describe('Combination Discovery', () => {
     it('should not find belot when card is not in trump suit (trump contract)', () => {
       const contract = 'hearts';
       const playedCard = new Card('spades', 'Q');
+      const leadSuit = 'spades';
       const playerHand = [
         new Card('spades', 'Q'),
         new Card('spades', 'K'),
         new Card('hearts', 'A')
       ];
 
-      const belot = findBelotOnPlay(contract, playedCard, playerHand);
+      const belot = findBelotOnPlay(contract, playedCard, playerHand, leadSuit);
       expect(belot).toBeNull();
     });
 
     it('should not find belot when non-Q/K card is played', () => {
       const contract = 'hearts';
       const playedCard = new Card('hearts', 'A');
+      const leadSuit = 'hearts';
       const playerHand = [
         new Card('hearts', 'Q'),
         new Card('hearts', 'K'),
         new Card('hearts', 'A')
       ];
 
-      const belot = findBelotOnPlay(contract, playedCard, playerHand);
+      const belot = findBelotOnPlay(contract, playedCard, playerHand, leadSuit);
+      expect(belot).toBeNull();
+    });
+
+    it('should not find belot if trick lead suit is different (cutting with trump Q/K)', () => {
+      const contract = 'hearts';
+      const playedCard = new Card('hearts', 'Q');
+      const leadSuit = 'spades'; // trick was led in spades, we are cutting with trump
+      const playerHand = [
+        new Card('hearts', 'Q'),
+        new Card('hearts', 'K'),
+        new Card('spades', 'A')
+      ];
+
+      const belot = findBelotOnPlay(contract, playedCard, playerHand, leadSuit);
       expect(belot).toBeNull();
     });
   });

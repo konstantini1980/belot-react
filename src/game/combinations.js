@@ -116,7 +116,8 @@ export function findEquals(cards) {
 // contract: the game contract ('all-trump', 'no-trump', or a suit)
 // playedCard: the card being played (must be Q or K)
 // playerHand: the player's current hand (including the card being played)
-export function findBelotOnPlay(contract, playedCard, playerHand) {
+// leadSuit: the leading suit of the current trick (suit of the first card in the trick)
+export function findBelotOnPlay(contract, playedCard, playerHand, leadSuit) {
   // Belot is not valid in no-trump
   if (contract === 'no-trump') {
     return null;
@@ -138,6 +139,12 @@ export function findBelotOnPlay(contract, playedCard, playerHand) {
       return null; // Card is not in trump suit
     }
     targetSuit = contract;
+  }
+  
+  // Belot can only be announced if the current trick is led in the same suit as the belot suit
+  // (i.e., the lead card suit of the trick must match the suit of the belot being announced)
+  if (leadSuit && leadSuit !== targetSuit) {
+    return null;
   }
   
   // Check if player has both Queen and King of the target suit

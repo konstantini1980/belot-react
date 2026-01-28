@@ -208,7 +208,8 @@ export class BelotGame {
     
     // Check for belot when Q or K is played (before removing card from hand)
     if (this.contract && (card.rank === 'Q' || card.rank === 'K')) {
-      const belot = findBelotOnPlay(this.contract, card, player.hand);
+      const leadSuit = this.currentTrick.cards.length > 0 ? this.currentTrick.cards[0].card.suit : card.suit;
+      const belot = findBelotOnPlay(this.contract, card, player.hand, leadSuit);
       if (belot) {
         const team = player.team;
         this.announcedCombinations[team].push({

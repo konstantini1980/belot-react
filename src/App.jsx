@@ -219,7 +219,8 @@ export default function App() {
     // Check for belot when Q or K is played (before playing the card)
     let belotCombo = null;
     if (newGame.contract && (card.rank === 'Q' || card.rank === 'K')) {
-      belotCombo = findBelotOnPlay(game.contract, card, player.hand);
+      const leadSuit = newGame.currentTrick.cards.length > 0 ? newGame.currentTrick.cards[0].card.suit : card.suit;
+      belotCombo = findBelotOnPlay(newGame.contract, card, player.hand, leadSuit);
     }
 
     // On first card play in first trick, show combinations (sequences, equals)
@@ -416,16 +417,18 @@ export default function App() {
         />
       </div>
 
-      <DevPanel
-        onShowCombinations={handleShowCombinations}
-        onShowScorePanel={handleShowScorePanel}
-        onShowCards={handleShowCards}
-        onShowBiddingPanel={handleShowBiddingPanel}
-        showCombinations={showCombinationsBalloon}
-        showScorePanel={forceShowScorePanel}
-        showCards={showCards}
-        showBiddingPanel={forceShowBiddingPanel}
-      />
+      {import.meta.env.DEV ? (
+        <DevPanel
+          onShowCombinations={handleShowCombinations}
+          onShowScorePanel={handleShowScorePanel}
+          onShowCards={handleShowCards}
+          onShowBiddingPanel={handleShowBiddingPanel}
+          showCombinations={showCombinationsBalloon}
+          showScorePanel={forceShowScorePanel}
+          showCards={showCards}
+          showBiddingPanel={forceShowBiddingPanel}
+        />
+      ) : null}
     </div>
   );
 }
