@@ -416,9 +416,8 @@ export default function App() {
           currentTrick={game.currentTrick}
           currentPlayer={game.currentPlayer}
           tricks={game.tricks}
-          scores={game.totalScores}
-          roundScores={game.currentRoundScore}
-          lastRoundScore={game.lastRoundScore}
+          totalScores={game.totalScores}
+          currentRoundScores={game.currentRoundScore}
           lastRoundRoundedPoints={game.lastRoundRoundedPoints}
           hangingPoints={game.hangingPoints}
           contract={game.contract}

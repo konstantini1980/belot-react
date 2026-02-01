@@ -60,7 +60,6 @@ describe('Scoring', () => {
       game.endRound();
       
       // Verify total points in round: 85 + 77 = 162
-      expect(game.lastRoundScore[0] + game.lastRoundScore[1]).toBe(162);
       expect(game.lastRoundBreakdown[0].cardPoints + game.lastRoundBreakdown[1].cardPoints).toBe(162);
       expect(game.lastRoundBreakdown[0].combinationPoints).toBe(0);
       expect(game.lastRoundBreakdown[1].combinationPoints).toBe(0);
@@ -71,9 +70,6 @@ describe('Scoring', () => {
       // Rounding happens at 6 on trump suit game
       expect(game.lastRoundRoundedPoints[0]).toBe(8); // 85 / 10 = 8.5 rounds to 8
       expect(game.lastRoundRoundedPoints[1]).toBe(8); // 77 / 10 = 7.6 rounds to 8
-      
-      // Verify total rounded points match total round points / 10
-      expect(game.lastRoundRoundedPoints[0] + game.lastRoundRoundedPoints[1]).toBe(16);
       
       // Verify breakdown
       expect(game.lastRoundBreakdown[0].cardPoints).toBe(85);
@@ -127,7 +123,6 @@ describe('Scoring', () => {
       game.endRound();
       
       // Verify total points in round: 86 + 76 = 162
-      expect(game.lastRoundScore[0] + game.lastRoundScore[1]).toBe(162);
       expect(game.lastRoundBreakdown[0].cardPoints + game.lastRoundBreakdown[1].cardPoints).toBe(162);
       expect(game.lastRoundBreakdown[0].combinationPoints).toBe(0);
       expect(game.lastRoundBreakdown[1].combinationPoints).toBe(0);
@@ -149,9 +144,6 @@ describe('Scoring', () => {
       // Verify total scores were updated
       expect(game.totalScores[0]).toBe(8);
       expect(game.totalScores[1]).toBe(8);
-      
-      // Verify total rounded points match total round points / 10
-      expect(game.lastRoundRoundedPoints[0] + game.lastRoundRoundedPoints[1]).toBe(16);
     });
 
     it('All trumps - should round up losing team points when both team points end in 4', () => {
@@ -202,7 +194,6 @@ describe('Scoring', () => {
       game.endRound();
       
       // Verify total points in round: 204 + 54 = 258
-      expect(game.lastRoundScore[0] + game.lastRoundScore[1]).toBe(258);
       expect(game.lastRoundBreakdown[0].cardPoints + game.lastRoundBreakdown[1].cardPoints).toBe(258);
       expect(game.lastRoundBreakdown[0].combinationPoints).toBe(0);
       expect(game.lastRoundBreakdown[1].combinationPoints).toBe(0);
@@ -330,14 +321,15 @@ describe('Scoring', () => {
       expect(game.lastRoundBreakdown[0].combinationPoints).toBe(40); // Both tierces count
       expect(game.lastRoundBreakdown[1].combinationPoints).toBe(0); // KQJ doesn't count
       
-      // Verify total points: 100 (card) + 40 (both sequences) = 140 for team 0
-      // 58 (card) + 0 (no combinations) = 58 for team 1
-      expect(game.lastRoundScore[0]).toBe(140);
-      expect(game.lastRoundScore[1]).toBe(58);
-      
       // Verify breakdown
       expect(game.lastRoundBreakdown[0].cardPoints).toBe(100);
       expect(game.lastRoundBreakdown[1].cardPoints).toBe(58);
+
+      // Verify total points: 100 (card) + 40 (both sequences) = 140 => 14 for team 0
+      // 58 (card) + 0 (no combinations) = 58 => 6 for team 1
+      expect(game.lastRoundRoundedPoints[0]).toBe(14);
+      expect(game.lastRoundRoundedPoints[1]).toBe(6);
+      
     });
 
     it('Trump game - should drop all sequences from both teams when they have the same highest sequence', () => {
@@ -389,15 +381,16 @@ describe('Scoring', () => {
       // Team 1's sequence (KQJ) doesn't count
       expect(game.lastRoundBreakdown[0].combinationPoints).toBe(0); // All sequences dropped
       expect(game.lastRoundBreakdown[1].combinationPoints).toBe(0); // All sequences dropped
-      
-      // Verify total points: 100 (card) + 0 (no combinations) = 100 for team 0
-      // 58 (card) + 0 (no combinations) = 58 for team 1
-      expect(game.lastRoundScore[0]).toBe(100);
-      expect(game.lastRoundScore[1]).toBe(58);
-      
+
       // Verify breakdown
       expect(game.lastRoundBreakdown[0].cardPoints).toBe(100);
       expect(game.lastRoundBreakdown[1].cardPoints).toBe(58);
+      
+      // Verify total points: 100 (card) + 0 (no combinations) = 100 => 10 for team 0
+      // 58 (card) + 0 (no combinations) = 58 => 6 for team 1
+      expect(game.lastRoundRoundedPoints[0]).toBe(10);
+      expect(game.lastRoundRoundedPoints[1]).toBe(6);
+      
     });
 
     it('Trump game - should not count lower order sequences when opponent has higher order sequence', () => {
@@ -450,15 +443,15 @@ describe('Scoring', () => {
       // Team 1's tierce should NOT count (0 points) because quint > tierce
       expect(game.lastRoundBreakdown[0].combinationPoints).toBe(100);
       expect(game.lastRoundBreakdown[1].combinationPoints).toBe(0);
-      
-      // Verify total points: 100 (card) + 100 (quint) = 200 for team 0
-      // 58 (card) + 0 (no combinations) = 58 for team 1
-      expect(game.lastRoundScore[0]).toBe(200);
-      expect(game.lastRoundScore[1]).toBe(58);
-      
+
       // Verify breakdown
       expect(game.lastRoundBreakdown[0].cardPoints).toBe(100);
       expect(game.lastRoundBreakdown[1].cardPoints).toBe(58);
+      
+      // Verify total points: 100 (card) + 100 (quint) = 200 => 20 for team 0
+      // 58 (card) + 0 (no combinations) = 58 => 6 for team 1
+      expect(game.lastRoundRoundedPoints[0]).toBe(20);
+      expect(game.lastRoundRoundedPoints[1]).toBe(6);     
     });
 
     it('Trump game - another test for rounding at 6', () => {
@@ -496,7 +489,6 @@ describe('Scoring', () => {
       game.endRound();
       
       // Verify total points in round: 85 + 77 = 162
-      expect(game.lastRoundScore[0] + game.lastRoundScore[1]).toBe(162);
       expect(game.lastRoundBreakdown[0].cardPoints + game.lastRoundBreakdown[1].cardPoints).toBe(162);
       
       // Verify: 
@@ -556,11 +548,6 @@ describe('Scoring', () => {
       // End the round
       game.endRound();
       
-      // Verify total points in round: 71 + 20 (combination) = 91 for team 0, 91 for team 1
-      expect(game.lastRoundScore[0]).toBe(91); 
-      expect(game.lastRoundScore[1]).toBe(91); 
-      expect(game.lastRoundScore[0]).toBe(game.lastRoundScore[1]); // Equal points
-      
       // Verify breakdown
       expect(game.lastRoundBreakdown[0].cardPoints).toBe(71);
       expect(game.lastRoundBreakdown[0].combinationPoints).toBe(20);
@@ -570,7 +557,7 @@ describe('Scoring', () => {
       // Verify hanging points: contract team's rounded points should become hanging
       // Contract team is team 0 (player 0 bid hearts)
       // After equal points, contract team's rounded points become hanging and are set to 0
-      expect(game.hangingPoints).toBe(9); // Contract team's 9 points are hanging
+      expect(game.hangingPoints).toBe(9);
       
       // Verify that contract team's points are NOT added to totalScores (they're hanging)
       // Opponent team's points ARE added to totalScores
@@ -669,7 +656,7 @@ describe('Scoring', () => {
       expect(game.hangingPoints).toBe(0); // Hanging points should be cleared
       expect(game.lastRoundRoundedPoints[0]).toBe(19); // Contract team: 10 (this round) + 9 (hanging) = 19
       expect(game.lastRoundRoundedPoints[1]).toBe(6); // Opponent team: 6 rounded points
-      
+ 
       // Verify total scores were updated correctly
       expect(game.totalScores[0]).toBe(69); // Contract team: 50 + 19 = 69
       expect(game.totalScores[1]).toBe(45); // Opponent team: 39 + 6 = 45

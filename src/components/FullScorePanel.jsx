@@ -28,8 +28,8 @@ function formatCombinationCards(combo) {
 }
 
 export default function FullScorePanel({ 
-  scores, 
-  roundScores = null,
+  totalScores, 
+  currentRoundScores = null,
   lastRoundRoundedPoints = null,
   hangingPoints = 0,
   phase,
@@ -45,13 +45,23 @@ export default function FullScorePanel({
   const isRoundOver = phase === GAME_PHASES.SCORING || phase === GAME_PHASES.FINISHED;
   const panelRef = useRef(null);
   
-  const playerTotalScore = scores[0] || 0;
-  const opponentTotalScore = scores[1] || 0;
+  const playerTotalScore = totalScores[0] || 0;
+  const opponentTotalScore = totalScores[1] || 0;
   const playerTotalProgress = (playerTotalScore / maxScore) * 100;
   const opponentTotalProgress = (opponentTotalScore / maxScore) * 100;
   
-  const playerRoundScore = roundScores ? (roundScores[0] || 0) : 0;
-  const opponentRoundScore = roundScores ? (roundScores[1] || 0) : 0;
+  const getRoundPoints = (teamIndex) => {
+    if (!currentRoundScores || currentRoundScores[teamIndex] == null) return 0;
+    const v = currentRoundScores[teamIndex];
+    return typeof v === 'object' && v !== null && 'roundPoints' in v ? v.roundPoints : (v || 0);
+  };
+  const getHangingForTeam = (teamIndex) => {
+    if (!currentRoundScores || currentRoundScores[teamIndex] == null) return 0;
+    const v = currentRoundScores[teamIndex];
+    return typeof v === 'object' && v !== null && 'hangingPoints' in v ? v.hangingPoints : hangingPoints;
+  };
+  const playerRoundScore = getRoundPoints(0);
+  const opponentRoundScore = getRoundPoints(1);
 
   // Close panel when clicking outside (only during gameplay, not when round is over, and not when force-shown)
   useEffect(() => {
@@ -103,7 +113,7 @@ export default function FullScorePanel({
         </div>
       </div>
 
-      {isRoundOver && roundScores && (
+      {isRoundOver && currentRoundScores && (
         <>
           <div className="score-section-title">{t('lastDeal')}</div>
           
@@ -121,7 +131,9 @@ export default function FullScorePanel({
                 </div>
                 <span className="team-name team-name-green">{t('youAndPartner')}</span>
               </div>
-              <div className="score-value">{lastRoundRoundedPoints ? lastRoundRoundedPoints[0] : Math.round(playerRoundScore / 10)}</div>
+              <div className="score-value">
+                {(lastRoundRoundedPoints ? lastRoundRoundedPoints[0] : Math.round(playerRoundScore / 10))}
+              </div>
             </div>
             {roundBreakdown && roundBreakdown[0] && (
               <div className="score-breakdown">
@@ -129,16 +141,22 @@ export default function FullScorePanel({
                   <span className="breakdown-label">{t('cardPoints')}</span>
                   <span className="breakdown-value">{roundBreakdown[0].cardPoints}</span>
                 </div>
-                {roundBreakdown[0].combinationPoints > 0 && (
-                  <div className="breakdown-item">
-                    <span className="breakdown-label">{t('combinations')}</span>
-                    <span className="breakdown-value">+{roundBreakdown[0].combinationPoints}</span>
-                  </div>
-                )}
                 {roundBreakdown[0].valatPoints > 0 && (
                   <div className="breakdown-item">
                     <span className="breakdown-label">{t('valat')}</span>
                     <span className="breakdown-value">+{roundBreakdown[0].valatPoints}</span>
+                  </div>
+                )}
+                {roundBreakdown[0].hangingPoints > 0 && (
+                  <div className="breakdown-item">
+                    <span className="breakdown-label">{t('hangingPoints')}</span>
+                    <span className="breakdown-value">+{roundBreakdown[0].hangingPoints}</span>
+                  </div>
+                )}
+                {roundBreakdown[0].combinationPoints > 0 && (
+                  <div className="breakdown-item">
+                    <span className="breakdown-label">{t('combinations')}</span>
+                    <span className="breakdown-value">+{roundBreakdown[0].combinationPoints}</span>
                   </div>
                 )}
                 {announcedCombinations[0] && announcedCombinations[0].length > 0 && (
@@ -172,7 +190,9 @@ export default function FullScorePanel({
                 </div>
                 <span className="team-name team-name-red">{t('opponents')}</span>
               </div>
-              <div className="score-value">{lastRoundRoundedPoints ? lastRoundRoundedPoints[1] : Math.round(opponentRoundScore / 10)}</div>
+              <div className="score-value">
+                {(lastRoundRoundedPoints ? lastRoundRoundedPoints[1] : Math.round(opponentRoundScore / 10))}
+              </div>
             </div>
             {roundBreakdown && roundBreakdown[1] && (
               <div className="score-breakdown">
@@ -180,16 +200,22 @@ export default function FullScorePanel({
                   <span className="breakdown-label">{t('cardPoints')}</span>
                   <span className="breakdown-value">{roundBreakdown[1].cardPoints}</span>
                 </div>
-                {roundBreakdown[1].combinationPoints > 0 && (
-                  <div className="breakdown-item">
-                    <span className="breakdown-label">{t('combinations')}</span>
-                    <span className="breakdown-value">+{roundBreakdown[1].combinationPoints}</span>
-                  </div>
-                )}
                 {roundBreakdown[1].valatPoints > 0 && (
                   <div className="breakdown-item">
                     <span className="breakdown-label">{t('valat')}</span>
                     <span className="breakdown-value">+{roundBreakdown[1].valatPoints}</span>
+                  </div>
+                )}
+                {roundBreakdown[1].hangingPoints > 0 && (
+                  <div className="breakdown-item">
+                    <span className="breakdown-label">{t('hangingPoints')}</span>
+                    <span className="breakdown-value">+{roundBreakdown[1].hangingPoints}</span>
+                  </div>
+                )}
+                {roundBreakdown[1].combinationPoints > 0 && (
+                  <div className="breakdown-item">
+                    <span className="breakdown-label">{t('combinations')}</span>
+                    <span className="breakdown-value">+{roundBreakdown[1].combinationPoints}</span>
                   </div>
                 )}
                 {announcedCombinations[1] && announcedCombinations[1].length > 0 && (

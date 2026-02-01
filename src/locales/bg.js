@@ -3,7 +3,7 @@ export default {
   appTitle: 'Игра Белот',
   teamWins: 'Отбор {team} Печели!',
   newGame: 'Нова Игра',
-  startBelotGame: 'Старт на белот',
+  startBelotGame: 'Стартиране на цял екран',
   
   // Players
   playerYou: 'Играч',
@@ -35,7 +35,7 @@ export default {
   cardPoints: 'Точки от карти:',
   combinations: 'Комбинации:',
   valat: 'Валат:',
-  hangingPoints: 'Висящи',
+  hangingPoints: 'Предишни висящи:',
   pointsForNextRoundWinner: 'Точки за победителя в следващия рунд:',
   hangingPointsDescription: 'Тези точки ще бъдат присъдени на победителя в следващия рунд.',
   totalScore: 'Общо',

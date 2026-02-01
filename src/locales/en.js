@@ -3,7 +3,7 @@ export default {
   appTitle: 'Belot Card Game',
   teamWins: 'Team {team} Wins!',
   newGame: 'New Game',
-  startBelotGame: 'Start belot game',
+  startBelotGame: 'Start full screen',
   
   // Players
   playerYou: 'You',
@@ -35,7 +35,7 @@ export default {
   cardPoints: 'Card points:',
   combinations: 'Combinations:',
   valat: 'Valat:',
-  hangingPoints: 'Hanging Points',
+  hangingPoints: 'Previous hanging',
   pointsForNextRoundWinner: 'Points for next round winner:',
   hangingPointsDescription: 'These points will be awarded to the winner of the next round.',
   totalScore: 'Total Score',

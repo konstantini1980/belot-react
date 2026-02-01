@@ -13,9 +13,8 @@ export default function GameBoard({
   currentTrick, 
   currentPlayer,
   tricks,
-  scores,
-  roundScores,
-  lastRoundScore,
+  totalScores,
+  currentRoundScores,
   lastRoundRoundedPoints,
   hangingPoints = 0,
   contract,
@@ -369,7 +368,7 @@ export default function GameBoard({
       <div className="score-board">
         {!isRoundOver && (
           <CompactScorePanel 
-            roundScores={roundScores}
+            roundScores={currentRoundScores}
             contract={contract}
             isDouble={isDouble}
             isRedouble={isRedouble}
@@ -384,8 +383,8 @@ export default function GameBoard({
       
         {showFullScorePanel && (
         <FullScorePanel 
-          scores={scores}
-          roundScores={isRoundOver ? lastRoundScore : (forceShowScorePanel ? roundScores : null)}
+          totalScores={totalScores}
+          currentRoundScores={isRoundOver ? lastRoundRoundedPoints : (forceShowScorePanel ? correntRoundScores : null)}
           lastRoundRoundedPoints={isRoundOver ? lastRoundRoundedPoints : null}
           hangingPoints={isRoundOver ? hangingPoints : 0}
           phase={phase}

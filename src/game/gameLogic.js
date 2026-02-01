@@ -45,7 +45,6 @@ export class BelotGame {
     this.tricks = [];
     this.totalScores = [0, 0]; // Team scores
     this.currentRoundScore = [0, 0]; // Points from current round
-    this.lastRoundScore = [0, 0]; // Points from last completed round (for display)
     this.lastRoundBreakdown = [{ cardPoints: 0, combinationPoints: 0, valatPoints: 0 }, { cardPoints: 0, combinationPoints: 0, valatPoints: 0 }]; // Breakdown of last round points
     this.lastRoundRoundedPoints = [0, 0]; // Rounded points added to scores from last round
     this.hangingPoints = 0; // Points hanging from last round
@@ -90,8 +89,6 @@ export class BelotGame {
     this.winner = null;
     // Reset round scores for new round
     this.currentRoundScore = [0, 0];
-    // Clear last round scores when starting new deal
-    this.lastRoundScore = [0, 0];
     // Clear last round breakdown when starting new deal
     this.lastRoundBreakdown = [{ cardPoints: 0, combinationPoints: 0, valatPoints: 0 }, { cardPoints: 0, combinationPoints: 0, valatPoints: 0 }];
     // Clear last round rounded points when starting new deal
@@ -486,8 +483,8 @@ export class BelotGame {
 
     // Calculate breakdown - card points are already in roundScore
     const breakdown = [
-      { cardPoints: this.currentRoundScore[0], combinationPoints: 0, valatPoints: 0 },
-      { cardPoints: this.currentRoundScore[1], combinationPoints: 0, valatPoints: 0 }
+      { cardPoints: this.currentRoundScore[0], combinationPoints: 0, valatPoints: 0, hangingPoints: 0 },
+      { cardPoints: this.currentRoundScore[1], combinationPoints: 0, valatPoints: 0, hangingPoints: 0 }
     ];
         
     if (this.contract === 'no-trump') {
@@ -637,131 +634,81 @@ export class BelotGame {
       breakdown[team].combinationPoints = comboPoints;
     });
     
-    // Store original round scores and breakdown for display
-    this.lastRoundScore = [...this.currentRoundScore];
-    this.lastRoundBreakdown = breakdown;
     
-    // Calculate rounded points for this round
+    // --- Round scoring (winner from round points; valat cancels doubling) ---
     const contractTeam = this.players[this.bids.find(b => b.bid === this.contract).playerId].team;
     const contractPoints = this.currentRoundScore[contractTeam];
     const opponentPoints = this.currentRoundScore[1 - contractTeam];
-
-    // Check if it's a hanging situation (equal points)
+    const previousHangingPoints = this.hangingPoints;
     const isHanging = contractPoints === opponentPoints;
+    const totalPoints = this.currentRoundScore[0] + this.currentRoundScore[1];
+    const totalRounded = Math.round(totalPoints / 10);
 
-    // Multiplier is only applied if game is doubled/redoubled AND not valat AND not hanging
-    let multiplier = 1;
-    if (this.redouble && !isValat && !isHanging) multiplier = 4;
-    else if (this.double && !isValat && !isHanging) multiplier = 2;
+    // even in hanging situation, the non contract team takes its points.
+    const roundWinner = contractPoints > opponentPoints ? contractTeam : (1 - contractTeam);
+    // Valat or hanging cancels doubling: count normally; otherwise double/redouble apply
+    const effectiveMultiplier = isValat || isHanging ? 1 : (this.redouble ? 4 : (this.double ? 2 : 1));
+    const winnerTakesAll = (this.double || this.redouble || isValat) && !isHanging;
 
-    // Initialize rounded points array
     this.lastRoundRoundedPoints = [0, 0];
 
-    if (contractPoints > opponentPoints) {
-      if (!this.double && !this.redouble) {
-        
-
-        // Specific rounding logic - adjustments
-        if (this.contract === 'all-trump') {
-          
-          // Adjusted rounding logic - Plus 1 point for proper rounding
-          // We do that for opponent only. Contract team gets remaining points.
-          const opponentRounded = Math.round((opponentPoints + 1) / 10);
-          this.lastRoundRoundedPoints[1 - contractTeam] = opponentRounded;
-          
-          const totalPoints = contractPoints + opponentPoints;
-          const totalRounded = Math.round(totalPoints / 10);
-          
-          this.lastRoundRoundedPoints[contractTeam] = totalRounded - opponentRounded;  
-
-        } else if (this.contract == 'no-trump') {
-          // Standard rounding logic - no adjustments
-          this.lastRoundRoundedPoints[0] = Math.round(this.currentRoundScore[0] / 10);
-          this.lastRoundRoundedPoints[1] = Math.round(this.currentRoundScore[1] / 10);
-        } else { // For a trump suit game
-
-          // Example 1: 86 + 76 = 162
-          // Initial rounded points: 9 + 8 = 17
-          // Total / 10 = 16.2, so we want sum = 16 (not 17)
-          // Adjustment: contract team gets rounded down -1
-          // Final rounded points: 8 + 8 = 16
-
-          // Example 2: 85 + 77 = 162
-          // Initial rounded points: 9 + 8 = 17
-          // Total / 10 = 16.2, so we want sum = 16 (not 17)
-          // Adjustment: contract team gets rounded down -1
-          // Final rounded points: 8 + 8 = 16
-
-          // Example 3: 87 + 75 = 162
-          // Initial rounded points: 9 + 8 = 17
-          // Total / 10 = 16.2, so we want sum = 16 (not 17)          
-          // Final rounded points: 8 + 8 = 16
-
-          // Adjusted rounding logic - Minus 1 point for proper rounding
-          // We do that for opponent only. Contract team gets remaining points.
-          const opponentRounded = Math.round((opponentPoints - 1) / 10);
-          this.lastRoundRoundedPoints[1 - contractTeam] = opponentRounded;
-          
-          const totalPoints = contractPoints + opponentPoints;
-          const totalRounded = Math.round(totalPoints / 10);
-          
-          this.lastRoundRoundedPoints[contractTeam] = totalRounded - opponentRounded;          
-        }
+    const applyAdjustedRounding = () => {
+      if (this.contract === 'all-trump') {
+        const opponentRounded = Math.round((opponentPoints + 1) / 10);
+        this.lastRoundRoundedPoints[1 - contractTeam] = opponentRounded;
+        this.lastRoundRoundedPoints[contractTeam] = totalRounded - opponentRounded;
+      } else if (this.contract === 'no-trump') {
+        this.lastRoundRoundedPoints[0] = Math.round(this.currentRoundScore[0] / 10);
+        this.lastRoundRoundedPoints[1] = Math.round(this.currentRoundScore[1] / 10);
       } else {
-        // Doubled or redoubled - winner takes it all
-        const totalPoints = contractPoints + opponentPoints;            
-        this.lastRoundRoundedPoints[contractTeam] = Math.round(totalPoints * multiplier / 10);
+        const opponentRounded = Math.round((opponentPoints - 1) / 10);
+        this.lastRoundRoundedPoints[1 - contractTeam] = opponentRounded;
+        this.lastRoundRoundedPoints[contractTeam] = totalRounded - opponentRounded;
       }
 
-      // Add previously hanging points
-      if (this.hangingPoints > 0) { 
-        this.lastRoundRoundedPoints[0] += this.hangingPoints;
-        this.hangingPoints = 0;
-      }      
-    } else if (contractPoints < opponentPoints) {
-      // Opponent takes it all
-      const totalPoints = this.currentRoundScore[0] + this.currentRoundScore[1];            
-      this.lastRoundRoundedPoints[1-contractTeam] = Math.round(totalPoints * multiplier / 10);
+      // Example 1: 86 + 76 = 162
+      // Initial rounded points: 9 + 8 = 17
+      // Total / 10 = 16.2, so we want sum = 16 (not 17)
+      // Adjustment: contract team gets rounded down -1
+      // Final rounded points: 8 + 8 = 16
 
-      // Add previously hanging points
-      if (this.hangingPoints > 0) { 
-        this.lastRoundRoundedPoints[1 - contractTeam] += this.hangingPoints;
-        this.hangingPoints = 0;
-      }      
-    } else {
-      // Add previously hanging points
-      if (this.hangingPoints > 0) { 
-        this.lastRoundRoundedPoints[1 - contractTeam] += this.hangingPoints;
-        this.hangingPoints = 0;
-      }
+      // Example 2: 85 + 77 = 162
+      // Initial rounded points: 9 + 8 = 17
+      // Total / 10 = 16.2, so we want sum = 16 (not 17)
+      // Adjustment: contract team gets rounded down -1
+      // Final rounded points: 8 + 8 = 16
 
-      // Equal points - Hanging situation
-      // Contract team does not receive any points (their rounded points become hanging)
-      // Opponent team gets their points as usual
-      // Calculate rounded points for both teams (normal rounding)
-      this.lastRoundRoundedPoints[0] = Math.round(this.currentRoundScore[0] / 10);
-      this.lastRoundRoundedPoints[1] = Math.round(this.currentRoundScore[1] / 10);
+      // Example 3: 87 + 75 = 162
+      // Initial rounded points: 9 + 8 = 17
+      // Total / 10 = 16.2, so we want sum = 16 (not 17)          
+      // Final rounded points: 8 + 8 = 16
 
-      // Apply rounding adjustments if needed (same as outside case)
-      if (this.contract === 'all-trump' && opponentPoints%10 === 4) {
-        // The team with less points (opponent) gets an additional point
-        this.lastRoundRoundedPoints[1 - contractTeam] += 1;
-      } else if (this.contract !== 'no-trump' && opponentPoints%10 === 6) {
-        // Contract team gets rounded down, opponent gets rounded up
-        this.lastRoundRoundedPoints[contractTeam] -= 1;
-      }
+      // Adjusted rounding logic - Minus 1 point for proper rounding
+      // We do that for opponent only. Contract team gets remaining points.
+    };    
 
-      // Contract team's rounded points become hanging (they don't get added to totalScores)
-      // Store the contract team's rounded points as hanging points
-      this.hangingPoints = this.lastRoundRoundedPoints[contractTeam];
-      
-      // Contract team gets 0 points this round (their points are hanging)
+    if (winnerTakesAll) {
+      this.lastRoundRoundedPoints[roundWinner] += totalRounded * effectiveMultiplier;
+      this.lastRoundRoundedPoints[roundWinner] += previousHangingPoints;
+      breakdown[roundWinner].hangingPoints = previousHangingPoints * 10;
+      this.hangingPoints = 0;
+    } else if (isHanging) {
+      this.hangingPoints = totalRounded / 2;
+      // contract team does not get any points now. Opponent team gets half of the points.
+      this.lastRoundRoundedPoints[1 - contractTeam] = this.hangingPoints;
       this.lastRoundRoundedPoints[contractTeam] = 0;
-      
-      // Opponent team keeps their rounded points (already calculated above)
+      this.lastRoundRoundedPoints[roundWinner] += previousHangingPoints;
+      breakdown[roundWinner].hangingPoints = previousHangingPoints * 10;
+    } else {
+      applyAdjustedRounding();
+      this.lastRoundRoundedPoints[roundWinner] += previousHangingPoints;
+      breakdown[roundWinner].hangingPoints = previousHangingPoints * 10;
+      this.hangingPoints = 0;
     }
 
-    // Add rounded points to total scores
+    // Store breakdown for display (lastRoundScore is set at end of round with roundPoints + hangingPoints)
+    this.lastRoundBreakdown = breakdown;
+
     this.totalScores[0] += this.lastRoundRoundedPoints[0];
     this.totalScores[1] += this.lastRoundRoundedPoints[1];
     
