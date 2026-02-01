@@ -1,7 +1,7 @@
 export default {
   // App
   appTitle: 'Игра Белот',
-  teamWins: 'Отбор {team} Печели!',
+  teamWins: 'Отбор {team} печели!',
   newGame: 'Нова Игра',
   startBelotGame: 'Стартиране на цял екран',
   

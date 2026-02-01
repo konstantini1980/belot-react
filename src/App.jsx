@@ -399,14 +399,6 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <h1>{t('appTitle')}</h1>
-        {game.phase === GAME_PHASES.FINISHED && (
-          <div className="winner-announcement">
-            <h2>{t('teamWins', { team: game.winner + 1 })}</h2>
-            <button onClick={handleNewGame} className="new-game-button">
-              {t('newGame')}
-            </button>
-          </div>
-        )}
       </header>
 
       <div className="game-container">
@@ -426,6 +418,8 @@ export default function App() {
           isDouble={game.double}
           isRedouble={game.redouble}
           onNextDeal={handleNextDeal}
+          winner={game.winner}
+          onNewGame={handleNewGame}
           playerCombinations={playerCombinations}
           announcedCombinations={game.announcedCombinations}
           roundBreakdown={game.lastRoundBreakdown}

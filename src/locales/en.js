@@ -1,7 +1,7 @@
 export default {
   // App
   appTitle: 'Belot Card Game',
-  teamWins: 'Team {team} Wins!',
+  teamWins: 'Team {team} wins!',
   newGame: 'New Game',
   startBelotGame: 'Start full screen',
   

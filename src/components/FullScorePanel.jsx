@@ -34,6 +34,8 @@ export default function FullScorePanel({
   hangingPoints = 0,
   phase,
   onNextDeal = null,
+  onNewGame = null,
+  winner = null,
   onClose = null,
   showOverlay = false,
   roundBreakdown = null,
@@ -41,6 +43,7 @@ export default function FullScorePanel({
   forceShow = false
 }) {
   const { t } = useLanguage();
+  const isGameFinished = phase === GAME_PHASES.FINISHED;
   const maxScore = 151;
   const isRoundOver = phase === GAME_PHASES.SCORING || phase === GAME_PHASES.FINISHED;
   const panelRef = useRef(null);
@@ -260,16 +263,23 @@ export default function FullScorePanel({
       {renderScoreSection(t('youAndPartner'), 'green', playerTotalScore, playerTotalProgress)}
       {renderScoreSection(t('opponents'), 'red', opponentTotalScore, opponentTotalProgress)}
 
-      <div className="score-footer">        
-        {onNextDeal && (
+      <div className="score-footer">
+        {isGameFinished && winner != null && onNewGame ? (
+          <div className="winner-announcement">
+            <h2>{t('teamWins', { team: winner + 1 })}</h2>
+            <button onClick={onNewGame} className="new-game-button">
+              {t('newGame')}
+            </button>
+          </div>
+        ) : onNextDeal ? (
           <button 
             onClick={onNextDeal}
             className="next-deal-button"
           >
             {t('nextDeal')}
           </button>
-        )}
-        <span className="win-condition">{t('firstTo151Wins')}</span>
+        ) : null}
+        {!isGameFinished && <span className="win-condition">{t('firstTo151Wins')}</span>}
       </div>
     </div>
   );

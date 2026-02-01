@@ -27,6 +27,8 @@ export default function GameBoard({
   isDouble = false,
   isRedouble = false,
   onNextDeal = null,
+  winner = null,
+  onNewGame = null,
   playerCombinations = {},
   announcedCombinations = [[], []],
   roundBreakdown = null,
@@ -388,7 +390,9 @@ export default function GameBoard({
           lastRoundRoundedPoints={isRoundOver ? lastRoundRoundedPoints : null}
           hangingPoints={isRoundOver ? hangingPoints : 0}
           phase={phase}
-          onNextDeal={isRoundOver ? onNextDeal : null}
+          onNextDeal={phase === GAME_PHASES.FINISHED ? null : (isRoundOver ? onNextDeal : null)}
+          winner={winner}
+          onNewGame={onNewGame}
           onClose={!isRoundOver && !forceShowScorePanel ? () => {
             setShowFullScorePanel(false);
             if (onForceShowScorePanelChange) {
