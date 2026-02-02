@@ -288,6 +288,10 @@ describe('Combination Discovery', () => {
       const belot = findBelotOnPlay(contract, playedCard, playerHand, leadSuit);
       expect(belot).not.toBeNull();
       expect(belot.type).toBe('belot');
+
+      const leadSuit2 = 'spades';
+      const belot2 = findBelotOnPlay(contract, playedCard, playerHand, leadSuit2);
+      expect(belot2).toBeNull();
     });
 
     it('should not find belot when card is not in trump suit (trump contract)', () => {
@@ -318,7 +322,21 @@ describe('Combination Discovery', () => {
       expect(belot).toBeNull();
     });
 
-    it('should not find belot if trick lead suit is different (cutting with trump Q/K)', () => {
+    it('should not find belot if trick lead suit is different', () => {
+      const contract = 'hearts';
+      const playedCard = new Card('clubs', 'Q');
+      const leadSuit = 'spades'; 
+      const playerHand = [
+        new Card('clubs', 'Q'),
+        new Card('clubs', 'K'),
+        new Card('clubs', 'A')
+      ];
+
+      const belot = findBelotOnPlay(contract, playedCard, playerHand, leadSuit);
+      expect(belot).toBeNull();
+    });
+
+    it('should find belot if trick lead suit is different but we are trumping', () => {
       const contract = 'hearts';
       const playedCard = new Card('hearts', 'Q');
       const leadSuit = 'spades'; // trick was led in spades, we are cutting with trump
@@ -329,7 +347,8 @@ describe('Combination Discovery', () => {
       ];
 
       const belot = findBelotOnPlay(contract, playedCard, playerHand, leadSuit);
-      expect(belot).toBeNull();
+      expect(belot).not.toBeNull();
+      expect(belot.type).toBe('belot');
     });
   });
 });

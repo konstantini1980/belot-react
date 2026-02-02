@@ -21,6 +21,51 @@ describe('Scoring', () => {
   });
 
   describe('Round point calculation', () => {
+    it('Trump game - losing contract gives all points to opponent', () => {
+                
+      game.contract = 'clubs';
+      game.trumpSuit = 'clubs';
+      game.bids = [
+        { playerId: 0, bid: 'clubs' },
+        { playerId: 1, bid: 'pass' },
+        { playerId: 2, bid: 'pass' },
+        { playerId: 3, bid: 'pass' }
+      ];
+      
+      game.announcedCombinations[0] = [];
+      game.announcedCombinations[1] = [];
+      
+      // Complete tricks
+      for (let i = 0; i < 8; i++) {
+        const team = i < 7 ? 0 : 1;
+        game.tricks.push({
+          cards: [
+            { playerId: 0, card: new Card('clubs', 'A') },
+            { playerId: 1, card: new Card('hearts', '7') },
+            { playerId: 2, card: new Card('spades', '7') },
+            { playerId: 3, card: new Card('diamonds', '7') }
+          ],
+          team: team
+        });
+      }
+      
+      game.currentRoundScore[0] = 55; 
+      game.currentRoundScore[1] = 107; 
+      
+      game.endRound();
+      
+      
+      expect(game.lastRoundBreakdown[0].cardPoints + game.lastRoundBreakdown[1].cardPoints).toBe(162);
+      expect(game.lastRoundBreakdown[0].combinationPoints).toBe(0);
+      expect(game.lastRoundBreakdown[1].combinationPoints).toBe(0);
+      expect(game.lastRoundBreakdown[0].valatPoints).toBe(0);
+      expect(game.lastRoundBreakdown[1].valatPoints).toBe(0);
+      
+      // Verify:       
+      expect(game.lastRoundRoundedPoints[0]).toBe(0); 
+      expect(game.lastRoundRoundedPoints[1]).toBe(16);       
+    });
+
     it('Trump game - should do rounding at 6', () => {
       // Test with clubs trump suit
       // Total points: 85 + 77 = 162 (no combinations or premiums)
@@ -661,7 +706,162 @@ describe('Scoring', () => {
       expect(game.totalScores[0]).toBe(69); // Contract team: 50 + 19 = 69
       expect(game.totalScores[1]).toBe(45); // Opponent team: 39 + 6 = 45
     });
+
+    it('Trump game - valat game receives bonus points', () => {
+      // First, set up a round with equal points to create hanging points
+      game.contract = 'hearts';
+      game.trumpSuit = 'hearts';
+      game.bids = [
+        { playerId: 0, bid: 'hearts' },
+        { playerId: 1, bid: 'pass' },
+        { playerId: 2, bid: 'pass' },
+        { playerId: 3, bid: 'pass' }
+      ];
+      
+      // Oppenonent team has a tierce (20 points) - receives it normally although it is valat game
+      game.announcedCombinations[0] = [];
+      game.announcedCombinations[1] = [
+        { type: 'tierce', points: 20, cards: [new Card('hearts', 'K'), new Card('hearts', 'Q'), new Card('hearts', 'J')] }
+      ];
+      
+      // Complete all tricks (8 tricks total)
+      for (let i = 0; i < 8; i++) {        
+        game.tricks.push({
+          cards: [
+            { playerId: 0, card: new Card('hearts', 'A') },
+            { playerId: 1, card: new Card('spades', '7') },
+            { playerId: 2, card: new Card('clubs', '7') },
+            { playerId: 3, card: new Card('diamonds', '7') }
+          ],
+          team: 0
+        });
+      }
+      
+      // Set up equal points to create hanging points
+      game.currentRoundScore[0] = 162; // Contract team card points
+      game.currentRoundScore[1] = 0; // Opponent team card points
+      game.totalScores[0] = 30;
+      game.totalScores[1] = 30;
+      
+      game.endRound();
+      
+      expect(game.hangingPoints).toBe(0);
+      expect(game.totalScores[0]).toBe(55); // Contract team - add valat points
+      expect(game.totalScores[1]).toBe(32); // Opponent team - add tierce points
+      
+      expect(game.lastRoundBreakdown[0].combinationPoints).toBe(0);
+      expect(game.lastRoundBreakdown[1].combinationPoints).toBe(20);
+      expect(game.lastRoundBreakdown[0].valatPoints).toBe(90);
+      expect(game.lastRoundBreakdown[1].valatPoints).toBe(0);
+      
+      // Verify:       
+      expect(game.lastRoundRoundedPoints[0]).toBe(25); 
+      expect(game.lastRoundRoundedPoints[1]).toBe(2); 
+    });
+
+    it('Trump game - valat game cancels doubling', () => {
+      // First, set up a round with equal points to create hanging points
+      game.contract = 'hearts';
+      game.double = true;
+      game.redouble = false;
+      game.trumpSuit = 'hearts';
+      game.bids = [
+        { playerId: 0, bid: 'hearts' },
+        { playerId: 1, bid: 'pass' },
+        { playerId: 2, bid: 'pass' },
+        { playerId: 3, bid: 'pass' }
+      ];
+      
+      // Oppenonent team has a tierce (20 points) - receives it normally although it is valat game
+      game.announcedCombinations[0] = [];
+      game.announcedCombinations[1] = [
+        { type: 'tierce', points: 20, cards: [new Card('hearts', 'K'), new Card('hearts', 'Q'), new Card('hearts', 'J')] }
+      ];
+      
+      // Complete all tricks (8 tricks total)
+      for (let i = 0; i < 8; i++) {        
+        game.tricks.push({
+          cards: [
+            { playerId: 0, card: new Card('hearts', 'A') },
+            { playerId: 1, card: new Card('spades', '7') },
+            { playerId: 2, card: new Card('clubs', '7') },
+            { playerId: 3, card: new Card('diamonds', '7') }
+          ],
+          team: 0
+        });
+      }
+      
+      // Set up equal points to create hanging points
+      game.currentRoundScore[0] = 162; // Contract team card points
+      game.currentRoundScore[1] = 0; // Opponent team card points
+      game.totalScores[0] = 30;
+      game.totalScores[1] = 30;
+      
+      game.endRound();
+      
+      expect(game.hangingPoints).toBe(0);
+      expect(game.totalScores[0]).toBe(55); // Contract team - add valat points
+      expect(game.totalScores[1]).toBe(32); // Opponent team - add tierce points
+      
+      expect(game.lastRoundBreakdown[0].combinationPoints).toBe(0);
+      expect(game.lastRoundBreakdown[1].combinationPoints).toBe(20);
+      expect(game.lastRoundBreakdown[0].valatPoints).toBe(90);
+      expect(game.lastRoundBreakdown[1].valatPoints).toBe(0);
+      
+      // Verify:       
+      expect(game.lastRoundRoundedPoints[0]).toBe(25); 
+      expect(game.lastRoundRoundedPoints[1]).toBe(2); 
+    });
     
+    it('Trump game - doubling and redoubling points', () => {
+      
+      game.contract = 'clubs';
+      game.trumpSuit = 'clubs';
+      game.double = true;
+      game.redouble = false;
+      game.bids = [
+        { playerId: 0, bid: 'clubs' },
+        { playerId: 1, bid: 'pass' },
+        { playerId: 2, bid: 'pass' },
+        { playerId: 3, bid: 'pass' }
+      ];
+      
+      game.announcedCombinations[0] = [
+        { type: 'tierce', points: 20, cards: [new Card('hearts', 'K'), new Card('hearts', 'Q'), new Card('hearts', 'J')] }
+      ];
+      game.announcedCombinations[1] = [];
+      
+      // Complete tricks
+      for (let i = 0; i < 8; i++) {
+        const team = i < 4 ? 0 : 1;
+        game.tricks.push({
+          cards: [
+            { playerId: 0, card: new Card('clubs', 'A') },
+            { playerId: 1, card: new Card('hearts', '7') },
+            { playerId: 2, card: new Card('spades', '7') },
+            { playerId: 3, card: new Card('diamonds', '7') }
+          ],
+          team: team
+        });
+      }
+      
+      // Ensure currentRoundScore is set correctly - total should be 162
+      game.currentRoundScore[0] = 101;
+      game.currentRoundScore[1] = 61;
+      
+      game.endRound();
+      
+      expect(game.lastRoundBreakdown[0].cardPoints + game.lastRoundBreakdown[1].cardPoints).toBe(162);
+      expect(game.lastRoundBreakdown[0].combinationPoints).toBe(20);
+      expect(game.lastRoundBreakdown[1].combinationPoints).toBe(0);
+      expect(game.lastRoundBreakdown[0].valatPoints).toBe(0);
+      expect(game.lastRoundBreakdown[1].valatPoints).toBe(0);
+      
+      // Verify: 
+      expect(game.lastRoundRoundedPoints[0]).toBe(36);
+      expect(game.lastRoundRoundedPoints[1]).toBe(0); 
+      
+    });
   });
 });
 

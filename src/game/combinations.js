@@ -133,18 +133,19 @@ export function findBelotOnPlay(contract, playedCard, playerHand, leadSuit) {
   if (contract === 'all-trump') {
     // In all-trump, belot can be in any suit
     targetSuit = playedCard.suit;
+
+    // Belot can only be announced if the current trick is led in the same suit as the belot suit
+    // (i.e., the lead card suit of the trick must match the suit of the belot being announced)
+    if (leadSuit && leadSuit !== targetSuit) {
+      return null;
+    }
   } else {
     // In trump suit game, belot must be in the trump suit
+    // This also covers the case of trumping and same time announcing belot
     if (playedCard.suit !== contract) {
       return null; // Card is not in trump suit
     }
     targetSuit = contract;
-  }
-  
-  // Belot can only be announced if the current trick is led in the same suit as the belot suit
-  // (i.e., the lead card suit of the trick must match the suit of the belot being announced)
-  if (leadSuit && leadSuit !== targetSuit) {
-    return null;
   }
   
   // Check if player has both Queen and King of the target suit

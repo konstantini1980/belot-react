@@ -648,7 +648,7 @@ export class BelotGame {
     const roundWinner = contractPoints > opponentPoints ? contractTeam : (1 - contractTeam);
     // Valat or hanging cancels doubling: count normally; otherwise double/redouble apply
     const effectiveMultiplier = isValat || isHanging ? 1 : (this.redouble ? 4 : (this.double ? 2 : 1));
-    const winnerTakesAll = (this.double || this.redouble || isValat) && !isHanging;
+    const winnerTakesAll = (((this.double || this.redouble) && !isValat) || (contractPoints < opponentPoints));
 
     this.lastRoundRoundedPoints = [0, 0];
 
