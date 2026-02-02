@@ -45,8 +45,9 @@
             
 import { CARD_RANKINGS } from './cards';
 
+// We will consider only top 3 cards for points evaluation
 const MIN_FOR_TRUMP = 34;
-const MIN_FOR_NOTRUMPS = 40;
+const MIN_FOR_NOTRUMPS = 32;
 const MIN_FOR_ALLTRUMPS = 60;
 
 function evaluateCardPoints(hand, contract) {
