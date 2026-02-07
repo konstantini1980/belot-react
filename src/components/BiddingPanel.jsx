@@ -73,8 +73,8 @@ export default function BiddingPanel({
       'diamonds': { icon: '♦', label: t('diamonds'), iconColor: '#d32f2f', textColor: '#ffffff' },
       'clubs': { icon: '♣', label: t('clubs'), iconColor: '#ffffff', textColor: '#ffffff' },
       'spades': { icon: '♠', label: t('spades'), iconColor: '#ffffff', textColor: '#ffffff' },
-      'no-trump': { icon: 'NT', label: t('noTrump'), iconColor: '#2196F3', textColor: '#2196F3' },
-      'all-trump': { icon: 'AT', label: t('allTrump'), iconColor: '#FFC107', textColor: '#FFC107' }
+      'no-trump': { icon: 'A', label: t('noTrump'), iconColor: '#2196F3', textColor: '#2196F3' },
+      'all-trump': { icon: 'J', label: t('allTrump'), iconColor: '#FFC107', textColor: '#FFC107' }
     };
     return contractMap[contractValue] || { icon: '', label: contractValue, iconColor: '#ffffff', textColor: '#ffffff' };
   };

@@ -25,7 +25,7 @@ export default {
   spades: 'Spades',
   noTrump: 'No Trump',
   allTrump: 'All Trump',
-  thisRound: 'This Round',
+  thisRound: 'This round',
   
   // Score Panel
   gameScore: 'Game score',

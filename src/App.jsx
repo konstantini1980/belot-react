@@ -385,13 +385,8 @@ export default function App() {
     newGame.players[1].name = t('playerWest');
     newGame.players[2].name = t('playerPartner');
     newGame.players[3].name = t('playerEast');
-    // Only update if names actually changed to avoid unnecessary re-renders
-    if (newGame.players[0].name !== game.players[0].name ||
-        newGame.players[1].name !== game.players[1].name ||
-        newGame.players[2].name !== game.players[2].name ||
-        newGame.players[3].name !== game.players[3].name) {
-      setGame(newGame);
-    }
+    
+    setGame(newGame);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language]);
 
