@@ -71,7 +71,7 @@ export default function App() {
       setPlayableCards([]);
       const timer = setTimeout(() => {
         handleAIPlay();
-      }, 1500);
+      }, 1000);
       return () => clearTimeout(timer);
     } else if (game.phase === GAME_PHASES.PLAYING && game.currentPlayer === PLAYER_ID) {
       // Update playable cards only when it's player's turn
@@ -84,7 +84,7 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game.phase, game.currentPlayer]);
 
-  // Handle trick completion - wait 3 seconds after 4th card, then trigger animation to holders
+  // Handle trick completion - wait 2 seconds after 4th card, then trigger animation to holders
   useEffect(() => {
     if (game.phase === GAME_PHASES.PLAYING) {
       if (game.currentTrick.cards.length === 4) {
@@ -92,7 +92,7 @@ export default function App() {
           const timer = setTimeout(() => {
             setWinningTeam(game.players[game.currentPlayer].team);
             animateToHolders();
-          }, 3000);
+          }, 2000);
           return () => clearTimeout(timer);
         }
       } 
@@ -250,7 +250,7 @@ export default function App() {
             delete updated[playerId];
             return updated;
           });
-        }, 4000);
+        }, 3000);
       }
 
       // Show belot when announced (when Q or K is played)
@@ -326,7 +326,7 @@ export default function App() {
   const handleNextDeal = () => {
     const newGame = new BelotGame();
     Object.assign(newGame, game);
-    newGame.dealer = (newGame.dealer + 1) % 4;
+    newGame.dealer = (newGame.dealer + 3) % 4;
     newGame.deal();
     setGame(newGame);
     setPlayableCards([]);
@@ -402,6 +402,7 @@ export default function App() {
           players={game.players}
           currentTrick={game.currentTrick}
           currentPlayer={game.currentPlayer}
+          currentBidder={game.currentBidder}
           tricks={game.tricks}
           totalScores={game.totalScores}
           currentRoundScores={game.currentRoundScore}

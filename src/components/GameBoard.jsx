@@ -12,6 +12,7 @@ export default function GameBoard({
   players, 
   currentTrick, 
   currentPlayer,
+  currentBidder = null,
   tricks,
   totalScores,
   currentRoundScores,
@@ -327,12 +328,16 @@ export default function GameBoard({
           const combinations = playerCombinations[idx] || [];
           const isSouth = idx === 0;
           const isTrickWinner = currentTrick.winner === idx;
+          // Show dot during bidding phase for current bidder, or during playing phase for current player
+          const isActive = phase === GAME_PHASES.BIDDING 
+            ? (currentBidder !== null && currentBidder === idx)
+            : (currentPlayer === idx);
           return (
             <div key={idx} className={`player-container ${position}`} data-player-id={idx}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-                <div className={`player-chip ${currentPlayer === idx ? 'active' : ''} ${isTrickWinner ? 'won-trick' : ''}` }>
+                <div className={`player-chip ${isActive ? 'active' : ''} ${isTrickWinner ? 'won-trick' : ''}` }>
                   <span className="player-chip-name">{player.name}</span>
-                  <span className={`player-turn-dot ${currentPlayer === idx ? 'visible' : ''}`}></span>
+                  <span className={`player-turn-dot ${isActive ? 'visible' : ''}`}></span>
                 </div>
                 {combinations.length > 0 && (
                   <div className={`combination-balloon-wrapper ${position}`}>
@@ -386,7 +391,7 @@ export default function GameBoard({
         {showFullScorePanel && (
         <FullScorePanel 
           totalScores={totalScores}
-          currentRoundScores={isRoundOver ? lastRoundRoundedPoints : (forceShowScorePanel ? correntRoundScores : null)}
+          currentRoundScores={isRoundOver ? lastRoundRoundedPoints : (forceShowScorePanel ? currentRoundScores : null)}
           lastRoundRoundedPoints={isRoundOver ? lastRoundRoundedPoints : null}
           hangingPoints={isRoundOver ? hangingPoints : 0}
           phase={phase}

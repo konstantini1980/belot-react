@@ -438,6 +438,85 @@ describe('Scoring', () => {
       
     });
 
+    it('Trump game - should drop lower 4-of-a-kind when opponent has higher 4-of-a-kind', () => {
+      // Set up card points
+      game.currentRoundScore[0] = 100; // Contract team
+      game.currentRoundScore[1] = 58; // Opponent team
+      
+      game.contract = 'hearts';
+      game.trumpSuit = 'hearts';
+      game.bids = [
+        { playerId: 0, bid: 'hearts' },
+        { playerId: 1, bid: 'pass' },
+        { playerId: 2, bid: 'pass' },
+        { playerId: 3, bid: 'pass' }
+      ];
+      
+      // Team 0 has 4 Jacks (200 points) - higher 4-of-a-kind
+      game.announcedCombinations[0] = [
+        { 
+          type: 'equal', 
+          points: 200, 
+          cards: [
+            new Card('hearts', 'J'), 
+            new Card('spades', 'J'), 
+            new Card('diamonds', 'J'), 
+            new Card('clubs', 'J')
+          ] 
+        }
+      ];
+      
+      // Team 1 has 4 Nines (150 points) - lower 4-of-a-kind, should be dropped
+      game.announcedCombinations[1] = [
+        { 
+          type: 'equal', 
+          points: 150, 
+          cards: [
+            new Card('hearts', '9'), 
+            new Card('spades', '9'), 
+            new Card('diamonds', '9'), 
+            new Card('clubs', '9')
+          ] 
+        }
+      ];
+      
+      // Complete all tricks (8 tricks total)
+      for (let i = 0; i < 8; i++) {
+        const team = i < 7 ? 0 : 1;
+        game.tricks.push({
+          cards: [
+            { playerId: 0, card: new Card('hearts', 'A') },
+            { playerId: 1, card: new Card('spades', '7') },
+            { playerId: 2, card: new Card('clubs', '7') },
+            { playerId: 3, card: new Card('diamonds', '7') }
+          ],
+          team: team
+        });
+      }
+      
+      // End the round
+      game.endRound();
+      
+      // Verify: Team 0's 4 Jacks (200 points) should count
+      // Team 1's 4 Nines (150 points) should be dropped because Team 0 has higher 4-of-a-kind
+      expect(game.lastRoundBreakdown[0].combinationPoints).toBe(200); // 4 Jacks count
+      expect(game.lastRoundBreakdown[1].combinationPoints).toBe(0); // 4 Nines dropped
+      
+      // Verify breakdown
+      expect(game.lastRoundBreakdown[0].cardPoints).toBe(100);
+      expect(game.lastRoundBreakdown[1].cardPoints).toBe(58);
+      
+      // Verify total points: 100 (card) + 200 (4 Jacks) = 300 => 30 for team 0
+      // 58 (card) + 0 (no combinations) = 58 => 6 for team 1
+      expect(game.lastRoundRoundedPoints[0]).toBe(30);
+      expect(game.lastRoundRoundedPoints[1]).toBe(6);
+      
+      // Verify that Team 1's combination is marked as invalid
+      expect(game.announcedCombinations[1][0].valid).toBe(false);
+      // Verify that Team 0's combination is marked as valid
+      expect(game.announcedCombinations[0][0].valid).toBe(true);
+    });
+
     it('Trump game - should not count lower order sequences when opponent has higher order sequence', () => {
       // Set up card points
       game.currentRoundScore[0] = 100; // Contract team

@@ -75,12 +75,12 @@ export class BelotGame {
     }
     
     this.phase = GAME_PHASES.BIDDING;
-    this.currentBidder = (this.dealer + 3) % 4; // Counter-clockwise
+    // First bidder is next from dealer
+    this.currentBidder = (this.dealer + 3) % 4;
     // Clear round variables for next round
     this.bids = [];
     this.tricks = [];
     this.currentTrick = { cards: [], winner: null, team: null };
-    this.currentBidder = 0;
     this.contract = null;
     this.trumpSuit = null;
     this.double = false;
@@ -153,16 +153,15 @@ export class BelotGame {
       this.redouble = false;
     }  
 
-    this.checkIsBiddingOver();
-    this.currentBidder = (this.currentBidder + 3) % 4; // Counter-clockwise
+    this.checkIsBiddingOver();    
     return true;
   }
   
 
   checkIsBiddingOver() {
-    // Check if bidding is over (3 consecutive passes after valid bid)
     const validBid = [...this.bids].reverse().find(b => b.bid !== 'pass' && b.bid !== 'double' && b.bid !== 'redouble');
     if (validBid) {
+      // If valid bid, check if bidding is over (3 consecutive passes after valid bid)
       const lastThree = this.bids.slice(-3);
       if (lastThree.length === 3 && lastThree.every(b => b.bid === 'pass')) {
         this.contract = validBid.bid;
@@ -178,15 +177,21 @@ export class BelotGame {
           }
         }
         this.phase = GAME_PHASES.PLAYING;
-        this.currentPlayer = (this.dealer + 3) % 4; // Counter-clockwise
+        this.currentPlayer = (this.dealer + 3) % 4; // Next from dealer starts playing
       } 
+
+      this.currentBidder = (this.currentBidder + 3) % 4; // Counter-clockwise
     } else {
       const lastFour = this.bids.slice(-4);
       if (lastFour.length === 4 && lastFour.every(b => b.bid === 'pass')) {
         // All passed - redeal
+        // Next dealer is counter clockwise from current dealer
         this.dealer = (this.dealer + 3) % 4;
         this.deal();   
-      }     
+      } else {
+        // Bidding is not over - update current bidder
+        this.currentBidder = (this.currentBidder + 3) % 4; // Counter-clockwise
+      }
     }
   }
 
@@ -557,10 +562,34 @@ export class BelotGame {
     const team0Highest = getHighestSequence(this.announcedCombinations[0]);
     const team1Highest = getHighestSequence(this.announcedCombinations[1]);
     
+    // Find highest 4-of-a-kind (equal) from each team - compare by points: J=200 > 9=150 > A/10/K/Q=100
+    const getHighestEqual = (combos) => {
+      const equals = combos.filter(c => c.type === 'equal');
+      if (equals.length === 0) return null;
+      return equals.reduce((best, curr) => (curr.points > (best?.points ?? -1) ? curr : best), null);
+    };
+    const team0HighestEqual = getHighestEqual(this.announcedCombinations[0]);
+    const team1HighestEqual = getHighestEqual(this.announcedCombinations[1]);
+    
     // Compare sequences
     let team0Wins = false;
     let team1Wins = false;
     let sequencesCancel = false;
+    
+    // Compare 4-of-a-kind: higher points wins
+    let team0EqualWins = false;
+    let team1EqualWins = false;
+    if (team0HighestEqual && team1HighestEqual) {
+      if (team0HighestEqual.points > team1HighestEqual.points) {
+        team0EqualWins = true;
+      } else if (team1HighestEqual.points > team0HighestEqual.points) {
+        team1EqualWins = true;
+      }
+    } else if (team0HighestEqual) {
+      team0EqualWins = true;
+    } else if (team1HighestEqual) {
+      team1EqualWins = true;
+    }
     
     if (team0Highest && team1Highest) {
       // Both teams have sequences - compare them
@@ -599,9 +628,30 @@ export class BelotGame {
       let comboPoints = 0;
       
       combos.forEach(combo => {
-        // Non-sequence combinations (equals, belot) always count
-        if (combo.type !== 'tierce' && combo.type !== 'quarte' && combo.type !== 'quint') {
-          combo.valid = true; // Always valid
+        // Belot always counts
+        if (combo.type === 'belot') {
+          combo.valid = true;
+          comboPoints += combo.points;
+          this.currentRoundScore[team] += combo.points;
+        } else if (combo.type === 'equal') {
+          // 4-of-a-kind: only count if team wins equals comparison otherwise drop lower
+          if (team === 0 && team0EqualWins) {
+            combo.valid = true;
+            comboPoints += combo.points;
+            this.currentRoundScore[team] += combo.points;
+          } else if (team === 1 && team1EqualWins) {
+            combo.valid = true;
+            comboPoints += combo.points;
+            this.currentRoundScore[team] += combo.points;
+          } else if (!team0HighestEqual && !team1HighestEqual) {
+            combo.valid = true;
+            comboPoints += combo.points;
+            this.currentRoundScore[team] += combo.points;
+          } else {
+            combo.valid = false;
+          }
+        } else if (combo.type !== 'tierce' && combo.type !== 'quarte' && combo.type !== 'quint') {
+          combo.valid = true;
           comboPoints += combo.points;
           this.currentRoundScore[team] += combo.points;
         } else {
