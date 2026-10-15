@@ -2,6 +2,7 @@ import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { usePlayerNames } from '../contexts/PlayerNamesContext';
 import { CONTRACT_RANK, lastContractBid } from '../game/gameLogic';
+import { SUITS } from '../game/cards';
 import './BiddingPanel.css';
 
 export default function BiddingPanel({ 
@@ -110,9 +111,16 @@ export default function BiddingPanel({
                       
                       return (
                         <span key={bidIdx} className={`bid-display ${isHistorical ? 'historical' : 'active'}`}>
-                          {bid.bid in CONTRACT_RANK && (
+                          {/* A suit bid shows its symbol; no-trump and all-trump are named, since
+                              four suit symbols read as noise */}
+                          {SUITS.includes(bid.bid) && (
                             <span className={`bid-suit-icon tone-${display.tone}`}>
                               {isHistorical ? '(' + display.icon + ')' : display.icon}
+                            </span>
+                          )}
+                          {(bid.bid === 'no-trump' || bid.bid === 'all-trump') && (
+                            <span className={`bid-text tone-${display.tone}`}>
+                              {isHistorical ? '(' + display.label + ')' : display.label}
                             </span>
                           )}
                           {bid.bid === 'pass' && (
