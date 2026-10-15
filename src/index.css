@@ -36,7 +36,7 @@
   --back-h: 65px;
   --bidding-sheet-h: 290px;
 
-  /* Card faces only; all UI text uses --font-sans */
+  /* Suit glyphs only (logo, bid tiles); all UI text uses --font-sans */
   --font-card: Georgia, 'Times New Roman', serif;
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',

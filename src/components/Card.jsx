@@ -2,16 +2,20 @@ import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import './Card.css';
 
-// Cards are drawn in CSS (corner indices, a big pip or a framed court card),
-// so they stay sharp at any size and need no image assets.
-const SUIT_SYMBOLS = {
-  clubs: '♣',
-  diamonds: '♦',
-  hearts: '♥',
-  spades: '♠'
+// Standard English-pattern card faces (public domain SVGs, see assets/cards/README.md).
+// The card back is drawn in CSS.
+const FACE_URLS = import.meta.glob('../assets/cards/*.svg', { eager: true, query: '?url', import: 'default' });
+
+const SUIT_LETTERS = {
+  clubs: 'c',
+  diamonds: 'd',
+  hearts: 'h',
+  spades: 's'
 };
 
-const COURT_RANKS = ['J', 'Q', 'K'];
+function faceUrl(card) {
+  return FACE_URLS[`../assets/cards/${card.rank.toLowerCase()}${SUIT_LETTERS[card.suit]}.svg`];
+}
 
 export default function Card({ card, onClick, selected, playable, showBack = false, cardId, className = '', style }) {
   const { t } = useLanguage();
@@ -43,34 +47,16 @@ export default function Card({ card, onClick, selected, playable, showBack = fal
     );
   }
 
-  const symbol = SUIT_SYMBOLS[card.suit];
-  const isRed = card.suit === 'hearts' || card.suit === 'diamonds';
-  const index = (
-    <>
-      <span className="card-rank">{card.rank}</span>
-      <span className="card-index-suit">{symbol}</span>
-    </>
-  );
-
   return (
     <div
-      className={`${classes} ${isRed ? 'red' : ''}`.replace(/\s+/g, ' ').trim()}
+      className={classes.replace(/\s+/g, ' ').trim()}
       onClick={handleClick}
       data-card-id={finalCardId}
       style={style}
       role="img"
       aria-label={t('cardName', { rank: card.rank, suit: t(card.suit) })}
     >
-      <span className="card-index" aria-hidden="true">{index}</span>
-      {COURT_RANKS.includes(card.rank) ? (
-        <span className="card-court" aria-hidden="true">
-          {card.rank}
-          <span className="card-court-suit">{symbol}</span>
-        </span>
-      ) : (
-        <span className="card-pip" aria-hidden="true">{symbol}</span>
-      )}
-      <span className="card-index card-index-bottom" aria-hidden="true">{index}</span>
+      <img className="card-face" src={faceUrl(card)} alt="" draggable="false" />
     </div>
   );
 }
