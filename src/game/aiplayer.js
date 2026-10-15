@@ -27,7 +27,11 @@
 
 2.2. If following a trick (not the first card):
 
-    2.2.1. If you hold the current strongest card in the requested suit, play it. (Note: If the suit has been trumped by an opponent, the "strongest card" is determined from the trump suit).
+    "The partner has played the winning card" below means the partner holds the trick and is sure to keep it: either the partner's card is the strongest card still in the game, or you are the last to play.
+
+    2.2.0. If you are the last to play, an opponent holds the trick and you can beat it, beat it with your cheapest winning card.
+
+    2.2.1. If you hold the current strongest card in the requested suit, play it. (Note: If the suit has been trumped by an opponent, the "strongest card" is determined from the trump suit). Exception: don't overtrump a partner who has played the winning card.
 
     2.2.2. If you do not hold the current strongest card in the requested suit:
 
@@ -285,13 +289,26 @@ function chooseFollow(validCards, ctx) {
     const value = card => card.getValue(game.contract);
     const playingColor = getRequestedSuit(game);
 
+    const winner = game.determineTrickWinner();
+    const isLast = game.currentTrick.cards.length === 3;
+    const partnerHolds = game.players[winner.playerId].team === game.players[playerId].team;
+    // The partner keeps the trick: nobody plays after us, or nothing still out beats the partner's card
+    const partnerWins = partnerHolds && (isLast || isTopCard(winner.card, ctx));
+
+    // 2.2.0
+    if (isLast && !partnerHolds) {
+        const winningCards = validCards.filter(card => card.isHigherThan(winner.card, game.contract));
+        if (winningCards.length > 0) return getWeakestCard(winningCards, game.contract, game.trumpSuit);
+    }
+
     // 2.2.1
     const topCard = validCards.find(card => card.suit === playingColor && isTopCard(card, ctx));
-    if (topCard) return topCard;
+    const overtrumpsPartner = topCard && partnerWins && topCard.suit === game.trumpSuit
+        && game.currentTrick.cards[0].card.suit !== game.trumpSuit;
+    if (topCard && !overtrumpsPartner) return topCard;
+    // An overtrump of the partner's sure trick falls through to 2.2.2 instead
 
     // 2.2.2
-    const winner = game.determineTrickWinner();
-    const partnerWins = game.players[winner.playerId].team === game.players[playerId].team && isTopCard(winner.card, ctx);
 
     const zeroEvaluatedColors = SUITS.filter(suit => {
         const suitCards = validCards.filter(card => card.suit === suit);
