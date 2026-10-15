@@ -173,6 +173,30 @@
   margin-top: 0;
 }
 
+/* The deal-by-deal results fold away: the whole title is the button, the caret on the right */
+.score-sheet-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.score-sheet-caret {
+  font-size: 14px;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.score-sheet-caret.folded {
+  transform: rotate(-90deg);
+}
+
 .score-section-divider {
   height: 1px;
   background: rgba(255, 255, 255, 0.2);

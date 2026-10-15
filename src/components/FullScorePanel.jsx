@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { GAME_PHASES, WINNING_SCORE } from '../game/gameLogic';
 import { useLanguage } from '../contexts/LanguageContext';
 import { usePlayerNames } from '../contexts/PlayerNamesContext';
@@ -12,6 +12,25 @@ const SUIT_SYMBOLS = {
   'diamonds': '♦',
   'clubs': '♣'
 };
+
+// Whether the deal-by-deal results are folded away (remembered on this device)
+const SHEET_FOLDED_KEY = 'belot-score-sheet-folded';
+
+function loadSheetFolded() {
+  try {
+    return localStorage.getItem(SHEET_FOLDED_KEY) === '1';
+  } catch {
+    return false; // Storage blocked: start unfolded
+  }
+}
+
+function saveSheetFolded(folded) {
+  try {
+    localStorage.setItem(SHEET_FOLDED_KEY, folded ? '1' : '0');
+  } catch {
+    // Storage blocked: the choice lasts until the panel closes
+  }
+}
 
 // Format a card as "A♠" or "9♦"
 function formatCard(card) {
@@ -47,6 +66,11 @@ export default function FullScorePanel({
   forceShow = false
 }) {
   const { t } = useLanguage();
+  const [sheetFolded, setSheetFolded] = useState(loadSheetFolded);
+  const toggleSheet = () => {
+    saveSheetFolded(!sheetFolded);
+    setSheetFolded(!sheetFolded);
+  };
   const playerNames = usePlayerNames();
   const isGameFinished = phase === GAME_PHASES.FINISHED;
   const maxScore = WINNING_SCORE;
@@ -272,8 +296,16 @@ export default function FullScorePanel({
       {dealHistory.length > 0 && (
         <>
           <div className="score-section-divider"></div>
-          <div className="score-section-title">{t('scoreSheet')}</div>
-          <table className="score-sheet">
+          <button
+            type="button"
+            className="score-section-title score-sheet-toggle"
+            onClick={toggleSheet}
+            aria-expanded={!sheetFolded}
+          >
+            <span>{t('scoreSheet')}</span>
+            <span className={`score-sheet-caret${sheetFolded ? ' folded' : ''}`} aria-hidden="true">▾</span>
+          </button>
+          {!sheetFolded && <table className="score-sheet">
             <thead>
               <tr>
                 <th>#</th>
@@ -296,7 +328,7 @@ export default function FullScorePanel({
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table>}
         </>
       )}
 
