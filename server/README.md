@@ -33,7 +33,7 @@ server plays by the same rules as the app.
 ## Costs and limits
 
 The Workers free plan covers this: SQLite-backed Durable Objects, 100,000 requests a day.
-A table nobody touches for 7 days is deleted.
+A table nobody touches for 24 hours (no move, join or deal) is deleted.
 
 ## Protocol
 
