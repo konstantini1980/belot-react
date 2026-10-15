@@ -31,35 +31,66 @@
   text-align: center;
 }
 
-/* Bids so far: a flat status line per player, in turn order. No boxes, so it
-   doesn't look like the bid buttons below. */
+/* Bids so far: each player's seat avatar with their name and bid beside it.
+   No boxes, so it doesn't look like the bid buttons below. */
 .bids-list {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 0;
+  gap: 8px;
   margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--panel-line);
   flex-shrink: 0;
 }
 
 .bid-item-row {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 8px;
   min-height: 40px;
-  padding: 2px 6px;
+  min-width: 0;
 }
 
-/* Thin dividers between players */
-.bid-item-row + .bid-item-row {
-  border-left: 1px solid var(--panel-line);
+/* The same round avatar as at the table: gold for your team, rose for theirs */
+.bid-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a1a;
+  background: linear-gradient(160deg, #f3e6c4, #c9a960);
+  opacity: 0.75;
+  transition: box-shadow 0.2s, opacity 0.2s;
 }
 
-/* The player whose turn it is to bid: gold name */
+.bid-avatar.team-1 {
+  background: linear-gradient(160deg, #f5d2c8, #c67f6e);
+}
+
+.bid-player-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-width: 0;
+}
+
+/* The player whose turn it is to bid: a gold ring and a gold name */
+.bid-item-row.current .bid-avatar {
+  opacity: 1;
+  box-shadow: 0 0 0 2px var(--panel-solid), 0 0 0 4px var(--gold), 0 0 14px var(--gold-soft);
+}
+
 .bid-item-row.current .bid-player-name {
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.bid-player-name {
   color: var(--gold);
   font-weight: 700;
 }
@@ -73,7 +104,7 @@
 .bid-right-side {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   flex-wrap: wrap;
   gap: 4px;
   min-height: 20px;
@@ -251,13 +282,19 @@
   }
 
   .bids-list {
+    gap: 4px;
     margin-bottom: 10px;
-    padding-bottom: 8px;
   }
 
   .bid-item-row {
+    gap: 6px;
     min-height: 34px;
-    padding: 2px 4px;
+  }
+
+  .bid-avatar {
+    width: 26px;
+    height: 26px;
+    font-size: 12px;
   }
 
   .bidding-grid {
