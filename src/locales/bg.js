@@ -126,5 +126,6 @@ export default {
   onlineError_badToken: 'Не успяхме да влезем в тази маса.',
   onlineError_taken: 'Не успяхме да създадем масата. Опитай отново.',
   confirmLeaveOnline: 'Да напуснеш ли онлайн играта? Компютърът ще заеме мястото ти.',
+  confirmLeaveOnlineAlone: 'Да напуснеш ли онлайн играта? Няма други играчи и играта ще приключи.',
   playerFriend: 'Приятел',
 };

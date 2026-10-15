@@ -126,5 +126,6 @@ export default {
   onlineError_badToken: 'Could not join this table.',
   onlineError_taken: 'Could not create the table. Please try again.',
   confirmLeaveOnline: 'Leave this online game? The computer takes your seat.',
+  confirmLeaveOnlineAlone: 'Leave this online game? Nobody else is playing, so the game ends.',
   playerFriend: 'Friend',
 };
