@@ -1,9 +1,9 @@
 import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { WINNING_SCORE } from '../game/gameLogic';
 import { contractLabel, multiplierLabel } from './contractLabel';
 import './ScorePanel.css';
 
-const WINNING_SCORE = 151;
 
 export default function CompactScorePanel({ 
   roundScores, 

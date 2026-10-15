@@ -3,6 +3,7 @@ import Card from './Card';
 import CompactScorePanel from './CompactScorePanel';
 import FullScorePanel from './FullScorePanel';
 import CombinationBalloon from './CombinationBalloon';
+import { BidLabel } from './BidLabel';
 import SouthPlayerHand from './SouthPlayerHand';
 import AIPlayerHand from './AIPlayerHand';
 import { GAME_PHASES } from '../game/gameLogic';
@@ -25,6 +26,7 @@ export default function GameBoard({
   currentTrick, 
   currentPlayer,
   currentBidder = null,
+  bids = [],
   tricks,
   totalScores,
   currentRoundScores,
@@ -399,9 +401,15 @@ export default function GameBoard({
           const isSouth = idx === 0;
           const isTrickWinner = currentTrick.winner === idx;
           // Show dot during bidding phase for current bidder, or during playing phase for current player
-          const isActive = phase === GAME_PHASES.BIDDING 
+          // (not while a full trick waits to be collected: then the trick's winner pulses)
+          const isActive = phase === GAME_PHASES.BIDDING
             ? (currentBidder !== null && currentBidder === idx)
-            : (currentPlayer === idx);
+            : (phase === GAME_PHASES.PLAYING && currentPlayer === idx && currentTrick.cards.length < 4);
+          // While bidding, a bubble shows each player's latest bid for the whole bidding
+          const lastBid = phase === GAME_PHASES.BIDDING
+            ? bids.filter(bid => bid.playerId === idx).at(-1)
+            : undefined;
+          const showBidBalloon = Boolean(lastBid);
           return (
             <div key={idx} className={`player-container ${position}`} data-player-id={idx}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
@@ -413,7 +421,14 @@ export default function GameBoard({
                   </span>
                   <span className="player-chip-name">{playerNames[idx]}</span>
                 </div>
-                {combinations.length > 0 && (
+                {showBidBalloon && (
+                  <div className={`combination-balloon-wrapper ${position}`}>
+                    <div className="combination-balloon bid-balloon visible">
+                      {lastBid && <BidLabel bid={lastBid.bid} words />}
+                    </div>
+                  </div>
+                )}
+                {!showBidBalloon && combinations.length > 0 && (
                   <div className={`combination-balloon-wrapper ${position}`}>
                     <CombinationBalloon
                       combinations={combinations}

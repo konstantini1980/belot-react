@@ -79,8 +79,10 @@
   font-weight: 700;
 }
 
-.bid-display.historical {
-  opacity: 0.5;
+/* An earlier bid is plain grey, whatever its suit colour */
+.bid-display.historical,
+.bid-display.historical [class*='tone-'] {
+  color: var(--ink-dim);
   font-weight: 400;
 }
 

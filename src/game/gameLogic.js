@@ -20,7 +20,7 @@ const emptyBreakdown = () => [0, 1].map(() => ({ cardPoints: 0, combinationPoint
 export function lastContractBid(bids) {
   return bids.findLast(b => b.bid in CONTRACT_RANK);
 }
-const WINNING_SCORE = 151;
+export const WINNING_SCORE = 151; // Reaching it (151 or more) wins the game
 const SAVE_VERSION = 1; // Bump when the saved game's shape changes, so old saves are ignored
 
 export const GAME_PHASES = {

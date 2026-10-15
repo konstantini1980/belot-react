@@ -2,7 +2,7 @@ import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { usePlayerNames } from '../contexts/PlayerNamesContext';
 import { CONTRACT_RANK, lastContractBid } from '../game/gameLogic';
-import { SUITS } from '../game/cards';
+import { BidLabel, ThinkingDots } from './BidLabel';
 import './BiddingPanel.css';
 
 export default function BiddingPanel({ 
@@ -102,45 +102,20 @@ export default function BiddingPanel({
             <div key={idx} className={`bid-item-row ${isCurrentBidder ? 'current' : ''}`}>
               <span className="bid-player-name">{playerNames[playerId]}</span>
               <div className="bid-right-side">
-                {playerBids.length > 0 ? (
-                  <>
-                    {playerBids.reverse().map((bid, bidIdx) => {
-                      const display = getContractDisplay(bid.bid);
-                      // Last bid in the array is active, previous ones are historical
-                      const isHistorical = bidIdx !== 0;
-                      
-                      return (
-                        <span key={bidIdx} className={`bid-display ${isHistorical ? 'historical' : 'active'}`}>
-                          {/* A suit bid shows its symbol; no-trump and all-trump are named, since
-                              four suit symbols read as noise */}
-                          {SUITS.includes(bid.bid) && (
-                            <span className={`bid-suit-icon tone-${display.tone}`}>
-                              {isHistorical ? '(' + display.icon + ')' : display.icon}
-                            </span>
-                          )}
-                          {(bid.bid === 'no-trump' || bid.bid === 'all-trump') && (
-                            <span className={`bid-text tone-${display.tone}`}>
-                              {isHistorical ? '(' + display.label + ')' : display.label}
-                            </span>
-                          )}
-                          {bid.bid === 'pass' && (
-                            <span className="bid-text">{isHistorical ? '(' + t('pass') + ')' : t('pass')}</span>
-                          )}
-                          {bid.bid === 'double' && (
-                            <span className="bid-text">{isHistorical ? '(' + t('double') + ')' : t('double')}</span>
-                          )}
-                          {bid.bid === 'redouble' && (
-                            <span className="bid-text">{isHistorical ? '(' + t('redouble') + ')' : t('redouble')}</span>
-                          )}
-                        </span>
-                      );
-                    })}
-                  </>
-                ) : isCurrentBidder ? (
-                  <span className="waiting-message-inline">
-                    {t('waiting')}
-                  </span>
-                ) : null}
+                {/* The player choosing now gets looping dots, followed by what they bid before */}
+                {isCurrentBidder && (
+                  <span className="waiting-message-inline"><ThinkingDots /></span>
+                )}
+                {playerBids.reverse().map((bid, bidIdx) => {
+                  // The latest bid is active, earlier ones are historical; while the
+                  // player is choosing again, all of their bids are historical
+                  const isHistorical = isCurrentBidder || bidIdx !== 0;
+                  return (
+                    <span key={bidIdx} className={`bid-display ${isHistorical ? 'historical' : 'active'}`}>
+                      <BidLabel bid={bid.bid} historical={isHistorical} />
+                    </span>
+                  );
+                })}
               </div>
             </div>
           );
