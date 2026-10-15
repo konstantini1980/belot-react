@@ -102,7 +102,6 @@ export default function OnlineGame({ table, onLeave, onCancel, onCodeTaken }) {
         error={error === 'taken' ? null : error}
         room={room}
         onStart={() => send({ type: 'start' })}
-        onRename={name => send({ type: 'rename', name })}
         onLeave={leave}
       />
     );

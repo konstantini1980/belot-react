@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import AppHeader, { TableControls } from './AppHeader';
 import { useLanguage } from '../contexts/LanguageContext';
 import { CODE_LENGTH, normalizeCode, shareLink, loadName, saveName } from '../online/session';
@@ -54,36 +54,23 @@ export function OnlineSetup({ onCreate, onJoin, onBack }) {
   );
 }
 
-// Your name at the table: kept on this device as you type, and sent to the others
-// shortly after you stop typing (or on Enter / leaving the field)
-function NameField({ onRename, onChange, onSubmit }) {
+// Your name, asked before you create or join a table (kept on this device for next time)
+function NameField({ onChange, onSubmit }) {
   const { t } = useLanguage();
   const [name, setName] = useState(loadName);
   const clean = name.replace(/\s+/g, ' ').trim().slice(0, NAME_LENGTH);
-  const sent = useRef(null);
-  const send = useCallback(() => {
-    if (!onRename || sent.current === clean) return;
-    sent.current = clean;
-    onRename(clean);
-  }, [onRename, clean]);
   useEffect(() => {
     saveName(clean);
     onChange?.(clean);
-    const timer = setTimeout(send, 600);
-    return () => clearTimeout(timer);
-  }, [clean, onChange, send]);
+  }, [clean, onChange]);
   return (
-    <form
-      className="online-name"
-      onSubmit={e => { e.preventDefault(); send(); onSubmit?.(); }}
-    >
+    <form className="online-name" onSubmit={e => { e.preventDefault(); onSubmit?.(); }}>
       <label className="online-label" htmlFor="online-name">{t('onlineYourName')}</label>
       <input
         id="online-name"
         value={name}
         maxLength={NAME_LENGTH}
         onChange={e => setName(e.target.value)}
-        onBlur={send}
         placeholder={t('onlineNamePlaceholder')}
         autoComplete="nickname"
       />
@@ -197,7 +184,7 @@ function SeatMap({ seats }) {
 
 // Before the game starts: the invite link, who sits where, and the host's start button.
 // Also shows connection problems (no such table, table full, server unreachable).
-export function OnlineLobby({ code, status, error, room, onStart, onRename, onLeave }) {
+export function OnlineLobby({ code, status, error, room, onStart, onLeave }) {
   const { t } = useLanguage();
 
   if (error) {
@@ -232,7 +219,6 @@ export function OnlineLobby({ code, status, error, room, onStart, onRename, onLe
   return (
     <TablePanel onExit={onLeave} confirmText={t('confirmLeaveOnline')}>
       <h2 className="online-title">{t('playOnline')}</h2>
-      <NameField onRename={onRename} />
       <SeatMap seats={view} />
       {room.isHost ? (
         <>
