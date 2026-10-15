@@ -12,6 +12,11 @@ export const CONTRACT_RANK = {
 };
 
 const VALAT_BONUS = 90;
+
+// The last real contract bid (not pass, double or redouble), or undefined
+export function lastContractBid(bids) {
+  return bids.findLast(b => b.bid in CONTRACT_RANK);
+}
 const WINNING_SCORE = 151;
 
 export const GAME_PHASES = {
@@ -31,10 +36,10 @@ export class BelotGame {
     this.phase = GAME_PHASES.DEALING;
     this.deck = [];
     this.players = [
-      { id: 0, name: 'You', hand: [], team: 0 },
-      { id: 1, name: 'West', hand: [], team: 1 },
-      { id: 2, name: 'Partner', hand: [], team: 0 },
-      { id: 3, name: 'East', hand: [], team: 1 }
+      { id: 0, hand: [], team: 0 },
+      { id: 1, hand: [], team: 1 },
+      { id: 2, hand: [], team: 0 },
+      { id: 3, hand: [], team: 1 }
     ];
     this.dealer = Math.floor(Math.random() * 4); // First dealer is picked at random
     this.currentBidder = 0;
@@ -52,7 +57,26 @@ export class BelotGame {
     this.lastRoundRoundedPoints = [0, 0]; // Rounded points added to scores from last round
     this.hangingPoints = 0; // Points hanging from last round
     this.announcedCombinations = [[], []]; // Team combinations
+    this.lastPlayAnnouncements = []; // What the last played card announced
     this.winner = null;
+  }
+
+  // A copy for the next React state. Everything that gets mutated (players, hands,
+  // tricks, scores, announcements) is copied, so the old state is never changed.
+  // Cards and bids are never mutated, so they stay shared.
+  clone() {
+    const copy = Object.assign(new BelotGame(), this);
+    copy.deck = [...this.deck];
+    copy.players = this.players.map(player => ({ ...player, hand: [...player.hand] }));
+    copy.bids = [...this.bids];
+    copy.currentTrick = { ...this.currentTrick, cards: [...this.currentTrick.cards] };
+    copy.tricks = this.tricks.map(trick => ({ ...trick, cards: [...trick.cards] }));
+    copy.totalScores = [...this.totalScores];
+    copy.currentRoundScore = [...this.currentRoundScore];
+    copy.lastRoundBreakdown = this.lastRoundBreakdown.map(team => ({ ...team }));
+    copy.lastRoundRoundedPoints = [...this.lastRoundRoundedPoints];
+    copy.announcedCombinations = this.announcedCombinations.map(combos => combos.map(c => ({ ...c })));
+    return copy;
   }
 
   deal() {
@@ -89,6 +113,7 @@ export class BelotGame {
     this.double = false;
     this.redouble = false;
     this.announcedCombinations = [[], []];
+    this.lastPlayAnnouncements = [];
     this.winner = null;
     // Reset round scores for new round
     this.currentRoundScore = [0, 0];
@@ -100,69 +125,56 @@ export class BelotGame {
 
 
   makeBid(playerId, bid) {
-    if (playerId !== this.currentBidder) return false;
-    if (bid === 'pass') {
-      this.bids.push({ playerId, bid: 'pass' });
-    } else if (bid === 'double') {
-      // Find the last winning contract (not pass, double, or redouble)
-      const lastWinningContract = this.bids
-        .filter(b => b.bid !== 'pass' && b.bid !== 'double' && b.bid !== 'redouble')
-        .pop();
-      
-      if (lastWinningContract) {
-        const lastContractTeam = this.players[lastWinningContract.playerId].team;
-        const currentPlayerTeam = this.players[playerId].team;
-        // Can only double if opponent (different team) has the winning contract
-        // Cannot double if teammate has the winning bid
-        if (lastContractTeam !== currentPlayerTeam) {
-          this.double = true;
-          this.bids.push({ playerId, bid: 'double' });
-        } else {
-          return false; // Cannot double teammate's bid
-        }
-      } else {
-        return false; // No winning contract to double
-      }
-    } else if (bid === 'redouble') {          
-      const lastWinningContract = this.bids
-      .filter(b => b.bid !== 'pass' && b.bid !== 'double' && b.bid !== 'redouble')
-      .pop();
+    if (playerId !== this.currentBidder) return false; // Not this player's turn to bid
 
-      // Can redouble only if valid bid exists by same team and game is already doubled
-      if (lastWinningContract && this.double) {
-        const lastContractTeam = this.players[lastWinningContract.playerId].team;
-        const currentPlayerTeam = this.players[playerId].team;
-        // Game already doubled by opponent
-        // Can redouble if current team has the winning bid
-        if (lastContractTeam === currentPlayerTeam) {
-          this.redouble = true;
-          this.bids.push({ playerId, bid: 'redouble' });
-        } else {
-          return false; // This team doesn't have the winning bid
-        }      
-      } else {
-        return false; // No double to redouble
+    if (bid === 'double') {
+      // Only an opponent of the contract team can double, and only once
+      if (!this.canDouble(playerId)) return false;
+      this.double = true;
+    } else if (bid === 'redouble') {
+      // Only the doubled contract team can redouble, and only once
+      if (!this.canRedouble(playerId)) return false;
+      this.redouble = true;
+    } else if (bid !== 'pass') {
+      if (!(bid in CONTRACT_RANK)) return false; // Not a known contract
+      const last = lastContractBid(this.bids);
+      if (last && CONTRACT_RANK[bid] <= CONTRACT_RANK[last.bid]) {
+        return false; // A new contract must outrank the last one (a double doesn't change that)
       }
-    } else {
-      // Contract bid
-      const lastValidBid = this.bids.filter(b => b.bid !== 'pass').pop();
-      if (lastValidBid) {
-        const lastRank = CONTRACT_RANK[lastValidBid.bid];
-        const newRank = CONTRACT_RANK[bid];
-        if (newRank <= lastRank) return false;
-      }
-      this.bids.push({ playerId, bid });
+      // A new contract starts fresh: any double or redouble is wiped out
       this.double = false;
       this.redouble = false;
-    }  
+    }
+    // A pass is always allowed
 
-    this.checkIsBiddingOver();    
+    this.bids.push({ playerId, bid });
+    this.checkIsBiddingOver();
     return true;
   }
-  
+
+  // Team holding the current (or final) contract, or null before anyone bids
+  contractTeam() {
+    const last = lastContractBid(this.bids);
+    return last ? this.players[last.playerId].team : null;
+  }
+
+  canDouble(playerId) {
+    const team = this.contractTeam();
+    if (team === null) return false; // No contract to double yet
+    if (team === this.players[playerId].team) return false; // Cannot double your own team's contract
+    if (this.double) return false; // Already doubled (a redouble is the contract team's answer)
+    return true; // An opponent may double
+  }
+
+  canRedouble(playerId) {
+    if (!this.double) return false; // Nothing to redouble until the contract is doubled
+    if (this.redouble) return false; // Already redoubled
+    if (this.contractTeam() !== this.players[playerId].team) return false; // Only the contract team can redouble
+    return true; // The doubled contract team may redouble, at any later turn in the bidding
+  }
 
   checkIsBiddingOver() {
-    const validBid = [...this.bids].reverse().find(b => b.bid !== 'pass' && b.bid !== 'double' && b.bid !== 'redouble');
+    const validBid = lastContractBid(this.bids);
     if (validBid) {
       // If valid bid, check if bidding is over (3 consecutive passes after valid bid)
       const lastThree = this.bids.slice(-3);
@@ -201,7 +213,7 @@ export class BelotGame {
   playCard(playerId, cardId) {
     if (playerId !== this.currentPlayer) return false;
     if (this.phase !== GAME_PHASES.PLAYING) return false;
-    if (this.currentTrick.cards.length >= 4) return false; // Trick is full, waiting for completeTrick()
+    if (this.currentTrick.cards.length === 4) return false; // Trick is full until completeTrick() collects it
     
     const player = this.players[playerId];
     const cardIndex = player.hand.findIndex(c => c.id === cardId);
@@ -212,69 +224,34 @@ export class BelotGame {
     // Validate card play
     if (!this.isValidCardPlay(player, card)) return false;
     
-    // Check for belot when Q or K is played (before removing card from hand)
+    // What this card announces, for the scoring and for the UI's speech balloon
+    const team = player.team;
+    const announced = [];
+
+    // Sequences and four of a kind are announced with the first card of the first trick.
+    // A sequence already beaten by the opponents' announced longer one isn't declared.
+    if (this.tricks.length === 0 && this.contract && this.contract !== 'no-trump') {
+      const opponentCombos = this.announcedCombinations[1 - team];
+      const opponentBest = Math.max(0, ...opponentCombos.filter(isSequence).map(c => SEQUENCE_TYPE_ORDER[c.type]));
+      for (const combo of getAllCombinations(player.hand)) {
+        if (!isSequence(combo) || SEQUENCE_TYPE_ORDER[combo.type] >= opponentBest) {
+          announced.push({ ...combo, playerId });
+        }
+      }
+    }
+
+    // Belot is announced when its Q or K is played (checked before the card leaves the hand)
     if (this.contract && (card.rank === 'Q' || card.rank === 'K')) {
       const leadSuit = this.currentTrick.cards.length > 0 ? this.currentTrick.cards[0].card.suit : card.suit;
       const belot = findBelotOnPlay(this.contract, card, player.hand, leadSuit);
       if (belot) {
-        const team = player.team;
-        this.announcedCombinations[team].push({
-          ...belot,
-          playerId
-        });
+        announced.push({ ...belot, playerId });
       }
     }
-    
-    // Auto-announce other combinations (sequences, equals) on first card play in first trick
-    const isFirstTrick = this.tricks.length === 0;
-    if (isFirstTrick && this.contract && this.contract !== 'no-trump') {
-      const allCombos = getAllCombinations(player.hand);
-      if (allCombos.length > 0) {
-        const team = player.team;
-        const opponentTeam = 1 - team;
-        
-        // Filter combinations based on opponent's announcements
-        const opponentCombos = this.announcedCombinations[opponentTeam];
-        const opponentHasQuint = opponentCombos.some(c => c.type === 'quint');
-        const opponentHasQuarte = opponentCombos.some(c => c.type === 'quarte');
-        
-        allCombos.forEach(combo => {
-          // If it's "equals" - add it
-          if (combo.type === 'equal') {
-            this.announcedCombinations[team].push({
-              ...combo,
-              playerId
-            });
-          }
-          // If sequential and is a quint - add it
-          else if (combo.type === 'quint') {
-            this.announcedCombinations[team].push({
-              ...combo,
-              playerId
-            });
-          }
-          // If sequential and is a quarte - check that opponent does not have quints
-          else if (combo.type === 'quarte') {
-            if (!opponentHasQuint) {
-              this.announcedCombinations[team].push({
-                ...combo,
-                playerId
-              });
-            }
-          }
-          // If sequential and is a tierce - check that opponent does not have quints or quartes
-          else if (combo.type === 'tierce') {
-            if (!opponentHasQuint && !opponentHasQuarte) {
-              this.announcedCombinations[team].push({
-                ...combo,
-                playerId
-              });
-            }
-          }
-        });
-      }
-    }
-    
+
+    this.announcedCombinations[team].push(...announced);
+    this.lastPlayAnnouncements = announced;
+
     // Remove card from hand
     player.hand.splice(cardIndex, 1);
     this.currentTrick.cards.push({ playerId, card });
@@ -526,16 +503,27 @@ export class BelotGame {
     // Show the full score panel; the next deal starts when the user continues
     this.phase = GAME_PHASES.SCORING;
 
-    if (this.totalScores[0] >= WINNING_SCORE || this.totalScores[1] >= WINNING_SCORE) {
-      this.winner = this.totalScores[0] >= WINNING_SCORE ? 0 : 1;
+    this.winner = this.gameWinner(valatTeam !== undefined);
+    if (this.winner !== null) {
       this.phase = GAME_PHASES.FINISHED;
     }
+  }
+
+  // The game ends when a team has 151 or more after a deal (per belot.bg):
+  // if both pass 151 the higher total wins, and an equal total keeps playing.
+  // A game can't be won with a valat, so a valat deal never ends it.
+  gameWinner(wasValat) {
+    const [score0, score1] = this.totalScores;
+    if (wasValat || Math.max(score0, score1) < WINNING_SCORE || score0 === score1) {
+      return null;
+    }
+    return score0 > score1 ? 0 : 1;
   }
 
   // Turns this round's raw points into game points (tens), applying doubling,
   // hanging points and rounding. Updates hangingPoints and breakdown[*].hangingPoints.
   calculateRoundedPoints(breakdown) {
-    const contractTeam = this.players[this.bids.find(b => b.bid === this.contract).playerId].team;
+    const contractTeam = this.contractTeam();
     const opponentTeam = 1 - contractTeam;
     const contractPoints = this.currentRoundScore[contractTeam];
     const opponentPoints = this.currentRoundScore[opponentTeam];

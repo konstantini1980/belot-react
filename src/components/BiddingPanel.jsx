@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { CONTRACT_RANK, lastContractBid } from '../game/gameLogic';
 import './BiddingPanel.css';
 
 export default function BiddingPanel({ 
@@ -7,7 +8,8 @@ export default function BiddingPanel({
   playerId, 
   bids, 
   onBid, 
-  players 
+  canDouble = false,
+  canRedouble = false
 }) {
   const { t } = useLanguage();
   
@@ -21,49 +23,12 @@ export default function BiddingPanel({
   ];
 
   const isMyTurn = currentBidder === playerId;
-  // Find the last winning contract (not pass, double, or redouble)
-  const lastWinningContract = bids
-    .filter(b => b.bid !== 'pass' && b.bid !== 'double' && b.bid !== 'redouble')
-    .pop();
-  
-  // Get teams
-  const currentPlayerTeam = players && players[playerId] ? players[playerId].team : null;
-  const lastContractTeam = lastWinningContract && players && players[lastWinningContract.playerId] 
-    ? players[lastWinningContract.playerId].team 
-    : null;
-  
-  // Can double if opponent (different team) has a winning contract
-  // Cannot double if teammate has the winning bid
-  const canDouble = lastWinningContract && 
-    lastContractTeam !== null &&
-    currentPlayerTeam !== null &&
-    lastContractTeam !== currentPlayerTeam;
-  
-  // Can redouble only if game is already doubled by opponent (different team)
-  // Cannot redouble if teammate doubled
-  const lastBid = bids.length > 0 ? bids[bids.length - 1] : null;
-  const lastBidderTeam = lastBid && players && players[lastBid.playerId] 
-    ? players[lastBid.playerId].team 
-    : null;
-  const canRedouble = lastBid && 
-    lastBid.bid === 'double' &&
-    lastBidderTeam !== null &&
-    currentPlayerTeam !== null &&
-    lastBidderTeam !== currentPlayerTeam;
+  const lastContract = lastContractBid(bids);
 
+  // Only contracts that outrank the current one can be bid
   const getAvailableContracts = () => {
-    if (!lastWinningContract) return CONTRACTS;
-    const lastRank = {
-      'clubs': 1, 'diamonds': 2, 'hearts': 3, 'spades': 4,
-      'no-trump': 5, 'all-trump': 6
-    }[lastWinningContract.bid];
-    return CONTRACTS.filter(c => {
-      const rank = {
-        'clubs': 1, 'diamonds': 2, 'hearts': 3, 'spades': 4,
-        'no-trump': 5, 'all-trump': 6
-      }[c.value];
-      return rank > lastRank;
-    });
+    if (!lastContract) return CONTRACTS;
+    return CONTRACTS.filter(c => CONTRACT_RANK[c.value] > CONTRACT_RANK[lastContract.bid]);
   };
 
   const getContractDisplay = (contractValue) => {
@@ -136,7 +101,7 @@ export default function BiddingPanel({
                       
                       return (
                         <span key={bidIdx} className={`bid-display ${isHistorical ? 'historical' : 'active'}`}>
-                          {bid.bid !== 'pass' && bid.bid !== 'double' && bid.bid !== 'redouble' && (
+                          {bid.bid in CONTRACT_RANK && (
                             <span className="bid-suit-icon" style={{ color: display.iconColor }}>
                               {isHistorical ? '(' + display.icon + ')' : display.icon}
                             </span>
