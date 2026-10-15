@@ -12,6 +12,7 @@ export default {
   exitGame: 'Exit game',
   continueGame: 'Continue game',
   confirmExitGame: 'Exit this game? It will not be saved.',
+  cancel: 'Cancel',
   
   // Players
   playerYou: 'You',
