@@ -50,7 +50,7 @@ jobs:
       - run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          npx gh-pages -d dist -u "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>" \
-            -r "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
+          # gh-pages takes the commit author from the git config above (its -u option can't parse "[bot]")
+          npx gh-pages -d dist -r "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
