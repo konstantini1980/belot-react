@@ -130,7 +130,8 @@ describe('Online table: playing', () => {
         const game = table.game;
         if (game.phase === GAME_PHASES.SCORING) {
           deals++;
-          expect(table.handle(friendSeat, { type: 'nextDeal' })).toMatchObject({ type: 'deal' });
+          expect(table.handle(friendSeat, { type: 'nextDeal' })).toMatchObject({ type: 'ready' });
+          expect(table.handle(HOST_SEAT, { type: 'nextDeal' })).toMatchObject({ type: 'deal' });
           continue;
         }
         if (game.phase === GAME_PHASES.FINISHED) break;
@@ -142,6 +143,28 @@ describe('Online table: playing', () => {
       expect(table.handle(HOST_SEAT, { type: 'newGame' })).toMatchObject({ type: 'newGame' });
       expect(table.game.phase).toBe(GAME_PHASES.DEALING);
     }
+  });
+
+  it('Deals the next deal only after both humans click Next deal', () => {
+    const table = tableWithFriend(FRIEND_SEATS.opponent);
+    table.game.phase = GAME_PHASES.SCORING; // A deal was just scored
+    const dealer = table.game.dealer;
+
+    expect(table.handle(HOST_SEAT, { type: 'nextDeal' })).toEqual({ type: 'ready', seat: HOST_SEAT });
+    expect(table.game.phase).toBe(GAME_PHASES.SCORING); // Still waiting for the friend
+    expect(table.isWaitingForNextDeal(HOST_SEAT)).toBe(true);
+    expect(table.isWaitingForNextDeal(FRIEND_SEATS.opponent)).toBe(false);
+    expect(table.handle(HOST_SEAT, { type: 'nextDeal' })).toBeNull(); // Clicking twice changes nothing
+    expect(table.nextStep()).toBeNull(); // Nothing moves on its own
+
+    // The wait survives a server restart
+    const restored = Table.restore(JSON.parse(JSON.stringify(table.snapshot())));
+    expect(restored.isWaitingForNextDeal(HOST_SEAT)).toBe(true);
+
+    expect(restored.handle(FRIEND_SEATS.opponent, { type: 'nextDeal' })).toEqual({ type: 'deal', seat: FRIEND_SEATS.opponent });
+    expect(restored.game.phase).toBe(GAME_PHASES.BIDDING);
+    expect(restored.game.dealer).toBe((dealer + 3) % 4);
+    expect(restored.isWaitingForNextDeal(HOST_SEAT)).toBe(false); // Fresh for the next deal
   });
 
   it('Leaves a full trick on the table, then collects it', () => {

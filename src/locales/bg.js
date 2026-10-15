@@ -57,6 +57,7 @@ export default {
   showLastTrick: 'Покажи последната ръка',
   totalScore: 'Общо',
   nextDeal: 'Следващо раздаване',
+  nextDealWaiting: 'Чакаме приятеля ти да натисне „Следващо раздаване“…',
   firstTo151Wins: 'Първият над 151 точки печели',
   you: 'Ние',
   opp: 'Вие',

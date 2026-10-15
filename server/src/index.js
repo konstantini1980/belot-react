@@ -130,6 +130,7 @@ export class GameRoom extends DurableObject {
         friendJoined: table.friendJoined,
         friendAt: seatFor(seat, other), // Where the other human sits, as this player sees the table
         friendOnline: online.has(other),
+        waitingForNextDeal: table.isWaitingForNextDeal(seat), // Clicked "Next deal", the other human hasn't yet
         event: event && { type: event.type, seat: seatFor(seat, event.seat) },
         game: viewFor(table.game, seat),
       }));

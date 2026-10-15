@@ -1,5 +1,5 @@
 # The game server for online play: one Durable Object per table (room code).
-# Deploy with `npm run deploy` in this folder (the owner's step); see README.md.
+# Deployed by CI on merges to main (see README.md), or by hand with `npm run deploy`.
 name = "belot"
 main = "src/index.js"
 compatibility_date = "2026-10-01"
