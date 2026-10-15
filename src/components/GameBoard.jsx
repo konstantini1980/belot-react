@@ -3,7 +3,7 @@ import Card from './Card';
 import CompactScorePanel from './CompactScorePanel';
 import FullScorePanel from './FullScorePanel';
 import CombinationBalloon from './CombinationBalloon';
-import { BidLabel, ThinkingDots } from './BidLabel';
+import { BidLabel } from './BidLabel';
 import SouthPlayerHand from './SouthPlayerHand';
 import AIPlayerHand from './AIPlayerHand';
 import { GAME_PHASES } from '../game/gameLogic';
@@ -404,12 +404,11 @@ export default function GameBoard({
           const isActive = phase === GAME_PHASES.BIDDING
             ? (currentBidder !== null && currentBidder === idx)
             : (phase === GAME_PHASES.PLAYING && currentPlayer === idx && currentTrick.cards.length < 4);
-          // While bidding, a bubble shows each player's latest bid for the whole bidding;
-          // the player choosing now gets looping dots before it
+          // While bidding, a bubble shows each player's latest bid for the whole bidding
           const lastBid = phase === GAME_PHASES.BIDDING
             ? bids.filter(bid => bid.playerId === idx).at(-1)
             : undefined;
-          const showBidBalloon = phase === GAME_PHASES.BIDDING && (lastBid || currentBidder === idx);
+          const showBidBalloon = Boolean(lastBid);
           return (
             <div key={idx} className={`player-container ${position}`} data-player-id={idx}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
@@ -424,7 +423,6 @@ export default function GameBoard({
                 {showBidBalloon && (
                   <div className={`combination-balloon-wrapper ${position}`}>
                     <div className="combination-balloon bid-balloon visible">
-                      {currentBidder === idx && <ThinkingDots />}
                       {lastBid && <BidLabel bid={lastBid.bid} words />}
                     </div>
                   </div>
