@@ -235,7 +235,7 @@ export default function GameBoard({
       )}
       {isMobile && !isMobileGameStarted && onStartMobileGame && (
         <div className="mobile-start-button-overlay">
-          <button className="mobile-start-button pass-button-large" onClick={onStartMobileGame}>
+          <button className="mobile-start-button" onClick={onStartMobileGame}>
             {startButtonText}
           </button>
         </div>

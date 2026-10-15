@@ -6,6 +6,16 @@ import './Card.css';
 // The card back is drawn in CSS.
 const FACE_URLS = import.meta.glob('../assets/cards/*.svg', { eager: true, query: '?url', import: 'default' });
 
+// Load and decode every face up front. Otherwise a card's face is fetched the first
+// time it is shown, and on a phone the card flies blank before the face appears.
+// Holding the decoded images keeps them ready for every later <img>.
+const PRELOADED_FACES = typeof Image === 'undefined' ? [] : Object.values(FACE_URLS).map((url) => {
+  const img = new Image();
+  img.src = url;
+  img.decode?.().catch(() => {}); // A failed preload just means that card loads when shown
+  return img;
+});
+
 const SUIT_LETTERS = {
   clubs: 'c',
   diamonds: 'd',
@@ -56,7 +66,7 @@ export default function Card({ card, onClick, selected, playable, showBack = fal
       role="img"
       aria-label={t('cardName', { rank: card.rank, suit: t(card.suit) })}
     >
-      <img className="card-face" src={faceUrl(card)} alt="" draggable="false" />
+      <img className="card-face" src={faceUrl(card)} alt="" draggable="false" decoding="sync" />
     </div>
   );
 }
