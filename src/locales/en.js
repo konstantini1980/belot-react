@@ -58,7 +58,7 @@ export default {
   totalScore: 'Total Score',
   nextDeal: 'Next Deal',
   nextDealWaiting: 'Waiting for the other players to click Next Deal…',
-  firstTo151Wins: 'The first team with 151 points or more wins',
+  firstTo151Wins: 'The first team that reaches 151 points wins',
   noWinnerAfterValat: 'No winner yet: a game can\'t be won with a valat',
   noWinnerEqualTotals: 'No winner yet: the totals are equal, so play goes on',
   you: 'Us',

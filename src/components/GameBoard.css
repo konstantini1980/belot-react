@@ -244,9 +244,11 @@
   margin-bottom: 36px;
 }
 
+/* Side seats sit mid-height, but never higher than just below the score panel
+   (on short screens the panel would cover West's chip) */
 .player-container.west {
   left: 40px;
-  top: 50%;
+  top: max(50%, 292px);
   transform: translateY(-50%);
 }
 
@@ -258,7 +260,7 @@
 
 .player-container.east {
   right: 40px;
-  top: 50%;
+  top: max(50%, 292px);
   transform: translateY(-50%);
 }
 
