@@ -304,7 +304,7 @@ export default function LocalGame({ onPlayOnline }) {
           showCards={showCards}
           isGameStarted={isGameStarted}
           onStartGame={handleStartGame}
-          startButtonText={hasGameInProgress ? t('continueGame') : t('startBelotGame')}
+          startButtonText={hasGameInProgress ? t('continueGame') : t('startLocalGame')}
           onStartNewGame={hasGameInProgress ? handleNewGame : null}
           onPlayOnline={onPlayOnline}
           biddingPanel={(game.phase === GAME_PHASES.BIDDING || forceShowBiddingPanel) ? (
