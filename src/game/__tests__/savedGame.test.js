@@ -66,7 +66,8 @@ describe('Saving and resuming a game', () => {
 
     const restored = BelotGame.deserialize(game.serialize());
 
-    expect(restored.announcedCombinations[0][0].cards[0]).toBe(restored.players[0].hand[0]);
+    // The last one: playing the first cards may have announced real combinations before it
+    expect(restored.announcedCombinations[0].at(-1).cards[0]).toBe(restored.players[0].hand[0]);
   });
 
   it('saveGame and loadSavedGame round-trip through storage', () => {
