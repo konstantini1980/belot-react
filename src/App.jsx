@@ -374,6 +374,7 @@ export default function App() {
           onNewGame={handleNewGame}
           playerCombinations={playerCombinations}
           announcedCombinations={game.announcedCombinations}
+          dealHistory={game.dealHistory}
           roundBreakdown={game.lastRoundBreakdown}
           contractTeam={game.contractTeam()}
           trickComplete={trickComplete}

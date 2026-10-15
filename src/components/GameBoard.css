@@ -651,3 +651,42 @@
     transform: scale(0.6);
   }
 }
+/* Tapping the trick piles shows the last trick */
+.card-holders-container.can-show-last-trick {
+  cursor: pointer;
+}
+
+.board-center.showing-last-trick {
+  cursor: pointer;
+}
+
+.last-trick-card {
+  z-index: 25;
+  opacity: 0.95;
+}
+
+.last-trick-label {
+  /* Top-left corner of the table centre, clear of the four cards */
+  position: absolute;
+  top: 0;
+  left: 0;
+  align-items: flex-start;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.65);
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.last-trick-hint {
+  font-size: 11px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.7);
+}

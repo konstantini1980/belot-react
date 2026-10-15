@@ -32,6 +32,7 @@ export default function GameBoard({
   onNewGame = null,
   playerCombinations = {},
   announcedCombinations = [[], []],
+  dealHistory = [],
   roundBreakdown = null,
   contractTeam = null,
   languageSwitcher = null,
@@ -48,6 +49,7 @@ export default function GameBoard({
 }) {
   const { t } = useLanguage();
   const [showFullScorePanel, setShowFullScorePanel] = useState(false);
+  const [showLastTrick, setShowLastTrick] = useState(false); // Peeking at the previous trick
   const [animatingCardsToCenter, setAnimatingCardsToCenter] = useState(new Map()); // Track cards animating to board
   const [holderPosition, setHolderPosition] = useState({ x: 0, y: 0 } );
   const [cardPositionInBoard, setCardPositionInBoard] = useState({ 
@@ -81,6 +83,13 @@ export default function GameBoard({
     const positions = ['south', 'west', 'north', 'east'];
     return positions[playerId];
   };
+
+  // The last-trick peek closes by itself when another trick is taken or the deal ends
+  useEffect(() => {
+    setShowLastTrick(false);
+  }, [tricks.length, phase]);
+  const lastTrick = tricks.length > 0 ? tricks[tricks.length - 1] : null;
+  const isShowingLastTrick = showLastTrick && lastTrick !== null && !trickComplete;
 
   // Show full panel when round is over
   React.useEffect(() => {
@@ -226,8 +235,34 @@ export default function GameBoard({
           {biddingPanel}
         </div>
       )}
-      <div className="board-center" ref={boardCenterRef}>
-        {!biddingPanel && !trickComplete && currentTrick.cards.map(({ playerId, card }) => {
+      <div
+        className={`board-center ${isShowingLastTrick ? 'showing-last-trick' : ''}`}
+        ref={boardCenterRef}
+        onClick={isShowingLastTrick ? () => setShowLastTrick(false) : undefined}
+      >
+        {/* The previous trick, each card in front of the player who played it */}
+        {isShowingLastTrick && (
+          <>
+            {lastTrick.cards.map(({ playerId, card }) => {
+              const targetPos = cardPositionInBoard[getPlayerPosition(playerId)];
+              return (
+                <div
+                  key={`last-${playerId}-${card.id}`}
+                  className="trick-card last-trick-card"
+                  style={{ left: `${targetPos.x}px`, top: `${targetPos.y}px` }}
+                >
+                  <Card card={card} />
+                </div>
+              );
+            })}
+            <div className="last-trick-label">
+              <span>{t('lastTrick')}</span>
+              <span className="last-trick-hint">{t('tapToClose')}</span>
+            </div>
+          </>
+        )}
+
+        {!biddingPanel && !trickComplete && !isShowingLastTrick && currentTrick.cards.map(({ playerId, card }) => {
           const cardKey = `${playerId}-${card.id}`;
           const isAnimating = animatingCardsToCenter.has(cardKey);
           const position = getPlayerPosition(playerId);
@@ -280,7 +315,12 @@ export default function GameBoard({
       
       {/* Card Holders - Team 0 (N/S) vertical, Team 1 (E/W) horizontal - show during playing phase */}
       {phase === GAME_PHASES.PLAYING && (
-        <div className="card-holders-container" ref={holderRef}>
+        <div
+          className={`card-holders-container ${lastTrick && !trickComplete ? 'can-show-last-trick' : ''}`}
+          ref={holderRef}
+          onClick={lastTrick && !trickComplete ? () => setShowLastTrick(show => !show) : undefined}
+          title={lastTrick ? t('showLastTrick') : undefined}
+        >
           {/* Team 0 (N/S) - Vertical holder */}
           <div className="card-holder card-holder-team0">
             {/* Show contour only if no tricks won yet */}
@@ -396,6 +436,7 @@ export default function GameBoard({
           } : null}
           showOverlay={true}
           announcedCombinations={announcedCombinations}
+          dealHistory={dealHistory}
           tricks={tricks}
           roundBreakdown={isRoundOver ? roundBreakdown : (forceShowScorePanel ? roundBreakdown : null)}
           forceShow={forceShowScorePanel}
