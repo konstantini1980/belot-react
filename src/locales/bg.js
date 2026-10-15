@@ -12,6 +12,7 @@ export default {
   exitGame: 'Изход от играта',
   continueGame: 'Продължи играта',
   confirmExitGame: 'Да излезем ли от тази игра? Тя няма да бъде запазена.',
+  cancel: 'Отказ',
   
   // Players
   playerYou: 'Играч',
