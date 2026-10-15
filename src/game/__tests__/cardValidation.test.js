@@ -210,6 +210,52 @@ describe('Card Validation (isValidCardPlay)', () => {
       expect(game.isValidCardPlay(player, validCard)).toBe(true);
       expect(game.isValidCardPlay(player, invalidCard)).toBe(false);
     });
+
+    it('should not force overtrumping when partner holds the trick with a higher trump', () => {
+      // West leads spades, partner (north) cuts with the 9 of hearts,
+      // east (opponent) can only undertrump with the 10.
+      game.currentTrick = {
+        cards: [
+          { playerId: 1, card: new Card('spades', 'A') },
+          { playerId: 2, card: new Card('hearts', '9') },
+          { playerId: 3, card: new Card('hearts', '10') }
+        ]
+      };
+
+      const player = game.players[0];
+      player.hand = [
+        new Card('hearts', 'J'), // beats the opponent's 10
+        new Card('hearts', '7'),
+        new Card('diamonds', 'A'),
+        new Card('clubs', 'K')
+      ];
+
+      // Partner is winning, so any card is allowed
+      player.hand.forEach(card => {
+        expect(game.isValidCardPlay(player, card)).toBe(true);
+      });
+    });
+
+    it('should still require overtrumping when an opponent trumped over partner', () => {
+      game.currentTrick = {
+        cards: [
+          { playerId: 1, card: new Card('spades', 'A') },
+          { playerId: 2, card: new Card('hearts', '10') },
+          { playerId: 3, card: new Card('hearts', '9') }
+        ]
+      };
+
+      const player = game.players[0];
+      player.hand = [
+        new Card('hearts', 'J'), // beats the opponent's 9
+        new Card('hearts', '7'),
+        new Card('diamonds', 'A')
+      ];
+
+      expect(game.isValidCardPlay(player, player.hand[0])).toBe(true);
+      expect(game.isValidCardPlay(player, player.hand[1])).toBe(false);
+      expect(game.isValidCardPlay(player, player.hand[2])).toBe(false);
+    });
   });
 
   describe('No-trump contract', () => {
