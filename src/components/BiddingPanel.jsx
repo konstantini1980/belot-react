@@ -98,43 +98,40 @@ export default function BiddingPanel({
           
           return (
             <div key={idx} className={`bid-item-row ${isCurrentBidder ? 'current' : ''}`}>
-              <span className={`bid-avatar team-${playerId % 2}`}>{playerNames[playerId].charAt(0)}</span>
-              <div className="bid-player-status">
-                <span className="bid-player-name">{playerNames[playerId]}</span>
-                <div className="bid-right-side">
-                  {playerBids.length > 0 ? (
-                    <>
-                      {playerBids.reverse().map((bid, bidIdx) => {
-                        const display = getContractDisplay(bid.bid);
-                        // Last bid in the array is active, previous ones are historical
-                        const isHistorical = bidIdx !== 0;
+              <span className="bid-player-name">{playerNames[playerId]}</span>
+              <div className="bid-right-side">
+                {playerBids.length > 0 ? (
+                  <>
+                    {playerBids.reverse().map((bid, bidIdx) => {
+                      const display = getContractDisplay(bid.bid);
+                      // Last bid in the array is active, previous ones are historical
+                      const isHistorical = bidIdx !== 0;
                       
-                        return (
-                          <span key={bidIdx} className={`bid-display ${isHistorical ? 'historical' : 'active'}`}>
-                            {bid.bid in CONTRACT_RANK && (
-                              <span className={`bid-suit-icon tone-${display.tone}`}>
-                                {isHistorical ? '(' + display.icon + ')' : display.icon}
-                              </span>
-                            )}
-                            {bid.bid === 'pass' && (
-                              <span className="bid-text">{isHistorical ? '(' + t('pass') + ')' : t('pass')}</span>
-                            )}
-                            {bid.bid === 'double' && (
-                              <span className="bid-text">{isHistorical ? '(' + t('double') + ')' : t('double')}</span>
-                            )}
-                            {bid.bid === 'redouble' && (
-                              <span className="bid-text">{isHistorical ? '(' + t('redouble') + ')' : t('redouble')}</span>
-                            )}
-                          </span>
-                        );
-                      })}
-                    </>
-                  ) : isCurrentBidder ? (
-                    <span className="waiting-message-inline">
-                      {t('waiting')}
-                    </span>
-                  ) : null}
-                </div>
+                      return (
+                        <span key={bidIdx} className={`bid-display ${isHistorical ? 'historical' : 'active'}`}>
+                          {bid.bid in CONTRACT_RANK && (
+                            <span className={`bid-suit-icon tone-${display.tone}`}>
+                              {isHistorical ? '(' + display.icon + ')' : display.icon}
+                            </span>
+                          )}
+                          {bid.bid === 'pass' && (
+                            <span className="bid-text">{isHistorical ? '(' + t('pass') + ')' : t('pass')}</span>
+                          )}
+                          {bid.bid === 'double' && (
+                            <span className="bid-text">{isHistorical ? '(' + t('double') + ')' : t('double')}</span>
+                          )}
+                          {bid.bid === 'redouble' && (
+                            <span className="bid-text">{isHistorical ? '(' + t('redouble') + ')' : t('redouble')}</span>
+                          )}
+                        </span>
+                      );
+                    })}
+                  </>
+                ) : isCurrentBidder ? (
+                  <span className="waiting-message-inline">
+                    {t('waiting')}
+                  </span>
+                ) : null}
               </div>
             </div>
           );
