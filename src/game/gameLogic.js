@@ -36,10 +36,10 @@ export class BelotGame {
     this.phase = GAME_PHASES.DEALING;
     this.deck = [];
     this.players = [
-      { id: 0, name: 'You', hand: [], team: 0 },
-      { id: 1, name: 'West', hand: [], team: 1 },
-      { id: 2, name: 'Partner', hand: [], team: 0 },
-      { id: 3, name: 'East', hand: [], team: 1 }
+      { id: 0, hand: [], team: 0 },
+      { id: 1, hand: [], team: 1 },
+      { id: 2, hand: [], team: 0 },
+      { id: 3, hand: [], team: 1 }
     ];
     this.dealer = Math.floor(Math.random() * 4); // First dealer is picked at random
     this.currentBidder = 0;
@@ -125,23 +125,29 @@ export class BelotGame {
 
 
   makeBid(playerId, bid) {
-    if (playerId !== this.currentBidder) return false;
+    if (playerId !== this.currentBidder) return false; // Not this player's turn to bid
+
     if (bid === 'double') {
+      // Only an opponent of the contract team can double, and only once
       if (!this.canDouble(playerId)) return false;
       this.double = true;
     } else if (bid === 'redouble') {
+      // Only the doubled contract team can redouble, and only once
       if (!this.canRedouble(playerId)) return false;
       this.redouble = true;
     } else if (bid !== 'pass') {
-      // A new contract must outrank the last one, and clears any double
+      if (!(bid in CONTRACT_RANK)) return false; // Not a known contract
       const last = lastContractBid(this.bids);
-      if (!(bid in CONTRACT_RANK)) return false;
-      if (last && CONTRACT_RANK[bid] <= CONTRACT_RANK[last.bid]) return false;
+      if (last && CONTRACT_RANK[bid] <= CONTRACT_RANK[last.bid]) {
+        return false; // A new contract must outrank the last one (a double doesn't change that)
+      }
+      // A new contract starts fresh: any double or redouble is wiped out
       this.double = false;
       this.redouble = false;
     }
-    this.bids.push({ playerId, bid });
+    // A pass is always allowed
 
+    this.bids.push({ playerId, bid });
     this.checkIsBiddingOver();
     return true;
   }
@@ -152,15 +158,19 @@ export class BelotGame {
     return last ? this.players[last.playerId].team : null;
   }
 
-  // An opponent of the contract team may double a contract that isn't doubled yet
   canDouble(playerId) {
     const team = this.contractTeam();
-    return team !== null && team !== this.players[playerId].team && !this.double;
+    if (team === null) return false; // No contract to double yet
+    if (team === this.players[playerId].team) return false; // Cannot double your own team's contract
+    if (this.double) return false; // Already doubled (a redouble is the contract team's answer)
+    return true; // An opponent may double
   }
 
-  // The contract team may redouble once its contract has been doubled
   canRedouble(playerId) {
-    return this.double && !this.redouble && this.contractTeam() === this.players[playerId].team;
+    if (!this.double) return false; // Nothing to redouble until the contract is doubled
+    if (this.redouble) return false; // Already redoubled
+    if (this.contractTeam() !== this.players[playerId].team) return false; // Only the contract team can redouble
+    return true; // The doubled contract team may redouble, at any later turn in the bidding
   }
 
   checkIsBiddingOver() {
@@ -203,6 +213,7 @@ export class BelotGame {
   playCard(playerId, cardId) {
     if (playerId !== this.currentPlayer) return false;
     if (this.phase !== GAME_PHASES.PLAYING) return false;
+    if (this.currentTrick.cards.length === 4) return false; // Trick is full until completeTrick() collects it
     
     const player = this.players[playerId];
     const cardIndex = player.hand.findIndex(c => c.id === cardId);

@@ -113,3 +113,26 @@ describe('Announcements of the last played card', () => {
     expect(game.announcedCombinations[0]).toEqual([]);
   });
 });
+
+describe('A full trick', () => {
+  it('takes no fifth card before it is collected', () => {
+    const game = new BelotGame();
+    game.phase = GAME_PHASES.PLAYING;
+    game.contract = 'no-trump';
+    game.currentPlayer = 0;
+    game.players[0].hand = [new Card('clubs', '7'), new Card('clubs', '8')];
+    game.currentTrick = {
+      cards: [
+        { playerId: 1, card: new Card('clubs', 'A') },
+        { playerId: 2, card: new Card('clubs', '10') },
+        { playerId: 3, card: new Card('clubs', 'K') },
+        { playerId: 0, card: new Card('clubs', 'Q') }
+      ],
+      winner: 1,
+      team: 1
+    };
+    expect(game.playCard(0, 'clubs-7')).toBe(false);
+    expect(game.currentTrick.cards).toHaveLength(4);
+    expect(game.players[0].hand).toHaveLength(2);
+  });
+});
