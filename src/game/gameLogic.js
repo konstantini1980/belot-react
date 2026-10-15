@@ -525,10 +525,21 @@ export class BelotGame {
     // Show the full score panel; the next deal starts when the user continues
     this.phase = GAME_PHASES.SCORING;
 
-    if (this.totalScores[0] >= WINNING_SCORE || this.totalScores[1] >= WINNING_SCORE) {
-      this.winner = this.totalScores[0] >= WINNING_SCORE ? 0 : 1;
+    this.winner = this.gameWinner(valatTeam !== undefined);
+    if (this.winner !== null) {
       this.phase = GAME_PHASES.FINISHED;
     }
+  }
+
+  // The game ends when a team has 151 or more after a deal (per belot.bg):
+  // if both pass 151 the higher total wins, and an equal total keeps playing.
+  // A game can't be won with a valat, so a valat deal never ends it.
+  gameWinner(wasValat) {
+    const [score0, score1] = this.totalScores;
+    if (wasValat || Math.max(score0, score1) < WINNING_SCORE || score0 === score1) {
+      return null;
+    }
+    return score0 > score1 ? 0 : 1;
   }
 
   // Turns this round's raw points into game points (tens), applying doubling,
