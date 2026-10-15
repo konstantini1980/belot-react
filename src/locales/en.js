@@ -63,7 +63,6 @@ export default {
   noWinnerEqualTotals: 'No winner yet: the totals are equal, so play goes on',
   you: 'Us',
   opp: 'Them',
-  raceTo151: 'to 151',
   
   // Combinations
   tierce: 'Tierce',

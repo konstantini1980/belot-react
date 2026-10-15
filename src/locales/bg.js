@@ -63,7 +63,6 @@ export default {
   noWinnerEqualTotals: 'Още няма победител: резултатът е равен, играе се нататък',
   you: 'Ние',
   opp: 'Вие',
-  raceTo151: 'до 151',
   
   // Combinations
   tierce: 'Терца',

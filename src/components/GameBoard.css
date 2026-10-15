@@ -244,11 +244,9 @@
   margin-bottom: 36px;
 }
 
-/* Side seats sit mid-height, but never higher than just below the score panel
-   (on short screens the panel would cover West's chip) */
 .player-container.west {
   left: 40px;
-  top: max(50%, 292px);
+  top: 50%;
   transform: translateY(-50%);
 }
 
@@ -260,7 +258,7 @@
 
 .player-container.east {
   right: 40px;
-  top: max(50%, 292px);
+  top: 50%;
   transform: translateY(-50%);
 }
 
@@ -566,11 +564,6 @@
 
   .score-board .round-score-number {
     font-size: 20px;
-  }
-
-  .score-board .game-race,
-  .score-board .game-race-labels {
-    display: none;
   }
 
   /* Opponents are avatars with a card count; their cards stay in place, invisible,
