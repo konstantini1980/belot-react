@@ -190,7 +190,7 @@ their natural order, whatever the contract: 7, 8, 9, 10, J, Q, K, A.
 |------|-----------|-------|--------|
 | Tierce | Терца | 3 in a row (e.g. 8♥ 9♥ 10♥) | 20 |
 | Quarte | Кварта | 4 in a row | 50 |
-| Quint  | Квинта | 5 or more in a row | 100 |
+| Quint  | Квинта | 5 in a row | 100 |
 
 ### Four of a kind ("square", Каре)
 
@@ -201,8 +201,11 @@ their natural order, whatever the contract: 7, 8, 9, 10, J, Q, K, A.
 | Four Aces, 10s, Kings or Queens | 100 |
 | Four 8s or 7s | nothing |
 
-A card can only be used once: if a card is part of four of a kind it cannot also count
-towards a sequence.
+A run longer than five cards still counts as one quint (the top five cards). All eight cards
+of a suit count as a quint plus a tierce (120).
+
+A card can only be used once. If a card could belong to both four of a kind and a sequence,
+the player chooses which one it counts for. The app picks whichever split is worth more.
 
 ### When combinations are announced
 
@@ -292,7 +295,8 @@ score all 16.
 ### Valat (all the tricks, Валат)
 
 If one team wins **all 8 tricks**, it scores a **bonus of 90 points** on top of everything
-else. A valat also **cancels any double or redouble**: the deal is scored at normal stakes.
+else. If the deal was doubled or redoubled, the valat bonus is doubled or quadrupled along with
+everything else.
 
 ### Doubled and redoubled deals
 
