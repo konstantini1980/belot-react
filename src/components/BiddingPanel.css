@@ -25,10 +25,9 @@
 
 .bidding-title {
   margin: 0 0 14px 0;
-  font-family: var(--font-serif);
-  font-size: 22px;
+  font-size: 20px;
   line-height: 26px;
-  font-weight: normal;
+  font-weight: 600;
   text-align: center;
 }
 
@@ -87,6 +86,7 @@
 }
 
 .bid-suit-icon {
+  font-family: var(--font-card); /* same suit glyphs as the cards */
   font-size: 15px;
   font-weight: bold;
 }
@@ -157,13 +157,13 @@
 }
 
 .suit-icon {
-  font-family: var(--font-serif);
+  font-family: var(--font-card);
   font-size: 32px;
   line-height: 1;
 }
 
 .special-icon {
-  font-family: var(--font-serif);
+  font-family: var(--font-card);
   font-size: 16px;
   line-height: 32px;
   letter-spacing: -1px;

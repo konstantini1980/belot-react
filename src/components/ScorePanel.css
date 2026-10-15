@@ -63,9 +63,10 @@
 }
 
 .round-score-number {
-  font-family: var(--font-serif);
-  font-size: 26px;
-  line-height: 1.1;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
 }
 
 .team-us .round-score-number {
@@ -183,9 +184,8 @@
 }
 
 .score-title {
-  font-family: var(--font-serif);
-  font-size: 20px;
-  font-weight: normal;
+  font-size: 18px;
+  font-weight: 700;
   color: white;
 }
 

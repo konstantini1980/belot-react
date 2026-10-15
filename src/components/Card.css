@@ -11,7 +11,7 @@
   background: linear-gradient(180deg, #ffffff 0%, #f4f0e6 100%);
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.35);
   color: var(--card-black);
-  font-family: var(--font-serif);
+  font-family: var(--font-card);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
   margin: 0;
@@ -43,7 +43,8 @@
 }
 
 .card-index-suit {
-  font-size: calc(var(--w) * 0.19);
+  font-size: calc(var(--w) * 0.27);
+  margin-top: calc(var(--w) * -0.01);
 }
 
 .card-index-bottom {
@@ -86,7 +87,7 @@
 }
 
 .card-court-suit {
-  font-size: calc(var(--w) * 0.2);
+  font-size: calc(var(--w) * 0.26);
 }
 
 /* Card back: deep red with a gold medallion, all gradients */
