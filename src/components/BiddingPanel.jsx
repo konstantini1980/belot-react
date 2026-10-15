@@ -106,12 +106,16 @@ export default function BiddingPanel({
                 {isCurrentBidder && (
                   <span className="waiting-message-inline"><ThinkingDots /></span>
                 )}
-                {playerBids.reverse().map((bid, bidIdx) => (
-                  // The latest bid is active, earlier ones are historical
-                  <span key={bidIdx} className={`bid-display ${bidIdx !== 0 ? 'historical' : 'active'}`}>
-                    <BidLabel bid={bid.bid} historical={bidIdx !== 0} />
-                  </span>
-                ))}
+                {playerBids.reverse().map((bid, bidIdx) => {
+                  // The latest bid is active, earlier ones are historical; while the
+                  // player is choosing again, all of their bids are historical
+                  const isHistorical = isCurrentBidder || bidIdx !== 0;
+                  return (
+                    <span key={bidIdx} className={`bid-display ${isHistorical ? 'historical' : 'active'}`}>
+                      <BidLabel bid={bid.bid} historical={isHistorical} />
+                    </span>
+                  );
+                })}
               </div>
             </div>
           );
