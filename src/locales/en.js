@@ -1,6 +1,7 @@
 export default {
   // App
   appTitle: 'Belot Card Game',
+  logo: 'Belot',
   teamWins: 'Team {team} wins!',
   newGame: 'New Game',
   startBelotGame: 'Start full screen',
@@ -50,8 +51,9 @@ export default {
   totalScore: 'Total Score',
   nextDeal: 'Next Deal',
   firstTo151Wins: 'First to 151 wins',
-  you: 'You',
-  opp: 'Opp',
+  you: 'Us',
+  opp: 'Them',
+  raceTo151: 'to 151',
   
   // Combinations
   tierce: 'Tierce',

@@ -12,14 +12,14 @@ export default function LanguageSwitcher() {
         onClick={() => changeLanguage('en')}
         title={t('english')}
       >
-        🇬🇧
+        EN
       </button>
       <button
         className={`lang-button ${language === 'bg' ? 'active' : ''}`}
         onClick={() => changeLanguage('bg')}
         title={t('bulgarian')}
       >
-        🇧🇬
+        БГ
       </button>
     </div>
   );

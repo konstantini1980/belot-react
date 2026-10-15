@@ -1,87 +1,124 @@
+/* Card size comes from --card-w / --card-h (set in index.css per screen size),
+   so the hand, the trick and the animations all agree on it. */
 .card {
-  width: 80px;
-  height: 108px;
-  background: white;  
-  border-radius: 4px;
+  --w: var(--card-w);
+  --h: var(--card-h);
+  width: var(--w);
+  height: var(--h);
+  flex: none;
+  position: relative;
+  border-radius: calc(var(--w) * 0.08);
+  background: linear-gradient(180deg, #ffffff 0%, #f4f0e6 100%);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.35);
+  color: var(--card-black);
+  font-family: var(--font-serif);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  isolation: isolate;
+}
+
+.card.red {
+  color: var(--card-red);
+}
+
+/* Rank and suit in the top-left corner, and upside down in the bottom-right */
+.card-index {
+  position: absolute;
+  left: 7%;
+  top: 5%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 0.95;
+  font-weight: bold;
+}
+
+.card-rank {
+  font-size: calc(var(--w) * 0.24);
+  letter-spacing: -0.04em;
+}
+
+.card-index-suit {
+  font-size: calc(var(--w) * 0.19);
+}
+
+.card-index-bottom {
+  left: auto;
+  top: auto;
+  right: 7%;
+  bottom: 5%;
+  transform: rotate(180deg);
+}
+
+/* Number cards and aces: one big pip */
+.card-pip {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(var(--w) * 0.5);
+  line-height: 1;
+}
+
+/* Jack, queen, king: framed letter */
+.card-court {
+  position: absolute;
+  left: 25%;
+  right: 25%;
+  top: 18%;
+  bottom: 18%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin: 0;
-  position: relative;
-  overflow: hidden;
-  padding: 0;
-  isolation: isolate;
+  border: 1.5px solid currentColor;
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(45deg, transparent 0 5px, rgba(0, 0, 0, 0.035) 5px 6px),
+    linear-gradient(180deg, rgba(231, 195, 106, 0.28), rgba(231, 195, 106, 0.06));
+  font-size: calc(var(--w) * 0.34);
+  line-height: 1;
 }
 
-/* Mobile responsive styles */
-@media (max-width: 768px) {
-  .card {
-    width: 60px;
-    height: 81px;
-  }
-
-  .card.playable:hover {
-    transform: translateY(-4px);
-  }
+.card-court-suit {
+  font-size: calc(var(--w) * 0.2);
 }
 
-.card-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
+/* Card back: deep red with a gold medallion, all gradients */
+.card.back {
+  --w: var(--back-w);
+  --h: var(--back-h);
+  border: 2px solid #fbf6ea;
+  background:
+    radial-gradient(circle at 50% 50%, transparent 0 17%, rgba(231, 195, 106, 0.6) 17% 20%, transparent 20%),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0 2px, transparent 2px 6px),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.1) 0 2px, transparent 2px 6px),
+    linear-gradient(160deg, #8e1b2c, #5a0f1c);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
 }
 
-.small {
-  width: 50px;
-  height: 68px;
-  scale: 1.4;
+/* Face-up opponents' cards (dev panel) use the back's size */
+.card.small {
+  --w: var(--back-w);
+  --h: var(--back-h);
   cursor: default;
 }
-/* Card back styles (when showBack prop is true) - backs are always small */
-.card.back{
-  width: 50px;
-  height: 68px;
-  margin: 0;
+
+/* Only playable cards react to the pointer */
+.card:not(.playable) {
+  cursor: default;
 }
 
-/* Mobile responsive styles */
-@media (max-width: 768px) {
-  .small {
-    width: 38px;
-    height: 51px;
-    scale: 1.2;
-  }
-
-  .card.back {
-    width: 38px;
-    height: 51px;
-  }
-}
-
-/* Only playable cards have hover effects and interactions */
 .card.back:not(.playable) {
   pointer-events: none;
-  cursor: default;  
 }
 
-.card.back:not(.playable):hover {
-  transform: none;
-}
-
-.card.playable:hover {
-  transform: translateY(-8px);
-}
-
-/* Disable hover effects for cards in the center (trick cards) */
+/* Trick cards don't react to the pointer */
 .trick-card .card {
   cursor: default;
 }
-
-.trick-card .card:hover {
-  transform: none;
-}
-

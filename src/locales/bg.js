@@ -1,6 +1,7 @@
 export default {
   // App
   appTitle: 'Игра Белот',
+  logo: 'Белот',
   teamWins: 'Отбор {team} печели!',
   newGame: 'Нова Игра',
   startBelotGame: 'Стартиране на цял екран',
@@ -52,6 +53,7 @@ export default {
   firstTo151Wins: 'Първият над 151 точки печели',
   you: 'Ние',
   opp: 'Вие',
+  raceTo151: 'до 151',
   
   // Combinations
   tierce: 'Терца',

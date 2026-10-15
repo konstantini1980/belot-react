@@ -32,16 +32,17 @@ export default function BiddingPanel({
     return CONTRACTS.filter(c => CONTRACT_RANK[c.value] > CONTRACT_RANK[lastContract.bid]);
   };
 
+  // No trump shows the four suits struck through, all trump shows them in gold
   const getContractDisplay = (contractValue) => {
     const contractMap = {
-      'hearts': { icon: '♥', label: t('hearts'), iconColor: '#d32f2f', textColor: '#ffffff' },
-      'diamonds': { icon: '♦', label: t('diamonds'), iconColor: '#d32f2f', textColor: '#ffffff' },
-      'clubs': { icon: '♣', label: t('clubs'), iconColor: '#ffffff', textColor: '#ffffff' },
-      'spades': { icon: '♠', label: t('spades'), iconColor: '#ffffff', textColor: '#ffffff' },
-      'no-trump': { icon: 'A', label: t('noTrump'), iconColor: '#2196F3', textColor: '#2196F3' },
-      'all-trump': { icon: 'J', label: t('allTrump'), iconColor: '#FFC107', textColor: '#FFC107' }
+      'hearts': { icon: '♥', label: t('hearts'), tone: 'red' },
+      'diamonds': { icon: '♦', label: t('diamonds'), tone: 'red' },
+      'clubs': { icon: '♣', label: t('clubs'), tone: 'black' },
+      'spades': { icon: '♠', label: t('spades'), tone: 'black' },
+      'no-trump': { icon: '♣♦♥♠', label: t('noTrump'), tone: 'no-trump' },
+      'all-trump': { icon: '♣♦♥♠', label: t('allTrump'), tone: 'all-trump' }
     };
-    return contractMap[contractValue] || { icon: '', label: contractValue, iconColor: '#ffffff', textColor: '#ffffff' };
+    return contractMap[contractValue] || { icon: '', label: contractValue, tone: 'black' };
   };
 
   const availableContracts = getAvailableContracts();
@@ -96,7 +97,7 @@ export default function BiddingPanel({
           const isCurrentBidder = playerId === currentBidder;
           
           return (
-            <div key={idx} className="bid-item-row">
+            <div key={idx} className={`bid-item-row ${isCurrentBidder ? 'current' : ''}`}>
               <span className="bid-player-name">{playerNames[playerId]}</span>
               <div className="bid-right-side">
                 {playerBids.length > 0 ? (
@@ -109,7 +110,7 @@ export default function BiddingPanel({
                       return (
                         <span key={bidIdx} className={`bid-display ${isHistorical ? 'historical' : 'active'}`}>
                           {bid.bid in CONTRACT_RANK && (
-                            <span className="bid-suit-icon" style={{ color: display.iconColor }}>
+                            <span className={`bid-suit-icon tone-${display.tone}`}>
                               {isHistorical ? '(' + display.icon + ')' : display.icon}
                             </span>
                           )}
@@ -143,34 +144,30 @@ export default function BiddingPanel({
             {suitContracts.map(contract => {
               const display = getContractDisplay(contract.value);
               const isAvailable = isContractAvailable(contract.value);
-              const iconColor = isAvailable ? display.iconColor : 'rgba(255, 255, 255, 0.3)';
-              const textColor = isAvailable ? '#ffffff' : 'rgba(255, 255, 255, 0.3)';
               return (
                 <button
                   key={contract.value}
                   onClick={() => isAvailable && onBid(contract.value)}
                   disabled={!isAvailable}
-                  className={`trump-button suit-button ${!isAvailable ? 'disabled' : ''}`}
+                  className={`trump-button suit-button tone-${display.tone} ${!isAvailable ? 'disabled' : ''}`}
                 >
-                  <span className="suit-icon" style={{ color: iconColor }}>{display.icon}</span>
-                  <span className="suit-label" style={{ color: textColor }}>{display.label}</span>
+                  <span className="suit-icon">{display.icon}</span>
+                  <span className="suit-label">{display.label}</span>
                 </button>
               );
             })}
             {specialContracts.map(contract => {
               const display = getContractDisplay(contract.value);
               const isAvailable = isContractAvailable(contract.value);
-              const iconColor = isAvailable ? display.iconColor : 'rgba(255, 255, 255, 0.3)';
-              const textColor = isAvailable ? '#ffffff' : 'rgba(255, 255, 255, 0.3)';
               return (
                 <button
                   key={contract.value}
                   onClick={() => isAvailable && onBid(contract.value)}
                   disabled={!isAvailable}
-                  className={`trump-button special-button ${!isAvailable ? 'disabled' : ''}`}
+                  className={`trump-button special-button tone-${display.tone} ${!isAvailable ? 'disabled' : ''}`}
                 >
-                  <span className="special-icon" style={{ color: iconColor }}>{display.icon}</span>
-                  <span className="special-label" style={{ color: textColor }}>{display.label}</span>
+                  <span className="special-icon">{display.icon}</span>
+                  <span className="special-label">{display.label}</span>
                 </button>
               );
             })}
@@ -187,14 +184,14 @@ export default function BiddingPanel({
               disabled={!canDouble}
               className={`double-button-x2 ${!canDouble ? 'disabled' : ''}`}
             >
-              x2
+              ×2
             </button>
             <button
               onClick={() => canRedouble && onBid('redouble')}
               disabled={!canRedouble}
               className={`double-button-x2 ${!canRedouble ? 'disabled' : ''}`}
             >
-              x4
+              ×4
             </button>
           </div>
         </>

@@ -2,29 +2,47 @@
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  padding: 10px;
-  min-height: 100px;
+  padding: 10px 10px 4px;
+  min-height: calc(var(--card-h) + 24px);
   position: relative;
+}
+
+.south-player-hand .card {
+  margin-left: calc(var(--card-w) * -0.36);
+  transform: translateY(var(--fan-drop, 0)) rotate(var(--fan-rot, 0));
+  transform-origin: 50% 100%;
 }
 
 .south-player-hand .card:first-child {
   margin-left: 0;
 }
 
-.south-player-hand .card {
-  margin-left: -20px;
-  transition: all 0.3s ease;
-  position: relative;
+/* Playable cards: gold edge, and they lift under the pointer */
+.south-player-hand.choosing .card.playable {
+  box-shadow: 0 0 0 2px var(--gold), 0 0 16px var(--gold-soft), 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+.south-player-hand .card.playable:hover {
+  transform: translateY(calc(var(--fan-drop, 0px) - 18px)) rotate(var(--fan-rot, 0));
+  z-index: 5;
+}
+
+/* Cards you can't play right now */
+.south-player-hand.choosing .card:not(.playable) {
+  filter: brightness(0.7) saturate(0.7);
 }
 
 /* Mobile responsive styles */
 @media (max-width: 768px) {
   .south-player-hand {
-    padding: 8px 4px;
-    min-height: 80px;
+    padding: 8px 4px 4px;
   }
 
   .south-player-hand .card {
-    margin-left: -20px;
+    margin-left: calc(var(--card-w) * -0.52);
+  }
+
+  .south-player-hand .card.playable:hover {
+    transform: translateY(calc(var(--fan-drop, 0px) - 10px)) rotate(var(--fan-rot, 0));
   }
 }

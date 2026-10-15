@@ -1,69 +1,122 @@
-/* Compact "This Round" panel */
+/* Compact score panel on the table: contract, this deal's points, race to 151 */
 .round-score-panel {
-  background: #2c2c2c;
-  border-radius: 6px;
-  padding: 8px 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  min-width: 110px;
-  height: 100px;
-  color: white;
+  background: var(--panel);
+  border: 1px solid var(--panel-line);
+  border-radius: 16px;
+  padding: 10px 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  width: 200px;
+  color: var(--ink);
 }
 
 .round-score-title {
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 22px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.8);
-  margin-top: 5px;
-  margin-bottom: 10px;
+  color: var(--ink-dim);
+  margin-bottom: 8px;
   font-weight: 600;
 }
 
-.round-score-values {
-  height: 50px;
-  display: flex;
-  justify-content: space-around;
+.contract-chip {
+  display: inline-flex;
   align-items: center;
-  gap: 16px;
+  padding: 2px 10px;
+  border-radius: 11px;
+  background: var(--gold);
+  color: var(--bubble-ink);
+  font-weight: 700;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.round-score-values {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }
 
 .round-score-item {
-  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  padding: 4px 0 6px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid transparent;
 }
 
-.round-score-number {
-  font-size: 18px;
-  font-weight: bold;
-}
-
-.round-score-number.round-score-green {
-  color: #4caf50;
-}
-
-.round-score-number.round-score-red {
-  color: #f44336;
+/* The team that chose the contract */
+.round-score-item.has-contract {
+  border-color: var(--gold-soft);
 }
 
 .round-score-label {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.8);
+  font-size: 10px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
-.contract-indicator {
-  width: 20px;
-  height: 2px;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 1px;
+.round-score-number {
+  font-family: var(--font-serif);
+  font-size: 26px;
+  line-height: 1.1;
+}
+
+.team-us .round-score-number {
+  color: var(--us);
+}
+
+.team-them .round-score-number {
+  color: var(--them);
+}
+
+.game-race {
+  position: relative;
+  height: 6px;
+  margin-top: 10px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.game-race span {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.game-race-us {
+  left: 0;
+  background: var(--us);
+}
+
+.game-race-them {
+  right: 0;
+  background: var(--them);
+}
+
+.game-race-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 3px;
+  font-size: 10px;
+  color: var(--ink-dim);
 }
 
 /* Full score panel */
 .score-panel {
-  background: #2c2c2c;
-  border-radius: 8px;
-  padding: 12px;
+  background: var(--panel-solid);
+  border: 1px solid var(--gold-soft);
+  border-radius: 16px;
+  padding: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   min-width: 220px;
   color: white;
@@ -130,8 +183,9 @@
 }
 
 .score-title {
-  font-size: 18px;
-  font-weight: bold;
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: normal;
   color: white;
 }
 
@@ -191,11 +245,11 @@
 }
 
 .team-icon-green {
-  color: #4caf50;
+  color: var(--us);
 }
 
 .team-icon-red {
-  color: #f44336;
+  color: var(--them);
 }
 
 .team-name {
@@ -204,11 +258,11 @@
 }
 
 .team-name-green {
-  color: #4caf50;
+  color: var(--us);
 }
 
 .team-name-red {
-  color: #f44336;
+  color: var(--them);
 }
 
 .score-value {
@@ -220,7 +274,7 @@
 .progress-bar {
   width: 100%;
   height: 4px;
-  background: #404040;
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 2px;
   overflow: hidden;
   margin-top: 3px;
@@ -233,11 +287,11 @@
 }
 
 .progress-fill-green {
-  background: #4caf50;
+  background: var(--us);
 }
 
 .progress-fill-red {
-  background: #f44336;
+  background: var(--them);
 }
 
 .score-footer {
@@ -274,10 +328,10 @@
 .next-deal-button {
   margin-top: 8px;
   padding: 10px 20px;
-  background: #4caf50;
+  background: linear-gradient(180deg, #f1d488, #d1a945);
   border: none;
-  border-radius: 6px;
-  color: white;
+  border-radius: 10px;
+  color: var(--bubble-ink);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -285,7 +339,7 @@
 }
 
 .next-deal-button:hover {
-  background: #45a049;
+  background: linear-gradient(180deg, #f5dc9a, #dbb453);
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
@@ -312,7 +366,7 @@
 }
 
 .breakdown-value {
-  color: #ffc107;
+  color: var(--gold);
   font-weight: 600;
 }
 
@@ -330,7 +384,7 @@
   border-radius: 4px;
   padding: 2px 6px;
   font-size: 11px;
-  color: #ffc107;
+  color: var(--gold);
   font-weight: 400;
 }
 
@@ -356,7 +410,7 @@
 }
 
 .hanging-points-value {
-  color: #ffc107;
+  color: var(--gold);
   font-size: 18px;
   font-weight: bold;
 }

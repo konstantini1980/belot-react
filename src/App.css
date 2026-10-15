@@ -2,19 +2,37 @@
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 0 20px;
 }
 
+/* Slim top bar: logo on the left, language on the right */
 .app-header {
-  text-align: center;
-  margin-bottom: 30px;
-  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  padding: 0 12px;
+  color: var(--ink);
 }
 
-.app-header h1 {
-  font-size: 48px;
-  margin-bottom: 20px;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+.app-logo {
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: normal;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.app-logo-suits {
+  font-size: 15px;
+  letter-spacing: 4px;
+  color: var(--ink-dim);
+}
+
+.app-logo-suits .red {
+  color: #e06a6a;
 }
 
 /* Mobile responsive styles - covers both portrait and landscape */
@@ -60,8 +78,8 @@
 
 .new-game-button {
   padding: 12px 24px;
-  background: #2196F3;
-  color: white;
+  background: linear-gradient(180deg, #f1d488, #d1a945);
+  color: var(--bubble-ink);
   border: none;
   border-radius: 8px;
   font-size: 16px;
@@ -71,7 +89,7 @@
 }
 
 .new-game-button:hover {
-  background: #1976D2;
+  background: linear-gradient(180deg, #f5dc9a, #dbb453);
   transform: translateY(-2px);
 }
 
