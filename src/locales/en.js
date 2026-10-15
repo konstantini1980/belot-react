@@ -57,6 +57,7 @@ export default {
   showLastTrick: 'Show the last trick',
   totalScore: 'Total Score',
   nextDeal: 'Next Deal',
+  nextDealWaiting: 'Waiting for your friend to click Next Deal…',
   firstTo151Wins: 'First to 151 wins',
   you: 'Us',
   opp: 'Them',

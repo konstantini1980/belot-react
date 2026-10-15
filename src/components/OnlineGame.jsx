@@ -109,6 +109,7 @@ export default function OnlineGame({ table, onLeave, onCodeTaken }) {
           isDouble={game.double}
           isRedouble={game.redouble}
           onNextDeal={() => send({ type: 'nextDeal' })}
+          nextDealWaiting={room.waitingForNextDeal}
           winner={game.winner}
           onNewGame={() => send({ type: 'newGame' })}
           playerCombinations={playerCombinations}

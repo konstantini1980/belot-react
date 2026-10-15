@@ -344,6 +344,12 @@
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
+.next-deal-waiting {
+  margin: 8px 0 0;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
 .next-deal-button:active {
   transform: translateY(0);
 }
