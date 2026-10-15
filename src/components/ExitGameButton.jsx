@@ -3,11 +3,11 @@ import { useLanguage } from '../contexts/LanguageContext';
 import './LanguageSwitcher.css';
 
 // A small X that exits the game in progress (after a confirmation) and goes back to the start screen
-export default function ExitGameButton({ onExitGame }) {
+export default function ExitGameButton({ onExitGame, confirmText }) {
   const { t } = useLanguage();
 
   const handleClick = () => {
-    if (window.confirm(t('confirmExitGame'))) onExitGame();
+    if (window.confirm(confirmText || t('confirmExitGame'))) onExitGame();
   };
 
   return (

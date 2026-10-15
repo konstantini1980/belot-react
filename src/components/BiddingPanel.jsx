@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { usePlayerNames } from '../contexts/PlayerNamesContext';
 import { CONTRACT_RANK, lastContractBid } from '../game/gameLogic';
 import './BiddingPanel.css';
 
@@ -55,7 +56,7 @@ export default function BiddingPanel({
   const suitContracts = suitOrder.map(suit => CONTRACTS.find(c => c.value === suit));
   const specialContracts = CONTRACTS.filter(c => ['no-trump', 'all-trump'].includes(c.value));
 
-  const playerNames = [t('playerYou'), t('playerWest'), t('playerPartner'), t('playerEast')];
+  const playerNames = usePlayerNames();
 
   // Calculate initial bidding order (counter-clockwise starting from currentBidder)
   // When no bids exist, show all 4 players in turn order

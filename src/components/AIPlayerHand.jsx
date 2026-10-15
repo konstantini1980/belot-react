@@ -10,7 +10,8 @@ export default function AIPlayerHand({
   showCards = false,
   contract
 }) {
-  const sortedCards = sortHand(cards, contract);
+  // Only sorted when shown: an online game sends other players' cards face down, with no suit or rank
+  const sortedCards = showCards ? sortHand(cards, contract) : cards;
   const middle = (cards.length - 1) / 2;
   // Opponents' cards are a small fan, like the hand they're holding
   const fanStyle = (i) => ({

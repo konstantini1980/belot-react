@@ -7,6 +7,7 @@ import SouthPlayerHand from './SouthPlayerHand';
 import AIPlayerHand from './AIPlayerHand';
 import { GAME_PHASES } from '../game/gameLogic';
 import { useLanguage } from '../contexts/LanguageContext';
+import { usePlayerNames } from '../contexts/PlayerNamesContext';
 import './GameBoard.css';
 
 // The card size lives in CSS (--card-w / --card-h, smaller on phones); read it so
@@ -56,6 +57,7 @@ export default function GameBoard({
   onStartGame = null,
   startButtonText = '',
   onStartNewGame = null,
+  onPlayOnline = null, // Start screen: play online with friends (when a game server is set up)
 }) {
   const { t } = useLanguage();
   const [showFullScorePanel, setShowFullScorePanel] = useState(false);
@@ -79,8 +81,8 @@ export default function GameBoard({
     team1: tricks.filter(t => t.team === 1).length
   };
 
-  // Player names follow the current language
-  const playerNames = [t('playerYou'), t('playerWest'), t('playerPartner'), t('playerEast')];
+  // Player names follow the current language (and name the friend in an online game)
+  const playerNames = usePlayerNames();
 
   // Card-to-center animation timers, cancelled if the board unmounts
   const animationTimersRef = useRef(new Set());
@@ -241,6 +243,11 @@ export default function GameBoard({
           {onStartNewGame && (
             <button className="start-new-game-button" onClick={onStartNewGame}>
               {t('newGame')}
+            </button>
+          )}
+          {onPlayOnline && (
+            <button className="start-new-game-button" onClick={onPlayOnline}>
+              {t('playOnline')}
             </button>
           )}
         </div>

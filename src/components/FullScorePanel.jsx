@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { GAME_PHASES } from '../game/gameLogic';
 import { useLanguage } from '../contexts/LanguageContext';
+import { usePlayerNames } from '../contexts/PlayerNamesContext';
 import { contractLabel, multiplierLabel } from './contractLabel';
 import './ScorePanel.css';
 
@@ -45,7 +46,7 @@ export default function FullScorePanel({
   forceShow = false
 }) {
   const { t } = useLanguage();
-  const playerNames = [t('playerYou'), t('playerWest'), t('playerPartner'), t('playerEast')];
+  const playerNames = usePlayerNames();
   const isGameFinished = phase === GAME_PHASES.FINISHED;
   const maxScore = 151;
   const isRoundOver = phase === GAME_PHASES.SCORING || phase === GAME_PHASES.FINISHED;

@@ -1,0 +1,14 @@
+# The game server for online play: one Durable Object per table (room code).
+# Deploy with `npm run deploy` in this folder (the owner's step); see README.md.
+name = "belot"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "GameRoom"
+
+# SQLite-backed Durable Objects are the ones included in the Workers free plan
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["GameRoom"]
