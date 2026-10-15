@@ -4,7 +4,9 @@ export default {
   logo: 'Belot',
   teamWins: 'Team {team} wins!',
   newGame: 'New Game',
-  startBelotGame: 'Start full screen',
+  startBelotGame: 'Start game',
+  enterFullScreen: 'Full screen',
+  exitFullScreen: 'Exit full screen',
   
   // Players
   playerYou: 'You',

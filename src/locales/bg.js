@@ -4,7 +4,9 @@ export default {
   logo: 'Белот',
   teamWins: 'Отбор {team} печели!',
   newGame: 'Нова Игра',
-  startBelotGame: 'Стартиране на цял екран',
+  startBelotGame: 'Започни играта',
+  enterFullScreen: 'Цял екран',
+  exitFullScreen: 'Изход от цял екран',
   
   // Players
   playerYou: 'Играч',
