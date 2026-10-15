@@ -294,8 +294,7 @@ export class BelotGame {
       return true; // Can play any card when leading
     }
     
-    const leadCard = this.currentTrick.cards[0].card;
-    const leadSuit = leadCard.suit;
+    const leadSuit = this.currentTrick.cards[0].card.suit;
     const hasLeadSuit = player.hand.some(c => c.suit === leadSuit);
     
     if (this.contract === 'all-trump') {
@@ -308,35 +307,10 @@ export class BelotGame {
       // Must follow suit (playing cards of the same color is mandatory)
       if (card.suit !== leadSuit) return false;
       
-      // Find the highest card played so far in the trick (of the lead suit)
-      // In all-trump, all cards are trumps, so we compare by all-trump ranking
-      let highestCard = leadCard;
-      let highestRanking = highestCard.getRanking(this.contract, this.trumpSuit);
-      
-      this.currentTrick.cards.forEach(({ card: trickCard }) => {
-        // Only consider cards of the lead suit
-        if (trickCard.suit === leadSuit) {
-          const trickRanking = trickCard.getRanking(this.contract, this.trumpSuit);
-          // Lower ranking number means higher card (J=0, 9=1, A=2, etc.)
-          if (trickRanking < highestRanking) {
-            highestCard = trickCard;
-            highestRanking = trickRanking;
-          }
-        }
-      });
-      
-      // Raising is mandatory: must play a higher card if available
+      // Raising is mandatory: must play a higher card of the lead suit if available.
       // This applies regardless of which team has the highest card
-      const higherCards = player.hand.filter(c => 
-        c.suit === leadSuit && 
-        c.getRanking(this.contract, this.trumpSuit) < highestRanking
-      );
-      
-      if (higherCards.length > 0 && !higherCards.includes(card)) {
-        return false; // Must play a higher card if available
-      }
-      
-      return true;
+      const higherCards = this.higherCardsInHand(player, leadSuit);
+      return higherCards.length === 0 || higherCards.includes(card);
     }
     
     if (this.contract === 'no-trump') {
@@ -353,70 +327,23 @@ export class BelotGame {
       
       // If trump suit is led, must raise (play higher trump if available)
       if (leadSuit === this.trumpSuit) {
-        // Find the currently winning trump card in the trick
-        let winningCard = leadCard;
-        let winningRanking = winningCard.getRanking(this.contract, this.trumpSuit);
-        
-        this.currentTrick.cards.forEach(({ card: trickCard }) => {
-          // Only consider trump cards
-          if (trickCard.suit === this.trumpSuit) {
-            const trickRanking = trickCard.getRanking(this.contract, this.trumpSuit);
-            // Lower ranking number means higher card
-            if (trickRanking < winningRanking) {
-              winningCard = trickCard;
-              winningRanking = trickRanking;
-            }
-          }
-        });
-        
-        // If player has a higher trump than the winning card, they must play it
-        const higherTrumps = player.hand.filter(c => 
-          c.suit === this.trumpSuit && 
-          c.getRanking(this.contract, this.trumpSuit) < winningRanking
-        );
-        
-        if (higherTrumps.length > 0 && !higherTrumps.includes(card)) {
-          return false; // Must play a higher trump if available
-        }
+        const higherTrumps = this.higherCardsInHand(player, this.trumpSuit);
+        return higherTrumps.length === 0 || higherTrumps.includes(card); // Must play a higher trump if available
       }
       
-      return true;
+      return true; // Following a non-trump suit: any card of it
     }
     
     // Don't have lead suit
-    const opponentHasHighest = this.opponentHasHighestCard(player);
-    
     // Partner holds the trick: no obligation to trump or overtrump
-    if (!opponentHasHighest) return true;
+    if (!this.opponentHasHighestCard(player)) return true;
     
-    // Check if opponents played a trump card
-    let highestOpponentTrump = null;
-    let highestOpponentTrumpRanking = Infinity;
-    this.currentTrick.cards.forEach(({ playerId, card: trickCard }) => {
-      if (this.players[playerId].team !== player.team && 
-          trickCard.suit === this.trumpSuit) {
-        const trickRanking = trickCard.getRanking(this.contract, this.trumpSuit);
-        if (trickRanking < highestOpponentTrumpRanking) {
-          highestOpponentTrump = trickCard;
-          highestOpponentTrumpRanking = trickRanking;
-        }
-      }
-    });
-    
-    // If opponents played a trump card, must play a higher trump if available
-    if (highestOpponentTrump !== null) {
-      const higherTrumps = player.hand.filter(c => 
-        c.suit === this.trumpSuit && 
-        c.getRanking(this.contract, this.trumpSuit) < highestOpponentTrumpRanking
-      );
-      
-      if (higherTrumps.length > 0) {
-        // Must play a higher trump
-        return higherTrumps.includes(card);
-      } else {
-        // Don't have a higher trump, can play any card
-        return true;
-      }
+    // If opponents played a trump card, must play a higher trump if available;
+    // without a higher trump, can play any card
+    const isOpponent = playerId => this.players[playerId].team !== player.team;
+    if (this.highestRankInTrick(this.trumpSuit, isOpponent) !== Infinity) {
+      const higherTrumps = this.higherCardsInHand(player, this.trumpSuit, isOpponent);
+      return higherTrumps.length === 0 || higherTrumps.includes(card);
     }
     
     // Opponents have the highest card: if player has trump, must play trump
@@ -429,6 +356,21 @@ export class BelotGame {
     return true;
   }
 
+  // Rank (lower is stronger, as in getRanking) of the strongest card of `suit` in the
+  // current trick among the players picked by `include`, or Infinity if there is none
+  highestRankInTrick(suit, include = () => true) {
+    return Math.min(Infinity, ...this.currentTrick.cards
+      .filter(({ playerId, card }) => card.suit === suit && include(playerId))
+      .map(({ card }) => card.getRanking(this.contract)));
+  }
+
+  // The player's cards of `suit` that beat the strongest card of `suit` played so far
+  // (by the players picked by `include`)
+  higherCardsInHand(player, suit, include = () => true) {
+    const highest = this.highestRankInTrick(suit, include);
+    return player.hand.filter(c => c.suit === suit && c.getRanking(this.contract) < highest);
+  }
+
   opponentHasHighestCard(player = this.players[this.currentPlayer]) {
     if (this.currentTrick.cards.length === 0) return false;
     
@@ -439,7 +381,7 @@ export class BelotGame {
     let highestPlayer = leadPlayer;
     
     this.currentTrick.cards.forEach(({ playerId, card }) => {
-      if (card.isHigherThan(highestCard, this.contract, this.trumpSuit, leadCard.suit)) {
+      if (card.isHigherThan(highestCard, this.contract)) {
         highestCard = card;
         highestPlayer = playerId;
       }
@@ -453,7 +395,7 @@ export class BelotGame {
     
     let winner = this.currentTrick.cards[0];
     this.currentTrick.cards.forEach(p => {
-      if (p.card.isHigherThan(winner.card, this.contract, this.trumpSuit)) {
+      if (p.card.isHigherThan(winner.card, this.contract)) {
         winner = p;
       }
     });
