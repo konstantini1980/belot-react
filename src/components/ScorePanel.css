@@ -368,3 +368,48 @@
   font-style: italic;
 }
 
+
+/* Long panels (score sheet after many deals) scroll inside the screen */
+.score-panel-full {
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+}
+
+.score-sheet {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.score-sheet th {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: left;
+  padding: 2px 4px 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.score-sheet td {
+  padding: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  vertical-align: top;
+}
+
+.score-sheet .score-sheet-points {
+  text-align: right;
+  font-weight: bold;
+  width: 36px;
+}
+
+.score-sheet-number {
+  color: rgba(255, 255, 255, 0.5);
+  width: 18px;
+}
+
+.score-sheet-note {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+}

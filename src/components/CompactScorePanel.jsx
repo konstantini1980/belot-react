@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { contractLabel, multiplierLabel } from './contractLabel';
 import './ScorePanel.css';
 
 export default function CompactScorePanel({ 
@@ -12,28 +13,11 @@ export default function CompactScorePanel({
 }) {
   const { t } = useLanguage();
   
-  const CONTRACTS = [
-    { value: 'clubs', label: `♣ ${t('clubs')}` },
-    { value: 'diamonds', label: `♦ ${t('diamonds')}` },
-    { value: 'hearts', label: `♥ ${t('hearts')}` },
-    { value: 'spades', label: `♠ ${t('spades')}` },
-    { value: 'no-trump', label: t('noTrump') },
-    { value: 'all-trump', label: t('allTrump') }
-  ];
   const playerScore = roundScores?.[0] || 0;
   const opponentScore = roundScores?.[1] || 0;
-
-  let contractLabel = contract 
-    ? CONTRACTS.find(c => c.value === contract)?.label || contract
+  const contractTitle = contract
+    ? contractLabel(contract, t) + multiplierLabel(isDouble, isRedouble)
     : t('thisRound');
-
-  if (contract) {
-    if (isRedouble) {
-      contractLabel += ' x4';
-    } else if (isDouble) {
-      contractLabel += ' x2';
-    }
-  }
   
   return (
     <div 
@@ -41,7 +25,7 @@ export default function CompactScorePanel({
       onClick={onClick}
       style={{ cursor: onClick ? 'pointer' : 'default' }}
     >
-      <div className="round-score-title">{contractLabel}</div>
+      <div className="round-score-title">{contractTitle}</div>
       <div className="round-score-values">
         <div className="round-score-item">
           <span className="round-score-number round-score-green">{playerScore}</span>

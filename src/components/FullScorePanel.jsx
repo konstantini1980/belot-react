@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { GAME_PHASES } from '../game/gameLogic';
 import { useLanguage } from '../contexts/LanguageContext';
+import { contractLabel, multiplierLabel } from './contractLabel';
 import './ScorePanel.css';
 
 // Suit symbols mapping
@@ -40,9 +41,11 @@ export default function FullScorePanel({
   showOverlay = false,
   roundBreakdown = null,
   announcedCombinations = [[], []],
+  dealHistory = [],
   forceShow = false
 }) {
   const { t } = useLanguage();
+  const playerNames = [t('playerYou'), t('playerWest'), t('playerPartner'), t('playerEast')];
   const isGameFinished = phase === GAME_PHASES.FINISHED;
   const maxScore = 151;
   const isRoundOver = phase === GAME_PHASES.SCORING || phase === GAME_PHASES.FINISHED;
@@ -257,6 +260,37 @@ export default function FullScorePanel({
       <div className="score-section-title">{t('totalScore')}</div>
       {renderScoreSection(t('youAndPartner'), 'green', playerTotalScore, playerTotalProgress)}
       {renderScoreSection(t('opponents'), 'red', opponentTotalScore, opponentTotalProgress)}
+
+      {dealHistory.length > 0 && (
+        <>
+          <div className="score-section-divider"></div>
+          <div className="score-section-title">{t('scoreSheet')}</div>
+          <table className="score-sheet">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>{t('contract')}</th>
+                <th className="score-sheet-points team-name-green">{t('you')}</th>
+                <th className="score-sheet-points team-name-red">{t('opp')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {dealHistory.map((deal, idx) => (
+                <tr key={idx}>
+                  <td className="score-sheet-number">{idx + 1}</td>
+                  <td>
+                    {contractLabel(deal.contract, t)}{multiplierLabel(deal.double, deal.redouble)}
+                    {deal.bidder != null && <span className="score-sheet-note"> · {playerNames[deal.bidder]}</span>}
+                    {deal.hanging > 0 && <div className="score-sheet-note">{t('pointsHanging', { points: deal.hanging })}</div>}
+                  </td>
+                  <td className="score-sheet-points">{deal.points[0]}</td>
+                  <td className="score-sheet-points">{deal.points[1]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
 
       <div className="score-footer">
         {isGameFinished && winner != null && onNewGame ? (
