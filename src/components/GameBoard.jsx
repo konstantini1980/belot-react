@@ -130,7 +130,7 @@ export default function GameBoard({
       }
     }
     prevTrickLengthRef.current = currentTrick.cards.length;
-  }, [currentTrick.cards.length, phase, cardPositions]);
+  }, [currentTrick.cards, phase, cardPositions]);
 
   // Calculate fixed card positions within board-center for each player
   const calculateCentralCardPositions = () => {
