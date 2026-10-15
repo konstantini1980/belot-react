@@ -674,6 +674,7 @@
   .bidding-panel-overlay {
     top: 50%;
     max-height: 80vh;
+    max-height: 80dvh; /* visible area, above the phone's own bars */
   }
 }
 
