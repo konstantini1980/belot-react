@@ -125,9 +125,13 @@ export default function OnlineGame({ table, onLeave, onCancel, onCodeTaken }) {
   const hostAway = room.seats.some((seat, i) => seat.host && awayLongEnough(i));
   const canHandOver = room.isHost || hostAway ? offline.filter(awayLongEnough) : [];
 
+  // With nobody else at the table, leaving simply ends the game
+  const othersAtTable = room.seats.some((seat, i) => i !== 0 && seat.state === 'human');
+  const leaveText = othersAtTable ? t('confirmLeaveOnline') : t('confirmLeaveOnlineAlone');
+
   return (
     <SeatNamesProvider names={names}>
-      <AppHeader onExitGame={leave} confirmText={t('confirmLeaveOnline')} />
+      <AppHeader onExitGame={leave} confirmText={leaveText} />
       <div className="game-container online-game">
         {notice && (
           <div className="online-notice" role="status">
@@ -140,7 +144,7 @@ export default function OnlineGame({ table, onLeave, onCancel, onCodeTaken }) {
           </div>
         )}
         <GameBoard
-          tableControls={<TableControls onExitGame={leave} confirmText={t('confirmLeaveOnline')} />}
+          tableControls={<TableControls onExitGame={leave} confirmText={leaveText} />}
           players={game.players}
           currentTrick={game.currentTrick}
           currentPlayer={game.currentPlayer}
