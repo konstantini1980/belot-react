@@ -136,3 +136,29 @@ describe('A full trick', () => {
     expect(game.players[0].hand).toHaveLength(2);
   });
 });
+
+describe('Dealing', () => {
+  it('deals 5 cards each before bidding and 3 more once a contract is set', () => {
+    const game = new BelotGame();
+    game.deal();
+    expect(game.players.map(p => p.hand.length)).toEqual([5, 5, 5, 5]);
+    expect(game.deck).toHaveLength(12);
+    game.makeBid(game.currentBidder, 'hearts');
+    for (let i = 0; i < 3; i++) game.makeBid(game.currentBidder, 'pass');
+    expect(game.players.map(p => p.hand.length)).toEqual([8, 8, 8, 8]);
+    expect(new Set(game.players.flatMap(p => p.hand.map(c => c.id))).size).toBe(32);
+  });
+
+  it('marks a deal thrown in because all four passed, until the next deal', () => {
+    const game = new BelotGame();
+    game.deal();
+    expect(game.allPassed).toBe(false);
+    const dealer = game.dealer;
+    for (let i = 0; i < 4; i++) game.makeBid(game.currentBidder, 'pass');
+    expect(game.allPassed).toBe(true);
+    expect(game.dealer).toBe((dealer + 3) % 4); // The next player deals
+    expect(game.bids).toHaveLength(0);
+    game.deal();
+    expect(game.allPassed).toBe(false);
+  });
+});
