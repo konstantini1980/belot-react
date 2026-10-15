@@ -12,11 +12,14 @@ export default {
   playerEast: 'Изток',
   
   // Bidding
+  cardBack: 'Гръб на карта',
+  cardName: '{rank} {suit}',
   selectYourBid: 'Изберете вашата обява',
   pass: 'Пас',
   double: 'Контра',
   redouble: 'Реконтра',
   waiting: 'Изчакване...',
+  allPassedRedeal: 'Всички казаха пас – ново раздаване.',
   
   // Contracts
   clubs: 'Спатия',

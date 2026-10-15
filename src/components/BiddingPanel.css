@@ -108,6 +108,14 @@
   }
 }
 
+.bidding-notice {
+  margin: 0 0 16px 0;
+  color: #ffd54f;
+  font-size: 16px;
+  line-height: 24px;
+  text-align: center;
+}
+
 .bidding-title {
   margin: 0 0 16px 0;
   color: white;
