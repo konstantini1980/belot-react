@@ -21,18 +21,23 @@ export class Table {
     this.friendSeat = friendSeat;
     this.tokens = { [HOST_SEAT]: hostToken, [friendSeat]: null };
     this.started = false;
+    this.readyForNextDeal = []; // Human seats that clicked "Next deal" after this deal was scored
     this.game = new BelotGame();
   }
 
   // Everything needed to rebuild the table, as JSON-safe data (the server stores it)
   snapshot() {
-    return { friendSeat: this.friendSeat, tokens: this.tokens, started: this.started, game: this.game.serialize() };
+    return {
+      friendSeat: this.friendSeat, tokens: this.tokens, started: this.started,
+      readyForNextDeal: this.readyForNextDeal, game: this.game.serialize(),
+    };
   }
 
   static restore(data) {
     const table = new Table(data.friendSeat, data.tokens[HOST_SEAT]);
     table.tokens = data.tokens;
     table.started = data.started;
+    table.readyForNextDeal = data.readyForNextDeal ?? []; // Tables saved before this field had nobody waiting
     table.game = BelotGame.deserialize(data.game);
     return table;
   }
@@ -43,6 +48,11 @@ export class Table {
 
   get friendJoined() {
     return this.tokens[this.friendSeat] !== null;
+  }
+
+  // Whether this seat clicked "Next deal" and waits for the other human
+  isWaitingForNextDeal(seat) {
+    return this.readyForNextDeal.includes(seat);
   }
 
   // The seat held by this token, or null
@@ -79,12 +89,19 @@ export class Table {
         return game.playCard(seat, action.cardId) ? { type: 'play', seat } : null; // playCard checks turn and rules
       case 'nextDeal':
         if (game.phase !== GAME_PHASES.SCORING) return null; // Only after a deal is scored
+        if (this.readyForNextDeal.includes(seat)) return null; // Already clicked
+        this.readyForNextDeal.push(seat);
+        if (![HOST_SEAT, this.friendSeat].every(human => this.readyForNextDeal.includes(human))) {
+          return { type: 'ready', seat }; // Waits until both humans clicked (AI players are always ready)
+        }
+        this.readyForNextDeal = [];
         game.dealer = (game.dealer + 3) % 4; // Next dealer is counter-clockwise
         game.deal();
         return { type: 'deal', seat };
       case 'newGame':
         if (game.phase !== GAME_PHASES.FINISHED) return null; // Only once the game is won
         this.game = new BelotGame();
+        this.readyForNextDeal = [];
         return { type: 'newGame', seat };
       default:
         return null; // Unknown action

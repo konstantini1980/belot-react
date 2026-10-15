@@ -36,6 +36,7 @@ export default function FullScorePanel({
   hangingPoints = 0,
   phase,
   onNextDeal = null,
+  nextDealWaiting = false, // Online: you clicked "Next deal" and your friend hasn't yet
   onNewGame = null,
   winner = null,
   onClose = null,
@@ -307,6 +308,8 @@ export default function FullScorePanel({
               {t('newGame')}
             </button>
           </div>
+        ) : onNextDeal && nextDealWaiting ? (
+          <p className="next-deal-waiting" role="status">{t('nextDealWaiting')}</p>
         ) : onNextDeal ? (
           <button 
             onClick={onNextDeal}

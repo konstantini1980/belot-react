@@ -27,8 +27,20 @@ game in two browser windows (or a private window) to play both seats.
    "Play online with friends" on the start screen. Without the variable the site offers
    local play only.
 
-Redeploy the server (`npm run deploy`) whenever `src/game/` or `server/` changes, so the
-server plays by the same rules as the app.
+## Automatic deploys (owner's step, once)
+
+After the first deploy, CI can redeploy the server by itself: on every merge to `main` that
+changes `server/` or `src/game/`, the `deploy-server` job runs `wrangler deploy`, so the
+server always plays by the same rules as the app. It needs one secret:
+
+1. In Cloudflare: My Profile → API Tokens → Create Token → template **Edit Cloudflare
+   Workers** → pick your account → Create. Copy the token.
+2. In GitHub: Settings → Secrets and variables → Actions → Secrets → New repository secret
+   `CLOUDFLARE_API_TOKEN` = that token.
+
+Without the secret the job skips and you redeploy by hand (`npm run deploy` here) whenever
+`src/game/` or `server/` changes. A redeploy drops open connections for a moment; the app
+reconnects by itself and the table carries on.
 
 ## Costs and limits
 
