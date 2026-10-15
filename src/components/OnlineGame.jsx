@@ -89,8 +89,9 @@ export default function OnlineGame({ table, onLeave, onCancel, onCodeTaken }) {
     send({ type: 'play', cardId: card.id });
   };
 
-  // Joining by link or code: pick a seat first (until the server has seated us)
-  if (table.confirm && !room && (!error || error === 'seatTaken')) {
+  // Joining by link or code: pick a seat first (until the server has seated us). Also
+  // after a dropped connection, if our seat was handed to the AI and someone else took it.
+  if ((table.confirm && !room && !error) || error === 'seatTaken') {
     return <OnlineJoin free={freeSeats} error={error} onSit={sit} onBack={onCancel} />; // Not seated: nothing to leave
   }
 
@@ -114,8 +115,6 @@ export default function OnlineGame({ table, onLeave, onCancel, onCodeTaken }) {
   // Names at the table: people by their name, AI seats by the usual labels
   // (yours too; without a name you stay "You")
   const names = room.seats.map((seat, i) => (seat.state === 'empty' ? null : seat.name || (i === 0 ? null : t('playerFriend'))));
-  const withAI = seat => (room.seats[seat].state === 'away' ? t('onlineAIPlaysFor', { name: names[seat] }) : names[seat]);
-  const seatNames = room.seats.map((_, seat) => withAI(seat));
 
   // Connection trouble, or someone dropped out (the game waits for them)
   const offline = room.seats.map((seat, i) => i).filter(i => i !== 0 && room.seats[i].handOverAt !== null);
@@ -127,7 +126,7 @@ export default function OnlineGame({ table, onLeave, onCancel, onCodeTaken }) {
   const canHandOver = room.isHost || hostAway ? offline.filter(awayLongEnough) : [];
 
   return (
-    <SeatNamesProvider names={seatNames}>
+    <SeatNamesProvider names={names}>
       <AppHeader onExitGame={leave} confirmText={t('confirmLeaveOnline')} />
       <div className="game-container online-game">
         {notice && (

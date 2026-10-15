@@ -294,9 +294,21 @@ describe('Online table: four people, and people leaving', () => {
     expect(table.handle(2, { type: 'handOver', seat: 2 }, HAND_OVER_AFTER_MS - 1)).toBeNull(); // Too soon
     // The partner (seat 2) sees the host as seat 2
     expect(table.handle(2, { type: 'handOver', seat: 2 }, HAND_OVER_AFTER_MS)).toMatchObject({ type: 'handOver', seat: HOST_SEAT });
+    expect(table.seats[HOST_SEAT]).toBeNull();
+    expect(table.hostSeat).not.toBe(HOST_SEAT); // Someone still at the table hosts now
+    expect(table.isHuman(table.hostSeat)).toBe(true);
   });
 
-  it('The AI plays a handed-over seat until its player comes back', () => {
+  it('A table saved with a seat handed to the AI the old way comes back with that seat free', () => {
+    const table = fullTable();
+    const data = JSON.parse(JSON.stringify(table.snapshot()));
+    data.seats[3].ai = true;
+    const restored = Table.restore(data);
+    expect(restored.seats[3]).toBeNull();
+    expect(restored.humanSeats()).toEqual([0, 1, 2]);
+  });
+
+  it('A handed-over seat is free: the AI plays it and anyone, its old player too, can take it', () => {
     const table = fullTable();
     const east = table.seats[3].token;
     table.setOnline(3, false, 0);
@@ -311,7 +323,8 @@ describe('Online table: four people, and people leaving', () => {
     }
     expect(table.game.currentPlayer).toBe(3);
     expect(table.nextStep().delay).toBe(1000); // An AI turn
-    expect(table.join(east)).toEqual({ seat: 3 }); // Back
+    expect(table.seats[3]).toBeNull(); // Their name is gone from the table
+    expect(table.join(east, 'East', 3)).toEqual({ seat: 3 }); // Back, by picking the seat like anyone
     expect(table.isHuman(3)).toBe(true);
     expect(table.nextStep()).toBeNull(); // Their own turn again
   });

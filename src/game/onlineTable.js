@@ -17,9 +17,8 @@ export const STEP_MS = { deal: 0, aiTurn: 1000, showFullTrick: 2000, collectTric
 // Each player's app makes up a random token and keeps it; the token is how the table
 // knows who sits where, so a reload or a dropped connection gets the same seat back.
 //
-// seats[s] is null or { token, name, ai, offlineSince }. Before the start a null seat is
+// seats[s] is null or { token, name, offlineSince }. Before the start a null seat is
 // empty; once the game runs, the AI plays it and anyone with the code can take it.
-// ai: true means the AI plays for a player who is away; they get the seat back by returning.
 export class Table {
   constructor(hostToken, hostName = '') {
     if (!isToken(hostToken)) throw new Error('Bad token');
@@ -42,7 +41,8 @@ export class Table {
   static restore(data) {
     const table = Object.create(Table.prototype);
     if (data.seats) {
-      table.seats = data.seats;
+      // Seats handed to the AI by older servers kept their player; now such a seat is free
+      table.seats = data.seats.map(entry => (entry?.ai ? null : entry));
       table.hostSeat = data.hostSeat;
     } else {
       // Saved by the two-player server: { friendSeat, tokens: { seat: token } }
@@ -55,10 +55,9 @@ export class Table {
     return table;
   }
 
-  // A person plays this seat (not empty, and not handed over to the AI)
+  // A person plays this seat (the AI plays the free ones)
   isHuman(seat) {
-    const entry = this.seats[seat];
-    return Boolean(entry) && !entry.ai;
+    return Boolean(this.seats[seat]);
   }
 
   humanSeats() {
@@ -82,14 +81,13 @@ export class Table {
     return seat === -1 ? null : seat;
   }
 
-  // Who is connecting: a known token gets its seat back (from the AI too, if it played
-  // for them); a new one sits in the free seat it chose. Returns { seat }, or { error }.
+  // Who is connecting: a known token gets its seat back; a new one sits in the free
+  // seat it chose. Returns { seat }, or { error }.
   join(token, name, seat) {
     if (!isToken(token)) return { error: 'badToken' };
     const known = this.seatOf(token);
     if (known !== null) {
       const entry = this.seats[known];
-      entry.ai = false; // Coming back: the AI hands the seat back
       entry.offlineSince = null;
       if (cleanName(name)) entry.name = cleanName(name);
       return { seat: known };
@@ -156,7 +154,9 @@ export class Table {
         const target = named(action.seat);
         if (!this.mayHandOver(seat, now)) return null; // Only the host decides (anyone, if the host is the one away)
         if (target === null || target === seat || !this.canHandOver(target, now)) return null; // Only for someone offline long enough
-        this.seats[target].ai = true; // The seat stays theirs; they take it back by returning
+        // Like leaving with X: the AI plays the seat and anyone (them too) can take it
+        this.seats[target] = null;
+        if (this.hostSeat === target) this.passHost();
         return this.seatsChanged({ type: 'handOver', seat: target });
       }
       case 'bid':
@@ -249,7 +249,7 @@ export class Table {
 }
 
 function newSeat(token, name = '') {
-  return { token, name: cleanName(name), ai: false, offlineSince: null };
+  return { token, name: cleanName(name), offlineSince: null };
 }
 
 // A player's name as shown at the table: one line, short; '' shows the seat's usual label
