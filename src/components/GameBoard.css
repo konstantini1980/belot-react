@@ -566,11 +566,6 @@
     font-size: 20px;
   }
 
-  .score-board .game-race,
-  .score-board .game-race-labels {
-    display: none;
-  }
-
   /* Opponents are avatars with a card count; their cards stay in place, invisible,
      so a played card still flies out from the right seat */
   .player-card-count {

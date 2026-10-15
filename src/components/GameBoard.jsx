@@ -461,7 +461,6 @@ export default function GameBoard({
         {!isRoundOver && (
           <CompactScorePanel 
             roundScores={currentRoundScores}
-            totalScores={totalScores}
             contract={contract}
             isDouble={isDouble}
             isRedouble={isRedouble}
