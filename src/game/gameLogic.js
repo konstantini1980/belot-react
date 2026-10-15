@@ -530,27 +530,35 @@ export class BelotGame {
     const previousHangingPoints = this.hangingPoints;
     const isHanging = contractPoints === opponentPoints;
     const totalRounded = Math.round((contractPoints + opponentPoints) / 10);
-
-    // In a hanging round the opponents still take their half now
-    const roundWinner = contractPoints > opponentPoints ? contractTeam : opponentTeam;
-    // Hanging cancels doubling; otherwise double/redouble apply (valat included, per belot.bg)
-    const multiplier = isHanging ? 1 : (this.redouble ? 4 : (this.double ? 2 : 1));
-    const winnerTakesAll = this.double || this.redouble || contractPoints < opponentPoints;
+    // Double/redouble apply to everything, valat included (per belot.bg)
+    const multiplier = this.redouble ? 4 : (this.double ? 2 : 1);
 
     const rounded = [0, 0];
-    if (winnerTakesAll) {
-      rounded[roundWinner] = totalRounded * multiplier;
-      this.hangingPoints = 0;
-    } else if (isHanging) {
-      // Contract team's half hangs until the next round; opponents take their half now
-      this.hangingPoints = totalRounded / 2;
-      rounded[opponentTeam] = this.hangingPoints;
-    } else {
-      roundSplitPoints(rounded, this.contract, contractTeam, this.currentRoundScore, totalRounded);
-      this.hangingPoints = 0;
+    if (isHanging && multiplier > 1) {
+      // Doubled tie: all points, doubled or quadrupled, hang for the next deal's winner
+      this.hangingPoints = previousHangingPoints + totalRounded * multiplier;
+      return rounded;
+    }
+    if (isHanging) {
+      // Tie: the contract team's half hangs, the opponents take their half now.
+      // The halves add up to the deal's total, with the odd point going to the
+      // opponents (106 : 106 is 21 in all, so 11 now and 10 hanging).
+      const hanging = Math.floor(totalRounded / 2);
+      rounded[opponentTeam] = totalRounded - hanging;
+      this.hangingPoints = previousHangingPoints + hanging; // Hanging points stack up over tied deals
+      return rounded;
     }
 
-    // Points left hanging from the previous round go to this round's winner
+    const roundWinner = contractPoints > opponentPoints ? contractTeam : opponentTeam;
+    if (multiplier > 1 || contractPoints < opponentPoints) {
+      // Doubled, or the contract team is "inside": the winner takes all the points
+      rounded[roundWinner] = totalRounded * multiplier;
+    } else {
+      roundSplitPoints(rounded, this.contract, contractTeam, this.currentRoundScore, totalRounded);
+    }
+
+    // Points left hanging from earlier deals go to this deal's winner
+    this.hangingPoints = 0;
     rounded[roundWinner] += previousHangingPoints;
     breakdown[roundWinner].hangingPoints = previousHangingPoints * 10;
 
@@ -590,6 +598,13 @@ function compareSequences(a, b) {
     || (highestSequenceRank(a.cards) - highestSequenceRank(b.cards));
 }
 
+// Positive if four of a kind a beats b: more points wins (J, then 9, then the 100s),
+// and between two 100s the higher rank wins (A, K, Q, 10), per the owner's rule
+function compareEquals(a, b) {
+  return (a.points - b.points)
+    || (SEQUENCE_ORDER.indexOf(a.cards[0].rank) - SEQUENCE_ORDER.indexOf(b.cards[0].rank));
+}
+
 // Which team's announcements of one kind count: the team holding the single best one.
 // Returns null when neither team has one, or when the two best are equal (both drop).
 function winningTeam(combinations, isKind, compare) {
@@ -607,7 +622,7 @@ function winningTeam(combinations, isKind, compare) {
 // team with the best one of each kind scores that kind (all of its announcements of it).
 function scoreCombinations(announcedCombinations) {
   const sequenceWinner = winningTeam(announcedCombinations, isSequence, compareSequences);
-  const equalWinner = winningTeam(announcedCombinations, c => c.type === 'equal', (a, b) => a.points - b.points);
+  const equalWinner = winningTeam(announcedCombinations, c => c.type === 'equal', compareEquals);
 
   return announcedCombinations.map((combos, team) => {
     let points = 0;

@@ -223,7 +223,8 @@ scores**, but then it scores **all** of its sequences.
 3. If the best sequences are exactly equal, **neither team** scores any sequences.
 
 Four of a kind is compared separately: if both teams have one, only the higher-valued one
-counts. Having four of a kind does not cancel the other team's sequences, and vice versa.
+counts. Between two fours worth 100, the higher rank wins: Aces, then Kings, then Queens,
+then 10s. Having four of a kind does not cancel the other team's sequences, and vice versa.
 
 ### Belot (Белот)
 
@@ -313,12 +314,14 @@ both sides.
 If the two teams finish a deal with **exactly equal** raw points:
 
 - the opponents of the declaring team score their own half straight away;
+- if the deal's total is odd, the opponents' half gets the extra point (106 : 106 is 21 in
+  all, so the opponents take 11 and 10 hang);
 - the declaring team's half is **left hanging** and goes to **whichever team wins the next
   deal**;
 - hanging points keep adding up if it happens again.
 
-If a **doubled** or **redoubled** deal ends equal, **all** of its points hang and go to the
-winner of the next deal.
+If a **doubled** or **redoubled** deal ends equal, **all** of its points, doubled or
+quadrupled, hang and go to the winner of the next deal.
 
 ### Nobody bids
 
