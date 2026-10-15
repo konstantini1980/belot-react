@@ -57,6 +57,13 @@ export class GameRoom extends DurableObject {
       await this.hello(ws, message);
       return;
     }
+    if (message.type === 'look') {
+      // Someone opened an invite: show them the free seats until they sit down
+      if (!this.table) return this.refuse(ws, 'noRoom');
+      ws.serializeAttachment({ looking: true });
+      ws.send(JSON.stringify(this.freeSeatsMessage()));
+      return;
+    }
     const seat = this.seatOf(ws);
     if (seat === null) return; // Must say hello first (or left the table)
     const event = this.table.handle(seat, message);
@@ -64,16 +71,16 @@ export class GameRoom extends DurableObject {
     if (event) await this.changed(event);
   }
 
-  // The seat of the player on this socket. Looked up by token each time, because the
-  // host can move people to other seats before the game starts.
+  // The seat of the player on this socket (looked up by token, so a seat that was given
+  // up no longer counts)
   seatOf(ws) {
     const token = ws.deserializeAttachment()?.token;
     return this.table && token ? this.table.seatOf(token) : null;
   }
 
-  // A player arrives with their token, name and the role from their invite link: creates
-  // the table, takes a free seat, or comes back to their own (saying hello twice is harmless)
-  async hello(ws, { token, name, as: role, create }) {
+  // A player arrives with their token, name and the seat they chose: creates the table,
+  // takes that seat, or comes back to their own (saying hello twice is harmless)
+  async hello(ws, { token, name, seat, create }) {
     if (!this.table) {
       if (!create) return this.refuse(ws, 'noRoom');
       try {
@@ -84,7 +91,13 @@ export class GameRoom extends DurableObject {
     } else if (create && this.table.seatOf(token) === null) {
       return this.refuse(ws, 'taken'); // Someone else's table has this code; the app picks another
     } else {
-      const joined = this.table.join(token, name, role);
+      const joined = this.table.join(token, name, seat);
+      if (joined.error === 'seatTaken') {
+        // Someone sat there first: they stay on the join screen and pick another seat
+        ws.send(JSON.stringify({ type: 'error', error: 'seatTaken' }));
+        ws.send(JSON.stringify(this.freeSeatsMessage()));
+        return;
+      }
       if (joined.error) return this.refuse(ws, joined.error);
     }
     ws.serializeAttachment({ token });
@@ -157,6 +170,11 @@ export class GameRoom extends DurableObject {
         host: seat === table.hostSeat,
       };
     });
+    const lookers = sockets.filter(ws => this.seatOf(ws) === null && ws.deserializeAttachment()?.looking);
+    if (lookers.length > 0) {
+      const free = JSON.stringify(this.freeSeatsMessage());
+      lookers.forEach(ws => ws.send(free));
+    }
     for (const ws of sockets) {
       const seat = this.seatOf(ws);
       if (seat === null) continue;
@@ -172,6 +190,22 @@ export class GameRoom extends DurableObject {
         game: viewFor(table.game, seat),
       }));
     }
+  }
+
+  // For someone choosing a seat: the table turned so the host sits south, with each
+  // seat's real number (sent back in hello) and who sits there
+  freeSeatsMessage() {
+    const table = this.table;
+    const from = table.hostSeat ?? 0;
+    return {
+      type: 'seats',
+      started: table.started,
+      seats: [0, 1, 2, 3].map(s => {
+        const seat = (s + from) % 4;
+        const entry = table.seats[seat];
+        return { seat, name: entry?.name ?? '', state: !entry ? 'empty' : entry.ai ? 'away' : 'human', host: seat === table.hostSeat };
+      }),
+    };
   }
 
   // Nobody has used the table for 24 hours: forget it

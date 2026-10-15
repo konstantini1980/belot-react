@@ -25,10 +25,10 @@ const token = () => crypto.randomUUID();
 
 const FRIEND_SEATS = { partner: 2, opponent: 1 };
 
-// A started table with the host and one friend, who joined with a partner or opponent link
+// A started table with the host and one friend in the seat they chose
 function tableWithFriend(friendSeat) {
   const table = new Table(token());
-  table.join(token(), '', friendSeat === 2 ? 'partner' : 'opponent');
+  table.join(token(), '', friendSeat);
   table.handle(HOST_SEAT, { type: 'start' });
   return table;
 }
@@ -36,7 +36,7 @@ function tableWithFriend(friendSeat) {
 // A started table where every seat is a person
 function fullTable() {
   const table = new Table(token(), 'Host');
-  for (const role of ['partner', 'opponent', 'opponent']) table.join(token(), '', role);
+  for (const seat of [2, 1, 3]) table.join(token(), '', seat);
   table.handle(HOST_SEAT, { type: 'start' });
   return table;
 }
@@ -49,23 +49,25 @@ function allNextDeal(table) {
 }
 
 describe('Online table: seats and lobby', () => {
-  it('Seats people by their invite link, then turns a fifth away; tokens bring players back', () => {
+  it('Seats people where they chose, then turns a fifth away; tokens bring players back', () => {
     const host = token();
     const table = new Table(host, 'Ana');
-    const opp1 = token();
-    expect(table.join(opp1, 'Bo', 'opponent')).toEqual({ seat: 1 });
-    expect(table.join(token(), '', 'opponent')).toEqual({ seat: 3 });
-    expect(table.join(token(), '', 'opponent')).toEqual({ seat: 2 }); // Opponents are full: the free seat
-    expect(table.join(token())).toEqual({ error: 'full' });
+    const opp = token();
+    expect(table.join(opp, 'Bo', 3)).toEqual({ seat: 3 });
+    expect(table.join(token(), '', 3)).toEqual({ error: 'seatTaken' }); // Someone sat there first
+    expect(table.join(token(), '', 0)).toEqual({ error: 'seatTaken' }); // The host's seat
+    expect(table.join(token(), '', 1)).toEqual({ seat: 1 });
+    expect(table.join(token(), '', 2)).toEqual({ seat: 2 });
+    expect(table.join(token(), '', 2)).toEqual({ error: 'full' });
     expect(table.join('made-up')).toEqual({ error: 'badToken' });
-    expect(table.join(opp1)).toEqual({ seat: 1 });
+    expect(table.join(opp)).toEqual({ seat: 3 });
     expect(table.join(host)).toEqual({ seat: 0 });
-    expect(table.seats[1].name).toBe('Bo');
+    expect(table.seats[3].name).toBe('Bo');
     expect(table.seatOf(host)).toBe(0);
     expect(table.seatOf(token())).toBeNull();
   });
 
-  it('A plain code takes the partner seat first, then the opponents', () => {
+  it('Without a chosen seat, takes the partner seat first, then the opponents', () => {
     const table = new Table(token());
     expect([table.join(token()), table.join(token()), table.join(token())]).toEqual([{ seat: 2 }, { seat: 1 }, { seat: 3 }]);
   });
@@ -73,34 +75,11 @@ describe('Online table: seats and lobby', () => {
   it('Starts only when the host asks and a friend is there; empty seats go to the AI', () => {
     const table = new Table(token());
     expect(table.handle(HOST_SEAT, { type: 'start' })).toBeNull(); // Nobody else here yet
-    table.join(token(), '', 'opponent');
+    table.join(token(), '', 1);
     expect(table.handle(1, { type: 'start' })).toBeNull(); // Only the host starts
     expect(table.handle(HOST_SEAT, { type: 'start' })).toEqual({ type: 'start', seat: 0 });
     expect(table.humanSeats()).toEqual([0, 1]);
     expect(table.nextStep().delay).toBe(0); // Deals right away
-  });
-
-  it('Lets only the host swap seats, only before the start, named as the host sees them', () => {
-    const table = new Table(token());
-    const friend = token();
-    table.join(friend, '', 'opponent'); // Seat 1
-    expect(table.handle(1, { type: 'swap', a: 0, b: 1 })).toBeNull(); // Not the host
-    expect(table.handle(HOST_SEAT, { type: 'swap', a: 1, b: 1 })).toBeNull();
-    expect(table.handle(HOST_SEAT, { type: 'swap', a: 1, b: 2 })).toEqual({ type: 'swap', seat: 0 });
-    expect(table.seatOf(friend)).toBe(2); // Now the host's partner
-    expect(table.seats[1]).toBeNull();
-
-    // The host can move themselves too, and stays host
-    expect(table.handle(HOST_SEAT, { type: 'swap', a: 0, b: 3 })).not.toBeNull();
-    expect(table.hostSeat).toBe(3);
-    expect(table.seats[0]).toBeNull();
-    // Seats are named as the host sees them: from seat 3, their 0 is seat 3 and their 3 is seat 2
-    expect(table.handle(3, { type: 'swap', a: 3, b: 0 })).not.toBeNull();
-    expect(table.seatOf(friend)).toBe(3);
-    expect(table.hostSeat).toBe(2);
-
-    table.handle(table.hostSeat, { type: 'start' });
-    expect(table.handle(table.hostSeat, { type: 'swap', a: 0, b: 1 })).toBeNull(); // Seats lock at the start
   });
 
   it('Keeps names short and on one line', () => {
@@ -115,7 +94,7 @@ describe('Online table: seats and lobby', () => {
     const host = token();
     const table = new Table(host);
     const friend = token();
-    table.join(friend, '', 'opponent');
+    table.join(friend, '', 1);
     expect(table.handle(HOST_SEAT, { type: 'leave' })).toMatchObject({ type: 'leave', seat: 0 });
     expect(table.seats[0]).toBeNull();
     expect(table.hostSeat).toBe(1);
@@ -337,7 +316,7 @@ describe('Online table: four people, and people leaving', () => {
     expect(table.handle(1, { type: 'leave' })).toMatchObject({ type: 'deal' });
     expect(table.seats[1]).toBeNull();
     expect(table.humanSeats()).toEqual([0, 2, 3]);
-    expect(table.join(token(), 'New', 'partner')).toEqual({ seat: 1 }); // Partner seat taken: the free one
+    expect(table.join(token(), 'New', 1)).toEqual({ seat: 1 }); // Anyone can take over the free seat
   });
 
   it('Stops when everyone has left', () => {

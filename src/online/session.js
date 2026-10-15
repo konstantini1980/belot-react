@@ -46,35 +46,37 @@ export function normalizeCode(text) {
   return text.toUpperCase().split('').filter(ch => CODE_LETTERS.includes(ch)).join('').slice(0, CODE_LENGTH);
 }
 
-// The link a friend opens to sit at this table; role 'partner' or 'opponent' says where
-export const ROLES = ['partner', 'opponent'];
-
-export function shareLink(code, role) {
-  const as = ROLES.includes(role) ? `&as=${role}` : '';
-  return `${window.location.origin}${window.location.pathname}?room=${code}${as}`;
+// The link a friend opens to sit at this table
+export function shareLink(code) {
+  return `${window.location.origin}${window.location.pathname}?room=${code}`;
 }
 
-// The table code and role in the page address (a shared link), removed from the address once read
+// The table code in the page address (a shared link), removed from the address once read
 export function takeRoomFromUrl() {
   const url = new URL(window.location.href);
   const code = normalizeCode(url.searchParams.get('room') || '');
-  const role = url.searchParams.get('as');
   if (url.searchParams.has('room') || url.searchParams.has('as')) {
     url.searchParams.delete('room');
-    url.searchParams.delete('as');
+    url.searchParams.delete('as'); // Links from the first four-player version named a role
     window.history.replaceState(null, '', url);
   }
-  return code.length === CODE_LENGTH ? { code, role: ROLES.includes(role) ? role : null } : null;
+  return code.length === CODE_LENGTH ? code : null;
+}
+
+// A table to open by its code: back to our own seat if we sat there and didn't leave,
+// otherwise a new token and a choice of seat first (confirm)
+export function tableByCode(code) {
+  const saved = loadSession();
+  const back = saved?.code === code && !saved.left;
+  return { code, token: back ? saved.token : newToken(), confirm: !back };
 }
 
 // Which table to open when the page loads: a shared link, else the table we were at
 export function initialTable() {
   if (!SERVER_URL) return null;
-  const saved = loadSession();
   const linked = takeRoomFromUrl();
-  if (linked) {
-    return { code: linked.code, as: linked.role, token: saved?.code === linked.code ? saved.token : newToken() };
-  }
+  if (linked) return tableByCode(linked);
+  const saved = loadSession();
   return saved && !saved.left ? { code: saved.code, token: saved.token } : null;
 }
 

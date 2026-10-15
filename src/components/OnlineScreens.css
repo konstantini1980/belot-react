@@ -95,8 +95,7 @@
   cursor: pointer;
 }
 
-.online-panel .online-seat:disabled {
-  opacity: 1;
+div.online-seat {
   cursor: default;
 }
 
@@ -106,8 +105,14 @@
   color: var(--ink);
 }
 
-.online-seat.picked {
+button.online-seat:hover {
   border-color: var(--gold);
+}
+
+.online-seat.picked {
+  border-style: solid;
+  border-color: var(--gold);
+  color: var(--gold);
   background: rgba(231, 195, 106, 0.16);
 }
 
@@ -128,17 +133,6 @@
 .online-seat-note {
   font-size: 11px;
   color: var(--ink-dim);
-}
-
-.online-invites {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.online-invites .start-new-game-button {
-  padding-left: 6px;
-  padding-right: 6px;
 }
 
 .online-divider {

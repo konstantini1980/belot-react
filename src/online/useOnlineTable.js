@@ -4,14 +4,18 @@ import { SERVER_URL, saveSession, loadName } from './session';
 const MAX_RETRY_MS = 10000;
 const GIVE_UP_AFTER = 4; // Failed attempts before a first connection counts as "server unreachable"
 
-// The connection to one table on the game server. Says hello with our token, name and
-// invite role (creating the table, or taking or getting back our seat), passes every state message to onState, and
+// The connection to one table on the game server. Says hello with our token and name
+// (creating the table, or taking or getting back our seat), passes every state message to onState, and
 // reconnects by itself when the connection drops (a locked phone, a network change).
-// status: 'connecting' | 'open' | 'reconnecting' | 'closed'; error: why it closed.
-export function useOnlineTable({ code, token, as = null, create = null }, onState) {
+// With `choose`, it first only looks: freeSeats lists the seats, and sit(seat) sits down.
+// status: 'connecting' | 'open' | 'reconnecting' | 'closed'; error: why it closed
+// (or 'seatTaken': someone sat in the chosen seat first; pick another).
+export function useOnlineTable({ code, token, create = null, choose = false }, onState) {
   const [status, setStatus] = useState('connecting');
   const [error, setError] = useState(null);
+  const [freeSeats, setFreeSeats] = useState(null);
   const socketRef = useRef(null);
+  const sitRef = useRef(choose ? null : {}); // { seat } once we sit down; null while still choosing
   const onStateRef = useRef(onState);
   useEffect(() => {
     onStateRef.current = onState;
@@ -29,7 +33,8 @@ export function useOnlineTable({ code, token, as = null, create = null }, onStat
       const ws = new WebSocket(`${SERVER_URL}/rooms/${code}`);
       socketRef.current = ws;
       ws.onopen = () => {
-        ws.send(JSON.stringify({ type: 'hello', token, name: loadName(), as, create }));
+        if (sitRef.current) ws.send(JSON.stringify({ type: 'hello', token, name: loadName(), seat: sitRef.current.seat, create }));
+        else ws.send(JSON.stringify({ type: 'look' }));
       };
       ws.onmessage = (e) => {
         const message = JSON.parse(e.data);
@@ -38,6 +43,11 @@ export function useOnlineTable({ code, token, as = null, create = null }, onStat
           failures = 0;
           saveSession(code, token); // A reload comes back to this seat
           setStatus('open');
+        } else if (message.type === 'seats') {
+          setFreeSeats(message);
+        } else if (message.type === 'error' && message.error === 'seatTaken') {
+          sitRef.current = null; // Back to choosing
+          setError('seatTaken');
         } else if (message.type === 'error') {
           stopped = true; // No table, table full or code taken: retrying won't help
           setError(message.error);
@@ -83,5 +93,13 @@ export function useOnlineTable({ code, token, as = null, create = null }, onStat
     if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(action));
   }, []);
 
-  return { status, error, send };
+  // Sit down in the chosen seat (a real seat number from freeSeats)
+  const sit = useCallback((seat) => {
+    sitRef.current = { seat };
+    setError(null);
+    const ws = socketRef.current;
+    if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'hello', token, name: loadName(), seat }));
+  }, [token]);
+
+  return { status, error, send, freeSeats, sit };
 }

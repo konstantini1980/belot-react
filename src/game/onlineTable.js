@@ -7,9 +7,7 @@ import { makeAIBid, makeAIPlayCard } from './aiplayer';
 // No React and no network here, so the same rules run on the server and in tests.
 
 export const HOST_SEAT = 0; // Whoever creates the table sits south
-// Where an invite link seats you: the partner opposite the host, opponents beside them
-export const ROLE_SEATS = { partner: [2], opponent: [1, 3] };
-const JOIN_ORDER = [2, 1, 3, 0]; // A plain code takes the first free seat
+const JOIN_ORDER = [2, 1, 3, 0]; // No seat chosen: the first free one, partner first
 export const HAND_OVER_AFTER_MS = 60 * 1000; // How long a player is offline before the AI may take over
 export const NAME_LENGTH = 16;
 
@@ -85,9 +83,8 @@ export class Table {
   }
 
   // Who is connecting: a known token gets its seat back (from the AI too, if it played
-  // for them); a new one takes a free seat, preferring the one its invite link names
-  // ('partner' or 'opponent'). Returns { seat }, or { error }.
-  join(token, name, role) {
+  // for them); a new one sits in the free seat it chose. Returns { seat }, or { error }.
+  join(token, name, seat) {
     if (!isToken(token)) return { error: 'badToken' };
     const known = this.seatOf(token);
     if (known !== null) {
@@ -97,12 +94,16 @@ export class Table {
       if (cleanName(name)) entry.name = cleanName(name);
       return { seat: known };
     }
-    const preferred = ROLE_SEATS[role] ?? [];
-    const seat = [...preferred, ...JOIN_ORDER].find(s => this.seats[s] === null);
-    if (seat === undefined) return { error: 'full' }; // Four people already sit here
-    this.seats[seat] = newSeat(token, name);
-    if (this.hostSeat === null) this.hostSeat = seat; // First person at a table everyone left hosts it
-    return { seat };
+    if (this.isFull) return { error: 'full' }; // Four people already sit here
+    const chosen = Number.isInteger(seat) && seat >= 0 && seat < 4 ? seat : JOIN_ORDER.find(s => this.seats[s] === null);
+    if (this.seats[chosen] !== null) return { error: 'seatTaken' }; // Someone sat there first
+    this.seats[chosen] = newSeat(token, name);
+    if (this.hostSeat === null) this.hostSeat = chosen; // First person at a table everyone left hosts it
+    return { seat: chosen };
+  }
+
+  get isFull() {
+    return this.seats.every(entry => entry !== null);
   }
 
   // The connection state of a seat, as the server sees its sockets
@@ -124,7 +125,7 @@ export class Table {
     return this.started && this.isHuman(seat) && this.offlineFor(seat, now) >= HAND_OVER_AFTER_MS;
   }
 
-  // An action from the player in `seat`. Seats named in an action (swap, handOver) are
+  // An action from the player in `seat`. A seat named in an action (handOver) is
   // as the sender sees the table (they are south). Returns the event to pass on to the
   // players ({ type, seat }), or null if the action isn't allowed now and nothing changed.
   handle(seat, action, now = Date.now()) {
@@ -137,16 +138,6 @@ export class Table {
         if (name === this.seats[seat].name) return null; // Nothing changes
         this.seats[seat].name = name;
         return { type: 'rename', seat };
-      }
-      case 'swap': {
-        if (seat !== this.hostSeat || this.started) return null; // Only the host moves people, before the start
-        const a = named(action.a);
-        const b = named(action.b);
-        if (a === null || b === null || a === b) return null; // Two different seats
-        [this.seats[a], this.seats[b]] = [this.seats[b], this.seats[a]];
-        if (this.hostSeat === a) this.hostSeat = b; // The host moves with their seat
-        else if (this.hostSeat === b) this.hostSeat = a;
-        return { type: 'swap', seat };
       }
       case 'start':
         if (seat !== this.hostSeat || !this.canStart) return null; // Only the host starts, once a friend is here
