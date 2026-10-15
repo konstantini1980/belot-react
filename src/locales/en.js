@@ -8,9 +8,9 @@ export default {
   chooseLanguage: 'Language',
   languageEnglish: 'English',
   languageBulgarian: 'Български',
-  leaveGame: 'Leave game',
+  exitGame: 'Exit game',
   continueGame: 'Continue game',
-  confirmNewGame: 'Leave this game and start a new one?',
+  confirmExitGame: 'Exit this game? It will not be saved.',
   
   // Players
   playerYou: 'You',

@@ -8,9 +8,9 @@ export default {
   chooseLanguage: 'Език',
   languageEnglish: 'English',
   languageBulgarian: 'Български',
-  leaveGame: 'Изход от играта',
+  exitGame: 'Изход от играта',
   continueGame: 'Продължи играта',
-  confirmNewGame: 'Да прекратим ли тази игра и да започнем нова?',
+  confirmExitGame: 'Да излезем ли от тази игра? Тя няма да бъде запазена.',
   
   // Players
   playerYou: 'Играч',
