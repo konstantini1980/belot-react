@@ -425,7 +425,7 @@ export default function GameBoard({
                   <div className={`combination-balloon-wrapper ${position}`}>
                     <div className="combination-balloon bid-balloon visible">
                       {currentBidder === idx && <ThinkingDots />}
-                      {lastBid && <BidLabel bid={lastBid.bid} />}
+                      {lastBid && <BidLabel bid={lastBid.bid} words />}
                     </div>
                   </div>
                 )}
