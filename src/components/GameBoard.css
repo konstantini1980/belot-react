@@ -532,7 +532,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 8px 160px 8px 10px;
+    padding: 8px 100px 8px 10px;
   }
 
   .score-board .round-score-title {
