@@ -31,12 +31,15 @@
   text-align: center;
 }
 
-/* Bids so far: one chip per player, in turn order */
+/* Bids so far: a flat status line per player, in turn order. No boxes, so it
+   doesn't look like the bid buttons below. */
 .bids-list {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  gap: 0;
   margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--panel-line);
   flex-shrink: 0;
 }
 
@@ -46,16 +49,19 @@
   align-items: center;
   justify-content: center;
   gap: 2px;
-  min-height: 50px;
-  padding: 6px 8px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid transparent;
+  min-height: 40px;
+  padding: 2px 6px;
 }
 
-/* The player whose turn it is to bid */
-.bid-item-row.current {
-  border: 1px dashed var(--gold);
+/* Thin dividers between players */
+.bid-item-row + .bid-item-row {
+  border-left: 1px solid var(--panel-line);
+}
+
+/* The player whose turn it is to bid: gold name */
+.bid-item-row.current .bid-player-name {
+  color: var(--gold);
+  font-weight: 700;
 }
 
 .bid-player-name {
@@ -245,13 +251,13 @@
   }
 
   .bids-list {
-    gap: 6px;
     margin-bottom: 10px;
+    padding-bottom: 8px;
   }
 
   .bid-item-row {
-    min-height: 40px;
-    padding: 4px;
+    min-height: 34px;
+    padding: 2px 4px;
   }
 
   .bidding-grid {
