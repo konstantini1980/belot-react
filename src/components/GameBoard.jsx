@@ -52,10 +52,10 @@ export default function GameBoard({
   onForceShowScorePanelChange = null,
   showCards = false,
   // Mobile start button props
-  isMobile = false,
-  isMobileGameStarted = true,
-  onStartMobileGame = null,
+  isGameStarted = true,
+  onStartGame = null,
   startButtonText = '',
+  onStartNewGame = null,
 }) {
   const { t } = useLanguage();
   const [showFullScorePanel, setShowFullScorePanel] = useState(false);
@@ -222,7 +222,7 @@ export default function GameBoard({
     }
   }, [trickComplete, phase, currentTrick.cards.length]);
 
-  const showStartButton = isMobile && !isMobileGameStarted && onStartMobileGame;
+  const showStartButton = !isGameStarted && onStartGame;
   const isYourTurnToPlay = phase === GAME_PHASES.PLAYING && currentPlayer === 0 && !trickComplete
     && !isShowingLastTrick && !currentTrick.cards.some(({ playerId }) => playerId === 0);
   
@@ -233,11 +233,16 @@ export default function GameBoard({
           {tableControls}
         </div>
       )}
-      {isMobile && !isMobileGameStarted && onStartMobileGame && (
-        <div className="mobile-start-button-overlay">
-          <button className="mobile-start-button" onClick={onStartMobileGame}>
+      {showStartButton && (
+        <div className="start-button-overlay">
+          <button className="start-button" onClick={onStartGame}>
             {startButtonText}
           </button>
+          {onStartNewGame && (
+            <button className="start-new-game-button" onClick={onStartNewGame}>
+              {t('newGame')}
+            </button>
+          )}
         </div>
       )}
       {biddingPanel && (
