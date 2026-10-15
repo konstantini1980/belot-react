@@ -3,10 +3,10 @@ export default {
   appTitle: 'Belot Card Game',
   logo: 'Belot',
   teamWins: 'Team {team} wins!',
-  newGame: 'New Game',
+  newGame: 'New game',
   startBelotGame: 'Start game',
-  enterFullScreen: 'Full screen',
-  exitFullScreen: 'Exit full screen',
+  continueGame: 'Continue game',
+  confirmNewGame: 'Leave this game and start a new one?',
   
   // Players
   playerYou: 'You',

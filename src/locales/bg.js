@@ -3,10 +3,10 @@ export default {
   appTitle: 'Игра Белот',
   logo: 'Белот',
   teamWins: 'Отбор {team} печели!',
-  newGame: 'Нова Игра',
+  newGame: 'Нова игра',
   startBelotGame: 'Започни играта',
-  enterFullScreen: 'Цял екран',
-  exitFullScreen: 'Изход от цял екран',
+  continueGame: 'Продължи играта',
+  confirmNewGame: 'Да прекратим ли тази игра и да започнем нова?',
   
   // Players
   playerYou: 'Играч',

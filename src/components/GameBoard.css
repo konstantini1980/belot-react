@@ -54,25 +54,27 @@
 }
 
 /* Hide all board elements when showing start button */
-.game-board.show-start-button-only > *:not(.mobile-start-button-overlay) {
+.game-board.show-start-button-only > *:not(.start-button-overlay):not(.table-controls) {
   visibility: hidden;
   opacity: 0;
 }
 
-.mobile-start-button-overlay {
+.start-button-overlay {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 30;
   display: flex;
+  flex-direction: column;
+  gap: 12px;
   align-items: center;
   justify-content: center;
   visibility: visible !important;
   opacity: 1 !important;
 }
 
-.mobile-start-button-overlay .mobile-start-button {
+.start-button-overlay .start-button {
   min-width: 220px;
   flex: 0 0 auto;
   padding: 16px 24px;
@@ -80,17 +82,26 @@
   border: none;
   border-radius: 14px;
   color: var(--bubble-ink);
+  font-family: var(--font-sans);
   font-size: 17px;
   font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
   cursor: pointer;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
 }
 
-/* Hide start button on desktop/high resolutions */
-@media (min-width: 1025px) {
-  .mobile-start-button-overlay {
-    display: none;
-  }
+.start-button-overlay .start-new-game-button {
+  min-width: 220px;
+  padding: 12px 24px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--panel-line);
+  border-radius: 14px;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 /* Full screen and language buttons sit on the table on phones; desktop has the language in the page header */

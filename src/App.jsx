@@ -6,7 +6,7 @@ import GameBoard from './components/GameBoard';
 import BiddingPanel from './components/BiddingPanel';
 import DevPanel from './components/DevPanel';
 import LanguageSwitcher from './components/LanguageSwitcher';
-import FullscreenToggle from './components/FullscreenToggle';
+import NewGameButton from './components/NewGameButton';
 import { useLanguage } from './contexts/LanguageContext';
 import './App.css';
 
@@ -22,8 +22,7 @@ export default function App() {
   const [playableCards, setPlayableCards] = useState([]);
   const [trickComplete, setTrickComplete] = useState(false);
   const [playerCombinations, setPlayerCombinations] = useState({}); // { playerId: combinations[] }
-  const [isMobile, setIsMobile] = useState(false);
-  const [isMobileGameStarted, setIsMobileGameStarted] = useState(false);
+  const [isGameStarted, setIsGameStarted] = useState(false);
   // Dev panel state
   const [forceShowScorePanel, setForceShowScorePanel] = useState(false);
   const [showCombinationsBalloon, setShowCombinationsBalloon] = useState(false);
@@ -87,21 +86,12 @@ export default function App() {
     saveGame(game);
   }, [game]);
 
-  // On mobile nothing moves until the player taps the start button (also after a reload)
-  const paused = isMobile && !isMobileGameStarted;
+  // Nothing moves until the player taps the start button (also after a reload)
+  const paused = !isGameStarted;
 
   useEffect(() => {
-    // Detect "mobile" using the same breakpoint logic we use in CSS
-    const mq = window.matchMedia('(max-width: 768px), ((max-width: 1024px) and (max-height: 768px))');
-    const update = () => setIsMobile(!!mq.matches);
-    update();
-    mq.addEventListener?.('change', update);
-    return () => mq.removeEventListener?.('change', update);
-  }, []);
-
-  useEffect(() => {
-    // On mobile, don't auto-deal until the user taps the start button
-    if (isMobile && !isMobileGameStarted) {
+    // Don't auto-deal until the user taps the start button
+    if (paused) {
       return;
     }
 
@@ -120,7 +110,7 @@ export default function App() {
     if (game.phase === GAME_PHASES.SCORING) {
       setPlayableCards([]);
     }
-  }, [game.phase, isMobile, isMobileGameStarted]);
+  }, [game.phase, paused]);
 
   // Auto-play for AI players
   useEffect(() => {
@@ -131,7 +121,7 @@ export default function App() {
   }, [paused, game.phase, game.currentBidder, game.bids.length, handleAIBid]);
 
   useEffect(() => {
-    if (paused) return; // Waiting for the mobile start button
+    if (paused) return; // Waiting for the start button
     if (game.phase === GAME_PHASES.PLAYING && game.currentPlayer !== null && game.currentPlayer !== PLAYER_ID) {
       // Clear playable cards when it's not player's turn
       setPlayableCards([]);
@@ -284,16 +274,11 @@ export default function App() {
     setCardPositions(new Map());
   };
 
+  // A fresh game; the dealing effect deals it once play has started
   const handleNewGame = () => {
     resetBoard();
-    const newGame = new BelotGame();
-    // On mobile, show the "Start belot game" screen first
-    if (isMobile) {
-      setIsMobileGameStarted(false);
-    } else {
-      newGame.deal();
-    }
-    setGame(newGame);
+    setGame(new BelotGame());
+    setIsGameStarted(true);
   };
 
   const handleNextDeal = () => {
@@ -304,10 +289,13 @@ export default function App() {
     setGame(newGame);
   };
 
-  // Starts play on mobile; full screen is a separate, optional toggle on the table
-  const handleStartMobileGame = () => {
-    setIsMobileGameStarted(true);
+  // Starts play, or continues the saved game after a reload
+  const handleStartGame = () => {
+    setIsGameStarted(true);
   };
+
+  // A saved game that was already under way when the page loaded
+  const hasGameInProgress = game.phase !== GAME_PHASES.DEALING || game.dealHistory.length > 0;
 
   // Dev panel handlers
   const handleShowCombinations = (show) => {
@@ -347,12 +335,15 @@ export default function App() {
           {t('logo')}
           <span className="app-logo-suits" aria-hidden="true">♣<span className="red">♦♥</span>♠</span>
         </h1>
-        <LanguageSwitcher />
+        <div className="app-header-controls">
+          <NewGameButton onNewGame={handleNewGame} />
+          <LanguageSwitcher />
+        </div>
       </header>
 
       <div className="game-container">
         <GameBoard
-          tableControls={<><FullscreenToggle /><LanguageSwitcher /></>}
+          tableControls={<><NewGameButton onNewGame={handleNewGame} /><LanguageSwitcher /></>}
           players={game.players}
           currentTrick={game.currentTrick}
           currentPlayer={game.currentPlayer}
@@ -378,10 +369,10 @@ export default function App() {
           forceShowScorePanel={forceShowScorePanel}
           onForceShowScorePanelChange={setForceShowScorePanel}
           showCards={showCards}
-          isMobile={isMobile}
-          isMobileGameStarted={isMobileGameStarted}
-          onStartMobileGame={handleStartMobileGame}
-          startButtonText={t('startBelotGame')}
+          isGameStarted={isGameStarted}
+          onStartGame={handleStartGame}
+          startButtonText={hasGameInProgress ? t('continueGame') : t('startBelotGame')}
+          onStartNewGame={hasGameInProgress ? handleNewGame : null}
           biddingPanel={(game.phase === GAME_PHASES.BIDDING || forceShowBiddingPanel) ? (
             <BiddingPanel
               currentBidder={game.currentBidder}
