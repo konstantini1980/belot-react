@@ -59,6 +59,7 @@ export class BelotGame {
     this.hangingPoints = 0; // Points hanging from last round
     this.announcedCombinations = [[], []]; // Team combinations
     this.lastPlayAnnouncements = []; // What the last played card announced
+    this.dealHistory = []; // One entry per finished deal, for the score sheet
     this.winner = null;
   }
 
@@ -77,6 +78,7 @@ export class BelotGame {
     copy.lastRoundBreakdown = this.lastRoundBreakdown.map(team => ({ ...team }));
     copy.lastRoundRoundedPoints = [...this.lastRoundRoundedPoints];
     copy.announcedCombinations = this.announcedCombinations.map(combos => combos.map(c => ({ ...c })));
+    copy.dealHistory = [...this.dealHistory]; // Entries are never changed once added
     return copy;
   }
 
@@ -463,6 +465,17 @@ export class BelotGame {
 
     this.totalScores[0] += this.lastRoundRoundedPoints[0];
     this.totalScores[1] += this.lastRoundRoundedPoints[1];
+
+    // A line on the score sheet: who played what, and what each team got
+    this.dealHistory.push({
+      contract: this.contract,
+      bidder: lastContractBid(this.bids)?.playerId ?? null,
+      double: this.double,
+      redouble: this.redouble,
+      points: [...this.lastRoundRoundedPoints],
+      hanging: this.hangingPoints, // Left hanging after this deal (0 if none)
+      totals: [...this.totalScores]
+    });
 
     // Show the full score panel; the next deal starts when the user continues
     this.phase = GAME_PHASES.SCORING;
