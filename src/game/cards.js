@@ -23,6 +23,20 @@ export const CARD_RANKINGS = {
 // Sequence order for combinations
 export const SEQUENCE_ORDER = ['7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
 
+// Rank order (strongest first) of a suit under a contract
+export function rankingFor(contract, suit) {
+  const isTrump = contract === 'all-trump' || (contract !== 'no-trump' && suit === contract);
+  return isTrump ? CARD_RANKINGS.trump : CARD_RANKINGS.nonTrump;
+}
+
+// A hand sorted for display: grouped by suit, strongest first. Before the
+// contract is known, cards are ordered as in all-trump.
+export function sortHand(cards, contract) {
+  const sortingContract = contract || 'all-trump';
+  return [...cards].sort((a, b) => a.suit.localeCompare(b.suit)
+    || rankingFor(sortingContract, a.suit).indexOf(a.rank) - rankingFor(sortingContract, b.suit).indexOf(b.rank));
+}
+
 export class Card {
   constructor(suit, rank) {
     this.suit = suit;
@@ -42,15 +56,7 @@ export class Card {
   }
 
   getRanking(contract) {
-    if (contract === 'all-trump') {
-      return CARD_RANKINGS.trump.indexOf(this.rank);
-    } else if (contract === 'no-trump') {
-      return CARD_RANKINGS.nonTrump.indexOf(this.rank);
-    } 
-    
-    return this.suit === contract 
-      ? CARD_RANKINGS.trump.indexOf(this.rank)
-      : CARD_RANKINGS.nonTrump.indexOf(this.rank);
+    return rankingFor(contract, this.suit).indexOf(this.rank);
   }
 
   isHigherThan(otherCard, contract, trumpSuit) {
