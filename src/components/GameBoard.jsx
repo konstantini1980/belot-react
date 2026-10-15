@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import Card from './Card';
 import CompactScorePanel from './CompactScorePanel';
 import FullScorePanel from './FullScorePanel';
@@ -102,18 +102,6 @@ export default function GameBoard({
       if (newCard && boardCenterRef.current) {
         const cardKey = `${newCard.playerId}-${newCard.card.id}`;
         
-        // Use position from cardPositions prop (captured in App.jsx)
-        // If not available, query DOM as fallback (shouldn't happen if App.jsx captures correctly)
-        let sourceX = 0;
-        let sourceY = 0;
-        
-        const storedPosition = cardPositions.get(cardKey);
-        if (storedPosition) {
-          // Position was captured in App.jsx and passed via prop
-          sourceX = storedPosition.x;
-          sourceY = storedPosition.y;
-        }
-
         // Mark this card as animating (for all players, including player 0)
         setAnimatingCardsToCenter(prev => {
           const newMap = new Map(prev);
@@ -343,8 +331,6 @@ export default function GameBoard({
                   <div className={`combination-balloon-wrapper ${position}`}>
                     <CombinationBalloon
                       combinations={combinations}
-                      playerName={player.name}
-                      onClose={() => {}}
                     />
                   </div>
                 )}

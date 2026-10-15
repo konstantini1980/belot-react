@@ -91,7 +91,8 @@ Trumps no suit beats another: only cards of the suit that was led can win the tr
 3. Once a contract is agreed, the dealer gives each player **3 more cards**, so everyone holds
    **8 cards** for play.
 
-The role of dealer moves one seat counter-clockwise (to the right) after every deal.
+The role of dealer moves one seat counter-clockwise (to the right) after every deal. In this app the
+first dealer of a new game is picked at random.
 
 ## 5. Bidding: choosing the contract
 

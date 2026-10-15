@@ -1,4 +1,4 @@
-import { createDeck } from './cards';
+import { createDeck, SEQUENCE_ORDER } from './cards';
 import { getAllCombinations, findBelotOnPlay } from './combinations';
 
 export const CONTRACTS = ['clubs', 'diamonds', 'hearts', 'spades', 'no-trump', 'all-trump'];
@@ -10,6 +10,9 @@ export const CONTRACT_RANK = {
   'no-trump': 5,
   'all-trump': 6
 };
+
+const VALAT_BONUS = 90;
+const WINNING_SCORE = 151;
 
 export const GAME_PHASES = {
   DEALING: 'dealing',
@@ -33,7 +36,7 @@ export class BelotGame {
       { id: 2, name: 'Partner', hand: [], team: 0 },
       { id: 3, name: 'East', hand: [], team: 1 }
     ];
-    this.dealer = 0;
+    this.dealer = Math.floor(Math.random() * 4); // First dealer is picked at random
     this.currentBidder = 0;
     this.bids = [];
     this.contract = null;
@@ -224,7 +227,7 @@ export class BelotGame {
     // Auto-announce other combinations (sequences, equals) on first card play in first trick
     const isFirstTrick = this.tricks.length === 0;
     if (isFirstTrick && this.contract && this.contract !== 'no-trump') {
-      const allCombos = getAllCombinations(player.hand, this.trumpSuit);
+      const allCombos = getAllCombinations(player.hand);
       if (allCombos.length > 0) {
         const team = player.team;
         const opponentTeam = 1 - team;
@@ -481,297 +484,154 @@ export class BelotGame {
   }
 
   endRound() {
-    // Add last 10 points - get winner from the last trick
+    // Last trick is worth 10 points
     const lastTrick = this.tricks[this.tricks.length - 1];
     if (lastTrick && lastTrick.winner !== null && lastTrick.winner !== undefined) {
       this.currentRoundScore[this.players[lastTrick.winner].team] += 10;
     }
 
-    // Calculate breakdown - card points are already in roundScore
-    const breakdown = [
-      { cardPoints: this.currentRoundScore[0], combinationPoints: 0, valatPoints: 0, hangingPoints: 0 },
-      { cardPoints: this.currentRoundScore[1], combinationPoints: 0, valatPoints: 0, hangingPoints: 0 }
-    ];
-        
+    // Card points (including the last 10) are already in currentRoundScore
+    const breakdown = this.currentRoundScore.map(cardPoints => (
+      { cardPoints, combinationPoints: 0, valatPoints: 0, hangingPoints: 0 }
+    ));
+
     if (this.contract === 'no-trump') {
-      // Double points in no-trump
-      this.currentRoundScore[0] *= 2;
-      this.currentRoundScore[1] *= 2;
-      breakdown[0].cardPoints *= 2;
-      breakdown[1].cardPoints *= 2;
-    }
-        
-    let isValat = false;
-    // Check for valat (winning all tricks)
-    if (this.tricks.every(t => {return t.team === 0; })) {
-      this.currentRoundScore[0] += 90;
-      breakdown[0].valatPoints = 90;
-      isValat = true;
-    } else if (this.tricks.every(t => {return t.team === 1; })) {
-      this.currentRoundScore[1] += 90;
-      breakdown[1].valatPoints = 90;
-      isValat = true;
-    }
-    
-    // Add combination points with sequence comparison logic
-    // Sequence type hierarchy: quint (100) > quarte (50) > tierce (20)
-    // For same type, compare highest card: A > K > Q > J > 10 > 9 > 8 > 7
-    
-    // Helper function to get sequence type order (higher number = bigger sequence)
-    const getSequenceTypeOrder = (type) => {
-      if (type === 'quint') return 3;
-      if (type === 'quarte') return 2;
-      if (type === 'tierce') return 1;
-      return 0; // non-sequences (equals, belot) don't participate in sequence comparison
-    };
-    
-    // Helper function to get highest card rank in a sequence (for same-type comparison)
-    const getHighestCardRank = (cards) => {
-      if (!cards || cards.length === 0) return -1;
-      const SEQUENCE_ORDER = ['7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
-      let highestIndex = -1;
-      cards.forEach(card => {
-        const index = SEQUENCE_ORDER.indexOf(card.rank);
-        if (index > highestIndex) {
-          highestIndex = index;
-        }
-      });
-      return highestIndex;
-    };
-    
-    // Find highest sequence from each team
-    const getHighestSequence = (combos) => {
-      const sequences = combos.filter(c => c.type === 'tierce' || c.type === 'quarte' || c.type === 'quint');
-      if (sequences.length === 0) return null;
-      
-      // Sort by type order (descending), then by highest card (descending)
-      sequences.sort((a, b) => {
-        const typeOrderA = getSequenceTypeOrder(a.type);
-        const typeOrderB = getSequenceTypeOrder(b.type);
-        if (typeOrderA !== typeOrderB) {
-          return typeOrderB - typeOrderA; // Higher type order first
-        }
-        // Same type - compare highest card
-        const highestA = getHighestCardRank(a.cards);
-        const highestB = getHighestCardRank(b.cards);
-        return highestB - highestA; // Higher card first
-      });
-      
-      return sequences[0];
-    };
-    
-    const team0Highest = getHighestSequence(this.announcedCombinations[0]);
-    const team1Highest = getHighestSequence(this.announcedCombinations[1]);
-    
-    // Find highest 4-of-a-kind (equal) from each team - compare by points: J=200 > 9=150 > A/10/K/Q=100
-    const getHighestEqual = (combos) => {
-      const equals = combos.filter(c => c.type === 'equal');
-      if (equals.length === 0) return null;
-      return equals.reduce((best, curr) => (curr.points > (best?.points ?? -1) ? curr : best), null);
-    };
-    const team0HighestEqual = getHighestEqual(this.announcedCombinations[0]);
-    const team1HighestEqual = getHighestEqual(this.announcedCombinations[1]);
-    
-    // Compare sequences
-    let team0Wins = false;
-    let team1Wins = false;
-    let sequencesCancel = false;
-    
-    // Compare 4-of-a-kind: higher points wins
-    let team0EqualWins = false;
-    let team1EqualWins = false;
-    if (team0HighestEqual && team1HighestEqual) {
-      if (team0HighestEqual.points > team1HighestEqual.points) {
-        team0EqualWins = true;
-      } else if (team1HighestEqual.points > team0HighestEqual.points) {
-        team1EqualWins = true;
+      // Card points count double in no-trump
+      for (const team of [0, 1]) {
+        this.currentRoundScore[team] *= 2;
+        breakdown[team].cardPoints *= 2;
       }
-    } else if (team0HighestEqual) {
-      team0EqualWins = true;
-    } else if (team1HighestEqual) {
-      team1EqualWins = true;
-    }
-    
-    if (team0Highest && team1Highest) {
-      // Both teams have sequences - compare them
-      const typeOrder0 = getSequenceTypeOrder(team0Highest.type);
-      const typeOrder1 = getSequenceTypeOrder(team1Highest.type);
-      
-      if (typeOrder0 > typeOrder1) {
-        team0Wins = true;
-      } else if (typeOrder1 > typeOrder0) {
-        team1Wins = true;
-      } else {
-        // Same type - compare highest card
-        const highest0 = getHighestCardRank(team0Highest.cards);
-        const highest1 = getHighestCardRank(team1Highest.cards);
-        
-        if (highest0 > highest1) {
-          team0Wins = true;
-        } else if (highest1 > highest0) {
-          team1Wins = true;
-        } else {
-          // Same highest sequence - all sequences are dropped
-          sequencesCancel = true;
-        }
-      }
-    } else if (team0Highest) {
-      // Only team 0 has sequences
-      team0Wins = true;
-    } else if (team1Highest) {
-      // Only team 1 has sequences
-      team1Wins = true;
-    }
-    
-    // Add combination points based on sequence comparison
-    // Mark each combination as valid or canceled
-    this.announcedCombinations.forEach((combos, team) => {
-      let comboPoints = 0;
-      
-      combos.forEach(combo => {
-        // Belot always counts
-        if (combo.type === 'belot') {
-          combo.valid = true;
-          comboPoints += combo.points;
-          this.currentRoundScore[team] += combo.points;
-        } else if (combo.type === 'equal') {
-          // 4-of-a-kind: only count if team wins equals comparison otherwise drop lower
-          if (team === 0 && team0EqualWins) {
-            combo.valid = true;
-            comboPoints += combo.points;
-            this.currentRoundScore[team] += combo.points;
-          } else if (team === 1 && team1EqualWins) {
-            combo.valid = true;
-            comboPoints += combo.points;
-            this.currentRoundScore[team] += combo.points;
-          } else if (!team0HighestEqual && !team1HighestEqual) {
-            combo.valid = true;
-            comboPoints += combo.points;
-            this.currentRoundScore[team] += combo.points;
-          } else {
-            combo.valid = false;
-          }
-        } else if (combo.type !== 'tierce' && combo.type !== 'quarte' && combo.type !== 'quint') {
-          combo.valid = true;
-          comboPoints += combo.points;
-          this.currentRoundScore[team] += combo.points;
-        } else {
-          // Sequence combinations - only count if team wins or if no sequence comparison
-          if (sequencesCancel) {
-            // All sequences are dropped - mark as canceled
-            combo.valid = false;
-          } else if (team === 0 && team0Wins) {
-            // Team 0 wins - count their sequences
-            combo.valid = true;
-            comboPoints += combo.points;
-            this.currentRoundScore[team] += combo.points;
-          } else if (team === 1 && team1Wins) {
-            // Team 1 wins - count their sequences
-            combo.valid = true;
-            comboPoints += combo.points;
-            this.currentRoundScore[team] += combo.points;
-          } else if (!team0Highest && !team1Highest) {
-            // No sequences from either team - count all (shouldn't happen for sequences, but safe)
-            combo.valid = true;
-            comboPoints += combo.points;
-            this.currentRoundScore[team] += combo.points;
-          } else {
-            // Losing team - sequence doesn't count, mark as canceled
-            combo.valid = false;
-          }
-        }
-      });
-      
-      breakdown[team].combinationPoints = comboPoints;
-    });
-    
-    
-    // --- Round scoring (winner from round points) ---
-    const contractTeam = this.players[this.bids.find(b => b.bid === this.contract).playerId].team;
-    const contractPoints = this.currentRoundScore[contractTeam];
-    const opponentPoints = this.currentRoundScore[1 - contractTeam];
-    const previousHangingPoints = this.hangingPoints;
-    const isHanging = contractPoints === opponentPoints;
-    const totalPoints = this.currentRoundScore[0] + this.currentRoundScore[1];
-    const totalRounded = Math.round(totalPoints / 10);
-
-    // even in hanging situation, the non contract team takes its points.
-    const roundWinner = contractPoints > opponentPoints ? contractTeam : (1 - contractTeam);
-    // Hanging cancels doubling: count normally; otherwise double/redouble apply (valat included, per belot.bg)
-    const effectiveMultiplier = isHanging ? 1 : (this.redouble ? 4 : (this.double ? 2 : 1));
-    const winnerTakesAll = this.double || this.redouble || (contractPoints < opponentPoints);
-
-    this.lastRoundRoundedPoints = [0, 0];
-
-    const applyAdjustedRounding = () => {
-      if (this.contract === 'all-trump') {
-        const opponentRounded = Math.round((opponentPoints + 1) / 10);
-        this.lastRoundRoundedPoints[1 - contractTeam] = opponentRounded;
-        this.lastRoundRoundedPoints[contractTeam] = totalRounded - opponentRounded;
-      } else if (this.contract === 'no-trump') {
-        this.lastRoundRoundedPoints[0] = Math.round(this.currentRoundScore[0] / 10);
-        this.lastRoundRoundedPoints[1] = Math.round(this.currentRoundScore[1] / 10);
-      } else {
-        const opponentRounded = Math.round((opponentPoints - 1) / 10);
-        this.lastRoundRoundedPoints[1 - contractTeam] = opponentRounded;
-        this.lastRoundRoundedPoints[contractTeam] = totalRounded - opponentRounded;
-      }
-
-      // Example 1: 86 + 76 = 162
-      // Initial rounded points: 9 + 8 = 17
-      // Total / 10 = 16.2, so we want sum = 16 (not 17)
-      // Adjustment: contract team gets rounded down -1
-      // Final rounded points: 8 + 8 = 16
-
-      // Example 2: 85 + 77 = 162
-      // Initial rounded points: 9 + 8 = 17
-      // Total / 10 = 16.2, so we want sum = 16 (not 17)
-      // Adjustment: contract team gets rounded down -1
-      // Final rounded points: 8 + 8 = 16
-
-      // Example 3: 87 + 75 = 162
-      // Initial rounded points: 9 + 8 = 17
-      // Total / 10 = 16.2, so we want sum = 16 (not 17)          
-      // Final rounded points: 8 + 8 = 16
-
-      // Adjusted rounding logic - Minus 1 point for proper rounding
-      // We do that for opponent only. Contract team gets remaining points.
-    };    
-
-    if (winnerTakesAll) {
-      this.lastRoundRoundedPoints[roundWinner] += totalRounded * effectiveMultiplier;
-      this.lastRoundRoundedPoints[roundWinner] += previousHangingPoints;
-      breakdown[roundWinner].hangingPoints = previousHangingPoints * 10;
-      this.hangingPoints = 0;
-    } else if (isHanging) {
-      this.hangingPoints = totalRounded / 2;
-      // contract team does not get any points now. Opponent team gets half of the points.
-      this.lastRoundRoundedPoints[1 - contractTeam] = this.hangingPoints;
-      this.lastRoundRoundedPoints[contractTeam] = 0;
-      this.lastRoundRoundedPoints[roundWinner] += previousHangingPoints;
-      breakdown[roundWinner].hangingPoints = previousHangingPoints * 10;
-    } else {
-      applyAdjustedRounding();
-      this.lastRoundRoundedPoints[roundWinner] += previousHangingPoints;
-      breakdown[roundWinner].hangingPoints = previousHangingPoints * 10;
-      this.hangingPoints = 0;
     }
 
-    // Store breakdown for display (lastRoundScore is set at end of round with roundPoints + hangingPoints)
+    // Valat: one team won every trick
+    const valatTeam = [0, 1].find(team => this.tricks.every(t => t.team === team));
+    if (valatTeam !== undefined) {
+      this.currentRoundScore[valatTeam] += VALAT_BONUS;
+      breakdown[valatTeam].valatPoints = VALAT_BONUS;
+    }
+
+    const combinationPoints = scoreCombinations(this.announcedCombinations);
+    for (const team of [0, 1]) {
+      this.currentRoundScore[team] += combinationPoints[team];
+      breakdown[team].combinationPoints = combinationPoints[team];
+    }
+
+    this.lastRoundRoundedPoints = this.calculateRoundedPoints(breakdown);
     this.lastRoundBreakdown = breakdown;
 
     this.totalScores[0] += this.lastRoundRoundedPoints[0];
     this.totalScores[1] += this.lastRoundRoundedPoints[1];
-    
-    // Set phase to SCORING to show full score panel
+
+    // Show the full score panel; the next deal starts when the user continues
     this.phase = GAME_PHASES.SCORING;
-    
-    // Check for game end
-    if (this.totalScores[0] >= 151 || this.totalScores[1] >= 151) {
-      this.winner = this.totalScores[0] >= 151 ? 0 : 1;
+
+    if (this.totalScores[0] >= WINNING_SCORE || this.totalScores[1] >= WINNING_SCORE) {
+      this.winner = this.totalScores[0] >= WINNING_SCORE ? 0 : 1;
       this.phase = GAME_PHASES.FINISHED;
     }
-    // Note: New round will start when user clicks or after delay
+  }
+
+  // Turns this round's raw points into game points (tens), applying doubling,
+  // hanging points and rounding. Updates hangingPoints and breakdown[*].hangingPoints.
+  calculateRoundedPoints(breakdown) {
+    const contractTeam = this.players[this.bids.find(b => b.bid === this.contract).playerId].team;
+    const opponentTeam = 1 - contractTeam;
+    const contractPoints = this.currentRoundScore[contractTeam];
+    const opponentPoints = this.currentRoundScore[opponentTeam];
+    const previousHangingPoints = this.hangingPoints;
+    const isHanging = contractPoints === opponentPoints;
+    const totalRounded = Math.round((contractPoints + opponentPoints) / 10);
+
+    // In a hanging round the opponents still take their half now
+    const roundWinner = contractPoints > opponentPoints ? contractTeam : opponentTeam;
+    // Hanging cancels doubling; otherwise double/redouble apply (valat included, per belot.bg)
+    const multiplier = isHanging ? 1 : (this.redouble ? 4 : (this.double ? 2 : 1));
+    const winnerTakesAll = this.double || this.redouble || contractPoints < opponentPoints;
+
+    const rounded = [0, 0];
+    if (winnerTakesAll) {
+      rounded[roundWinner] = totalRounded * multiplier;
+      this.hangingPoints = 0;
+    } else if (isHanging) {
+      // Contract team's half hangs until the next round; opponents take their half now
+      this.hangingPoints = totalRounded / 2;
+      rounded[opponentTeam] = this.hangingPoints;
+    } else {
+      roundSplitPoints(rounded, this.contract, contractTeam, this.currentRoundScore, totalRounded);
+      this.hangingPoints = 0;
+    }
+
+    // Points left hanging from the previous round go to this round's winner
+    rounded[roundWinner] += previousHangingPoints;
+    breakdown[roundWinner].hangingPoints = previousHangingPoints * 10;
+
+    return rounded;
   }
 }
 
+// Splits a normal (not doubled, not lost, not hanging) round into game points.
+// The opponents' points are rounded and the contract team gets the rest, so the
+// two always add up to the rounded total, e.g. 85 + 77 = 162 gives 8 + 8 = 16.
+// The opponents' rounding threshold differs by contract: in a suit contract their
+// 5 rounds down and 6 rounds up (75 -> 7, 76 -> 8); in all-trump their 4 already
+// rounds up (74 -> 8). No-trump rounds each team's points on their own.
+function roundSplitPoints(rounded, contract, contractTeam, roundScore, totalRounded) {
+  const opponentTeam = 1 - contractTeam;
+  if (contract === 'no-trump') {
+    rounded[0] = Math.round(roundScore[0] / 10);
+    rounded[1] = Math.round(roundScore[1] / 10);
+    return;
+  }
+  const offset = contract === 'all-trump' ? 1 : -1;
+  rounded[opponentTeam] = Math.round((roundScore[opponentTeam] + offset) / 10);
+  rounded[contractTeam] = totalRounded - rounded[opponentTeam];
+}
+
+const SEQUENCE_TYPE_ORDER = { tierce: 1, quarte: 2, quint: 3 };
+const isSequence = combo => combo.type in SEQUENCE_TYPE_ORDER;
+
+// Highest card of a sequence, as an index into SEQUENCE_ORDER (7 = 0 ... A = 7)
+function highestSequenceRank(cards) {
+  return Math.max(-1, ...(cards || []).map(card => SEQUENCE_ORDER.indexOf(card.rank)));
+}
+
+// Positive if sequence a beats b: longer type wins, then higher top card
+function compareSequences(a, b) {
+  return (SEQUENCE_TYPE_ORDER[a.type] - SEQUENCE_TYPE_ORDER[b.type])
+    || (highestSequenceRank(a.cards) - highestSequenceRank(b.cards));
+}
+
+// Which team's announcements of one kind count: the team holding the single best one.
+// Returns null when neither team has one, or when the two best are equal (both drop).
+function winningTeam(combinations, isKind, compare) {
+  const best = combinations.map(combos => combos.filter(isKind)
+    .reduce((top, c) => (top === null || compare(c, top) > 0 ? c : top), null));
+  if (!best[0] || !best[1]) {
+    return best[0] ? 0 : (best[1] ? 1 : null);
+  }
+  const result = compare(best[0], best[1]);
+  return result > 0 ? 0 : (result < 0 ? 1 : null);
+}
+
+// Marks each announced combination valid or canceled and returns the points per team.
+// Belot always counts. Sequences and four-of-a-kinds are compared separately: only the
+// team with the best one of each kind scores that kind (all of its announcements of it).
+function scoreCombinations(announcedCombinations) {
+  const sequenceWinner = winningTeam(announcedCombinations, isSequence, compareSequences);
+  const equalWinner = winningTeam(announcedCombinations, c => c.type === 'equal', (a, b) => a.points - b.points);
+
+  return announcedCombinations.map((combos, team) => {
+    let points = 0;
+    for (const combo of combos) {
+      if (isSequence(combo)) {
+        combo.valid = sequenceWinner === team;
+      } else if (combo.type === 'equal') {
+        combo.valid = equalWinner === team;
+      } else {
+        combo.valid = true;
+      }
+      if (combo.valid) points += combo.points;
+    }
+    return points;
+  });
+}
