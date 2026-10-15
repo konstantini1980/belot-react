@@ -190,8 +190,8 @@
 }
 
 .score-sheet-caret {
-  font-size: 14px;
-  line-height: 1;
+  flex-shrink: 0;
+  color: var(--ink);
   transition: transform 0.2s ease;
 }
 

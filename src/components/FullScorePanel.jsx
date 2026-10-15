@@ -303,7 +303,10 @@ export default function FullScorePanel({
             aria-expanded={!sheetFolded}
           >
             <span>{t('scoreSheet')}</span>
-            <span className={`score-sheet-caret${sheetFolded ? ' folded' : ''}`} aria-hidden="true">▾</span>
+            <svg className={`score-sheet-caret${sheetFolded ? ' folded' : ''}`} viewBox="0 0 24 24" width="18" height="18"
+              aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 9l7 7 7-7" />
+            </svg>
           </button>
           {!sheetFolded && <table className="score-sheet">
             <thead>
