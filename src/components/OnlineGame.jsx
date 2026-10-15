@@ -3,7 +3,7 @@ import { BelotGame, GAME_PHASES } from '../game/gameLogic';
 import GameBoard from './GameBoard';
 import BiddingPanel from './BiddingPanel';
 import AppHeader, { TableControls } from './AppHeader';
-import { OnlineLobby } from './OnlineScreens';
+import { OnlineLobby, OnlineJoin } from './OnlineScreens';
 import { SeatNamesProvider } from '../contexts/PlayerNamesContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useBoardEffects } from '../hooks/useBoardEffects';
@@ -13,7 +13,7 @@ import './OnlineScreens.css';
 // An online table: the game server holds the game and runs the AI players; this app
 // shows the view the server sends (you are always player 0, south, as in a local game)
 // and sends back your bids and cards.
-export default function OnlineGame({ table, onLeave, onCodeTaken }) {
+export default function OnlineGame({ table, onLeave, onCancel, onCodeTaken }) {
   const { t } = useLanguage();
   const [game, setGame] = useState(null); // The game as this player sees it
   const [room, setRoom] = useState(null); // Lobby and connection facts from the server
@@ -54,7 +54,7 @@ export default function OnlineGame({ table, onLeave, onCodeTaken }) {
     setNow(receivedAt);
   }, [storeCardPosition, showAnnouncements, resetEffects]);
 
-  const { status, error, send } = useOnlineTable(table, onState);
+  const { status, error, send, freeSeats, sit } = useOnlineTable({ ...table, choose: Boolean(table.confirm) }, onState);
 
   // Leaving on purpose frees the seat (the AI plays it if the game is running)
   const leave = () => {
@@ -89,6 +89,11 @@ export default function OnlineGame({ table, onLeave, onCodeTaken }) {
     send({ type: 'play', cardId: card.id });
   };
 
+  // Joining by link or code: pick a seat first (until the server has seated us)
+  if (table.confirm && !room && (!error || error === 'seatTaken')) {
+    return <OnlineJoin free={freeSeats} error={error} onSit={sit} onBack={onCancel} />; // Not seated: nothing to leave
+  }
+
   if (error || !room || !room.started || !game) {
     return (
       <OnlineLobby
@@ -97,7 +102,6 @@ export default function OnlineGame({ table, onLeave, onCodeTaken }) {
         error={error === 'taken' ? null : error}
         room={room}
         onStart={() => send({ type: 'start' })}
-        onSwap={(a, b) => send({ type: 'swap', a, b })}
         onRename={name => send({ type: 'rename', name })}
         onLeave={leave}
       />

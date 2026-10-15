@@ -50,16 +50,20 @@ A table nobody touches for 24 hours (no move, join or deal) is deleted.
 ## Protocol
 
 Client → server, JSON over the WebSocket at `/rooms/<CODE>`:
-- `{ type: 'hello', token, name?, as?: 'partner' | 'opponent', create? }` first. The token
-  is a random UUID the app keeps; it is how a player gets the same seat back. `as` comes
-  from the invite link and picks the seat (partner = opposite the host, opponent = beside).
-- `{ type: 'start' }` (host), `{ type: 'swap', a, b }` (host, lobby), `{ type: 'rename', name }`,
+- `{ type: 'look' }` (optional, before sitting down): the server answers `{ type: 'seats',
+  started, seats }` with each seat's real number, name and state (host at the bottom), and
+  again whenever that changes, so the join screen can offer the free seats.
+- `{ type: 'hello', token, name?, seat?, create? }` to sit down. The token is a random UUID
+  the app keeps; it is how a player gets the same seat back. `seat` is the chosen free seat
+  (a real seat number from `seats`); if someone took it first the answer is the error
+  `seatTaken` and the socket stays open to pick again.
+- `{ type: 'start' }` (host), `{ type: 'rename', name }`,
   `{ type: 'leave' }`, `{ type: 'handOver', seat }` (let the AI play for someone offline
   for a minute), `{ type: 'bid', bid }`, `{ type: 'play', cardId }`, `{ type: 'nextDeal' }`,
   `{ type: 'newGame' }`. Seats in actions are numbered as the sender sees the table (they are 0).
 
 Server → client: `{ type: 'joined' }`, `{ type: 'error', error }` (`noRoom`, `full`,
-`taken`, `badToken`), and `{ type: 'state', isHost, started, canStart, seats, handOverAfter,
+`taken`, `badToken`, `seatTaken`), and `{ type: 'state', isHost, started, canStart, seats, handOverAfter,
 waitingForNextDeal, event, game }` after every change. `seats` lists the four seats turned the
 same way (`name`, `state`: empty / human / away, `online`, `offlineFor`, `host`). `game` is the game as that player sees it
 (`viewFor`): turned so they are player 0, other hands face down.
