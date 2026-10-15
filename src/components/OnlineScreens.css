@@ -39,26 +39,106 @@
   color: var(--ink-dim);
 }
 
-.online-choice {
+.online-name {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+}
+
+.online-name input {
+  min-width: 0;
+  padding: 9px 12px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--panel-line);
+  border-radius: 12px;
+  color: var(--ink);
+  font: 600 16px var(--font-sans);
+}
+
+.online-name input::placeholder {
+  font-weight: 400;
+  color: var(--ink-dim);
+}
+
+/* The four seats around a small table: partner on top, you at the bottom */
+.online-seats {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-areas:
+    ". north ."
+    "west . east"
+    ". south .";
+  gap: 6px;
+}
+
+.online-seats::before {
+  content: '';
+  grid-area: 2 / 2;
+  margin: 6px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--panel-line);
+}
+
+.online-seat {
+  min-width: 0;
+  padding: 8px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px dashed var(--panel-line);
+  border-radius: 12px;
+  color: var(--ink-dim);
+  font-family: var(--font-sans);
+  cursor: pointer;
+}
+
+.online-panel .online-seat:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.online-seat.taken {
+  border-style: solid;
+  background: rgba(0, 0, 0, 0.32);
+  color: var(--ink);
+}
+
+.online-seat.picked {
+  border-color: var(--gold);
+  background: rgba(231, 195, 106, 0.16);
+}
+
+.online-seat.seat-2 { grid-area: north; }
+.online-seat.seat-1 { grid-area: west; }
+.online-seat.seat-3 { grid-area: east; }
+.online-seat.seat-0 { grid-area: south; }
+
+.online-seat-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.online-seat-note {
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+
+.online-invites {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
 
-.online-choice button {
-  padding: 10px 8px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--panel-line);
-  border-radius: 12px;
-  color: var(--ink);
-  font: 600 15px var(--font-sans);
-  cursor: pointer;
-}
-
-.online-choice button.selected {
-  border-color: var(--gold);
-  background: rgba(231, 195, 106, 0.16);
-  color: var(--gold);
+.online-invites .start-new-game-button {
+  padding-left: 6px;
+  padding-right: 6px;
 }
 
 .online-divider {
@@ -136,7 +216,7 @@
   top: 14px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 60;
+  z-index: 1100; /* Above the score sheet: a player may need handing over while everyone waits for Next deal */
   max-width: calc(100% - 32px);
   padding: 8px 16px;
   background: var(--bubble);
@@ -147,4 +227,17 @@
   text-align: center;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
   pointer-events: none;
+}
+
+.online-notice-button {
+  display: block;
+  margin: 6px auto 0;
+  padding: 6px 12px;
+  background: var(--gold);
+  color: #1d1406;
+  border: none;
+  border-radius: 999px;
+  font: 600 13px var(--font-sans);
+  cursor: pointer;
+  pointer-events: auto;
 }

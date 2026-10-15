@@ -4,7 +4,7 @@ import GameBoard from './GameBoard';
 import BiddingPanel from './BiddingPanel';
 import AppHeader, { TableControls } from './AppHeader';
 import { OnlineLobby } from './OnlineScreens';
-import { FriendSeatProvider } from '../contexts/PlayerNamesContext';
+import { SeatNamesProvider } from '../contexts/PlayerNamesContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useBoardEffects } from '../hooks/useBoardEffects';
 import { useOnlineTable } from '../online/useOnlineTable';
@@ -17,6 +17,7 @@ export default function OnlineGame({ table, onLeave, onCodeTaken }) {
   const { t } = useLanguage();
   const [game, setGame] = useState(null); // The game as this player sees it
   const [room, setRoom] = useState(null); // Lobby and connection facts from the server
+  const [now, setNow] = useState(() => Date.now());
   const gameRef = useRef(null);
   const {
     cardPositions, storeCardPosition,
@@ -43,10 +44,31 @@ export default function OnlineGame({ table, onLeave, onCodeTaken }) {
     }
     gameRef.current = next;
     setGame(next);
+    // When each offline player may be handed to the AI, on this device's clock
+    const receivedAt = Date.now();
+    roomInfo.seats = roomInfo.seats.map(seat => ({
+      ...seat,
+      handOverAt: seat.offlineFor === null ? null : receivedAt + roomInfo.handOverAfter - seat.offlineFor,
+    }));
     setRoom(roomInfo);
+    setNow(receivedAt);
   }, [storeCardPosition, showAnnouncements, resetEffects]);
 
   const { status, error, send } = useOnlineTable(table, onState);
+
+  // Leaving on purpose frees the seat (the AI plays it if the game is running)
+  const leave = () => {
+    send({ type: 'leave' });
+    onLeave();
+  };
+
+  // Tick while someone is offline, so "Let the computer play" shows up when the wait is over
+  const someoneOffline = room?.seats.some(seat => seat.handOverAt !== null);
+  useEffect(() => {
+    if (!someoneOffline) return undefined;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [someoneOffline]);
 
   // The code belongs to someone else's table: start over with a new code
   useEffect(() => {
@@ -75,7 +97,9 @@ export default function OnlineGame({ table, onLeave, onCodeTaken }) {
         error={error === 'taken' ? null : error}
         room={room}
         onStart={() => send({ type: 'start' })}
-        onLeave={onLeave}
+        onSwap={(a, b) => send({ type: 'swap', a, b })}
+        onRename={name => send({ type: 'rename', name })}
+        onLeave={leave}
       />
     );
   }
@@ -84,17 +108,33 @@ export default function OnlineGame({ table, onLeave, onCodeTaken }) {
   const trickComplete = game.phase === GAME_PHASES.PLAYING
     && game.currentTrick.cards.length === 4 && game.currentPlayer === null;
 
-  // Connection trouble, or the friend dropped out (the game waits for them)
+  // Names at the table: people by their name, AI seats by the usual labels
+  const names = room.seats.map(seat => (seat.state === 'empty' ? null : seat.name || t('playerFriend')));
+  const withAI = seat => (room.seats[seat].state === 'away' ? t('onlineAIPlaysFor', { name: names[seat] }) : names[seat]);
+  const seatNames = room.seats.map((_, seat) => withAI(seat));
+
+  // Connection trouble, or someone dropped out (the game waits for them)
+  const offline = room.seats.map((seat, i) => i).filter(i => i !== 0 && room.seats[i].handOverAt !== null);
   const notice = status !== 'open' ? t('onlineReconnecting')
-    : (!room.friendOnline ? t('onlineFriendOffline') : null);
+    : offline.length > 0 ? t('onlinePlayerOffline', { name: offline.map(i => names[i]).join(', ') }) : null;
+  const canHandOver = offline.filter(i => now >= room.seats[i].handOverAt);
 
   return (
-    <FriendSeatProvider seat={room.friendAt}>
-      <AppHeader onExitGame={onLeave} confirmText={t('confirmLeaveOnline')} />
+    <SeatNamesProvider names={seatNames}>
+      <AppHeader onExitGame={leave} confirmText={t('confirmLeaveOnline')} />
       <div className="game-container online-game">
-        {notice && <div className="online-notice" role="status">{notice}</div>}
+        {notice && (
+          <div className="online-notice" role="status">
+            {notice}
+            {status === 'open' && canHandOver.map(seat => (
+              <button key={seat} className="online-notice-button" onClick={() => send({ type: 'handOver', seat })}>
+                {t('onlineHandOver', { name: names[seat] })}
+              </button>
+            ))}
+          </div>
+        )}
         <GameBoard
-          tableControls={<TableControls onExitGame={onLeave} confirmText={t('confirmLeaveOnline')} />}
+          tableControls={<TableControls onExitGame={leave} confirmText={t('confirmLeaveOnline')} />}
           players={game.players}
           currentTrick={game.currentTrick}
           currentPlayer={game.currentPlayer}
@@ -135,6 +175,6 @@ export default function OnlineGame({ table, onLeave, onCodeTaken }) {
           cardPositions={cardPositions}
         />
       </div>
-    </FriendSeatProvider>
+    </SeatNamesProvider>
   );
 }

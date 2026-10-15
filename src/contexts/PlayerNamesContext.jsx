@@ -2,17 +2,17 @@ import React, { createContext, useContext } from 'react';
 import { useLanguage } from './LanguageContext';
 
 // Seat labels as drawn on the table: 0 = you (south), 1 = west, 2 = partner, 3 = east.
-// An online game renames the seat where the friend sits.
-const FriendSeatContext = createContext(null);
+// An online game passes the names of the people at the table (null keeps the usual label).
+const SeatNamesContext = createContext(null);
 
-export function FriendSeatProvider({ seat, children }) {
-  return <FriendSeatContext.Provider value={seat}>{children}</FriendSeatContext.Provider>;
+export function SeatNamesProvider({ names, children }) {
+  return <SeatNamesContext.Provider value={names}>{children}</SeatNamesContext.Provider>;
 }
 
 export function usePlayerNames() {
   const { t } = useLanguage();
-  const friendSeat = useContext(FriendSeatContext);
+  const seatNames = useContext(SeatNamesContext);
   const names = [t('playerYou'), t('playerWest'), t('playerPartner'), t('playerEast')];
-  if (friendSeat !== null) names[friendSeat] = t('playerFriend');
+  seatNames?.forEach((name, seat) => { if (seat !== 0 && name) names[seat] = name; });
   return names;
 }

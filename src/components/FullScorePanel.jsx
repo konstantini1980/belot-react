@@ -36,7 +36,7 @@ export default function FullScorePanel({
   hangingPoints = 0,
   phase,
   onNextDeal = null,
-  nextDealWaiting = false, // Online: you clicked "Next deal" and your friend hasn't yet
+  nextDealWaiting = false, // Online: you clicked "Next deal" and the other players haven't yet
   onNewGame = null,
   winner = null,
   onClose = null,

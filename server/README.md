@@ -1,7 +1,7 @@
 # Belot game server (online play)
 
 A Cloudflare Worker with one Durable Object per table. It runs the same rules code as the
-app (`../src/game/onlineTable.js`), deals, runs the two AI players, and sends each human only
+app (`../src/game/onlineTable.js`), deals, runs the AI players in the seats no person takes, and sends each of up to four humans only
 their own cards. The app on GitHub Pages connects to it over a WebSocket.
 
 ## Run it locally
@@ -14,7 +14,7 @@ npm run dev          # ws://localhost:8787
 
 In another terminal, `npm run dev` in the repo root. In dev mode the app uses
 `ws://<host>:8787` by itself, so "Play online with friends" works right away. Open the
-game in two browser windows (or a private window) to play both seats.
+game in several browser windows (or private windows) to play more than one seat.
 
 ## Deploy (owner's step, once)
 
@@ -50,12 +50,16 @@ A table nobody touches for 24 hours (no move, join or deal) is deleted.
 ## Protocol
 
 Client → server, JSON over the WebSocket at `/rooms/<CODE>`:
-- `{ type: 'hello', token, create?: { friend: 'partner' | 'opponent' } }` first. The token
-  is a random UUID the app keeps; it is how a player gets the same seat back.
-- `{ type: 'start' }` (host), `{ type: 'bid', bid }`, `{ type: 'play', cardId }`,
-  `{ type: 'nextDeal' }`, `{ type: 'newGame' }`.
+- `{ type: 'hello', token, name?, as?: 'partner' | 'opponent', create? }` first. The token
+  is a random UUID the app keeps; it is how a player gets the same seat back. `as` comes
+  from the invite link and picks the seat (partner = opposite the host, opponent = beside).
+- `{ type: 'start' }` (host), `{ type: 'swap', a, b }` (host, lobby), `{ type: 'rename', name }`,
+  `{ type: 'leave' }`, `{ type: 'handOver', seat }` (let the AI play for someone offline
+  for a minute), `{ type: 'bid', bid }`, `{ type: 'play', cardId }`, `{ type: 'nextDeal' }`,
+  `{ type: 'newGame' }`. Seats in actions are numbered as the sender sees the table (they are 0).
 
 Server → client: `{ type: 'joined' }`, `{ type: 'error', error }` (`noRoom`, `full`,
-`taken`, `badToken`), and `{ type: 'state', isHost, started, friendJoined, friendAt,
-friendOnline, event, game }` after every change. `game` is the game as that player sees it
+`taken`, `badToken`), and `{ type: 'state', isHost, started, canStart, seats, handOverAfter,
+waitingForNextDeal, event, game }` after every change. `seats` lists the four seats turned the
+same way (`name`, `state`: empty / human / away, `online`, `offlineFor`, `host`). `game` is the game as that player sees it
 (`viewFor`): turned so they are player 0, other hands face down.

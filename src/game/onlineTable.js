@@ -1,25 +1,33 @@
 import { BelotGame, GAME_PHASES } from './gameLogic';
 import { makeAIBid, makeAIPlayCard } from './aiplayer';
 
-// One table of an online game: two humans (the host and a friend) and two AI players.
+// One table of an online game: up to four humans, with AI players in the other seats.
 // The game server keeps one Table per room and is the only place the game changes;
 // each player's app gets its own view (viewFor) and sends back actions (handle).
 // No React and no network here, so the same rules run on the server and in tests.
 
-export const HOST_SEAT = 0;
-export const FRIEND_SEATS = { partner: 2, opponent: 1 };
+export const HOST_SEAT = 0; // Whoever creates the table sits south
+// Where an invite link seats you: the partner opposite the host, opponents beside them
+export const ROLE_SEATS = { partner: [2], opponent: [1, 3] };
+const JOIN_ORDER = [2, 1, 3, 0]; // A plain code takes the first free seat
+export const HAND_OVER_AFTER_MS = 60 * 1000; // How long a player is offline before the AI may take over
+export const NAME_LENGTH = 16;
 
 // Same pacing as the local game in App.jsx
 export const STEP_MS = { deal: 0, aiTurn: 1000, showFullTrick: 2000, collectTrick: 1000 };
 
 // Each player's app makes up a random token and keeps it; the token is how the table
 // knows who sits where, so a reload or a dropped connection gets the same seat back.
+//
+// seats[s] is null or { token, name, ai, offlineSince }. Before the start a null seat is
+// empty; once the game runs, the AI plays it and anyone with the code can take it.
+// ai: true means the AI plays for a player who is away; they get the seat back by returning.
 export class Table {
-  constructor(friendSeat, hostToken) {
-    if (!Object.values(FRIEND_SEATS).includes(friendSeat)) throw new Error('Bad friend seat');
+  constructor(hostToken, hostName = '') {
     if (!isToken(hostToken)) throw new Error('Bad token');
-    this.friendSeat = friendSeat;
-    this.tokens = { [HOST_SEAT]: hostToken, [friendSeat]: null };
+    this.seats = [null, null, null, null];
+    this.seats[HOST_SEAT] = newSeat(hostToken, hostName);
+    this.hostSeat = HOST_SEAT;
     this.started = false;
     this.readyForNextDeal = []; // Human seats that clicked "Next deal" after this deal was scored
     this.game = new BelotGame();
@@ -28,29 +36,43 @@ export class Table {
   // Everything needed to rebuild the table, as JSON-safe data (the server stores it)
   snapshot() {
     return {
-      friendSeat: this.friendSeat, tokens: this.tokens, started: this.started,
+      seats: this.seats, hostSeat: this.hostSeat, started: this.started,
       readyForNextDeal: this.readyForNextDeal, game: this.game.serialize(),
     };
   }
 
   static restore(data) {
-    const table = new Table(data.friendSeat, data.tokens[HOST_SEAT]);
-    table.tokens = data.tokens;
+    const table = Object.create(Table.prototype);
+    if (data.seats) {
+      table.seats = data.seats;
+      table.hostSeat = data.hostSeat;
+    } else {
+      // Saved by the two-player server: { friendSeat, tokens: { seat: token } }
+      table.seats = [0, 1, 2, 3].map(s => (data.tokens?.[s] ? newSeat(data.tokens[s]) : null));
+      table.hostSeat = HOST_SEAT;
+    }
     table.started = data.started;
     table.readyForNextDeal = data.readyForNextDeal ?? []; // Tables saved before this field had nobody waiting
     table.game = BelotGame.deserialize(data.game);
     return table;
   }
 
+  // A person plays this seat (not empty, and not handed over to the AI)
   isHuman(seat) {
-    return seat === HOST_SEAT || seat === this.friendSeat;
+    const entry = this.seats[seat];
+    return Boolean(entry) && !entry.ai;
   }
 
-  get friendJoined() {
-    return this.tokens[this.friendSeat] !== null;
+  humanSeats() {
+    return [0, 1, 2, 3].filter(seat => this.isHuman(seat));
   }
 
-  // Whether this seat clicked "Next deal" and waits for the other human
+  // The host may start once at least one friend sat down
+  get canStart() {
+    return !this.started && this.humanSeats().length >= 2;
+  }
+
+  // Whether this seat clicked "Next deal" and waits for the other humans
   isWaitingForNextDeal(seat) {
     return this.readyForNextDeal.includes(seat);
   }
@@ -58,29 +80,88 @@ export class Table {
   // The seat held by this token, or null
   seatOf(token) {
     if (!isToken(token)) return null;
-    return [HOST_SEAT, this.friendSeat].find(seat => this.tokens[seat] === token) ?? null;
+    const seat = this.seats.findIndex(entry => entry?.token === token);
+    return seat === -1 ? null : seat;
   }
 
-  // Who is connecting: a known token gets its seat back, a new one takes the
-  // friend's seat while it is free. Returns the seat, or { error }.
-  join(token) {
+  // Who is connecting: a known token gets its seat back (from the AI too, if it played
+  // for them); a new one takes a free seat, preferring the one its invite link names
+  // ('partner' or 'opponent'). Returns { seat }, or { error }.
+  join(token, name, role) {
     if (!isToken(token)) return { error: 'badToken' };
-    const seat = this.seatOf(token);
-    if (seat !== null) return { seat }; // Coming back to their seat
-    if (this.friendJoined) return { error: 'full' }; // Both human seats are taken
-    this.tokens[this.friendSeat] = token;
-    return { seat: this.friendSeat }; // The friend sits down
+    const known = this.seatOf(token);
+    if (known !== null) {
+      const entry = this.seats[known];
+      entry.ai = false; // Coming back: the AI hands the seat back
+      entry.offlineSince = null;
+      if (cleanName(name)) entry.name = cleanName(name);
+      return { seat: known };
+    }
+    const preferred = ROLE_SEATS[role] ?? [];
+    const seat = [...preferred, ...JOIN_ORDER].find(s => this.seats[s] === null);
+    if (seat === undefined) return { error: 'full' }; // Four people already sit here
+    this.seats[seat] = newSeat(token, name);
+    if (this.hostSeat === null) this.hostSeat = seat; // First person at a table everyone left hosts it
+    return { seat };
   }
 
-  // An action from the player in `seat`. Returns the event to pass on to the players
-  // ({ type, seat }), or null if the action isn't allowed now and nothing changed.
-  handle(seat, action) {
+  // The connection state of a seat, as the server sees its sockets
+  setOnline(seat, online, now = Date.now()) {
+    const entry = this.seats[seat];
+    if (!entry) return;
+    if (online) entry.offlineSince = null;
+    else entry.offlineSince ??= now;
+  }
+
+  // Milliseconds this seat's player has been offline, or null while online
+  offlineFor(seat, now = Date.now()) {
+    const since = this.seats[seat]?.offlineSince;
+    return since == null ? null : Math.max(0, now - since);
+  }
+
+  // Another player may let the AI play for someone who has been offline long enough
+  canHandOver(seat, now = Date.now()) {
+    return this.started && this.isHuman(seat) && this.offlineFor(seat, now) >= HAND_OVER_AFTER_MS;
+  }
+
+  // An action from the player in `seat`. Seats named in an action (swap, handOver) are
+  // as the sender sees the table (they are south). Returns the event to pass on to the
+  // players ({ type, seat }), or null if the action isn't allowed now and nothing changed.
+  handle(seat, action, now = Date.now()) {
     const game = this.game;
+    if (!this.isHuman(seat)) return null; // Only someone sitting at the table acts
+    const named = s => (Number.isInteger(s) && s >= 0 && s < 4 ? (s + seat) % 4 : null); // Their view → real seat
     switch (action?.type) {
+      case 'rename': {
+        const name = cleanName(action.name);
+        if (name === this.seats[seat].name) return null; // Nothing changes
+        this.seats[seat].name = name;
+        return { type: 'rename', seat };
+      }
+      case 'swap': {
+        if (seat !== this.hostSeat || this.started) return null; // Only the host moves people, before the start
+        const a = named(action.a);
+        const b = named(action.b);
+        if (a === null || b === null || a === b) return null; // Two different seats
+        [this.seats[a], this.seats[b]] = [this.seats[b], this.seats[a]];
+        if (this.hostSeat === a) this.hostSeat = b; // The host moves with their seat
+        else if (this.hostSeat === b) this.hostSeat = a;
+        return { type: 'swap', seat };
+      }
       case 'start':
-        if (seat !== HOST_SEAT || this.started || !this.friendJoined) return null; // Only the host starts, once both are here
-        this.started = true;
+        if (seat !== this.hostSeat || !this.canStart) return null; // Only the host starts, once a friend is here
+        this.started = true; // Empty seats are played by the AI from now on
         return { type: 'start', seat };
+      case 'leave':
+        this.seats[seat] = null; // In the lobby the seat is free again; in a game the AI plays it
+        if (this.hostSeat === seat) this.passHost();
+        return this.seatsChanged({ type: 'leave', seat });
+      case 'handOver': {
+        const target = named(action.seat);
+        if (target === null || target === seat || !this.canHandOver(target, now)) return null; // Only for someone offline long enough
+        this.seats[target].ai = true; // The seat stays theirs; they take it back by returning
+        return this.seatsChanged({ type: 'handOver', seat: target });
+      }
       case 'bid':
         if (!this.started || game.phase !== GAME_PHASES.BIDDING) return null; // Not bidding now
         return game.makeBid(seat, action.bid) ? { type: 'bid', seat } : null; // makeBid checks turn and bid
@@ -88,16 +169,10 @@ export class Table {
         if (!this.started || game.currentTrick.cards.length === 4) return null; // The full trick is still on the table
         return game.playCard(seat, action.cardId) ? { type: 'play', seat } : null; // playCard checks turn and rules
       case 'nextDeal':
-        if (game.phase !== GAME_PHASES.SCORING) return null; // Only after a deal is scored
+        if (!this.started || game.phase !== GAME_PHASES.SCORING) return null; // Only after a deal is scored
         if (this.readyForNextDeal.includes(seat)) return null; // Already clicked
         this.readyForNextDeal.push(seat);
-        if (![HOST_SEAT, this.friendSeat].every(human => this.readyForNextDeal.includes(human))) {
-          return { type: 'ready', seat }; // Waits until both humans clicked (AI players are always ready)
-        }
-        this.readyForNextDeal = [];
-        game.dealer = (game.dealer + 3) % 4; // Next dealer is counter-clockwise
-        game.deal();
-        return { type: 'deal', seat };
+        return this.dealIfAllReady() ?? { type: 'ready', seat }; // Waits for every human (AI players are always ready)
       case 'newGame':
         if (game.phase !== GAME_PHASES.FINISHED) return null; // Only once the game is won
         this.game = new BelotGame();
@@ -108,11 +183,35 @@ export class Table {
     }
   }
 
+  // A human left or the AI took a seat over: they no longer hold up "Next deal"
+  seatsChanged(event) {
+    this.readyForNextDeal = this.readyForNextDeal.filter(seat => this.isHuman(seat));
+    return this.dealIfAllReady() ?? event;
+  }
+
+  // After a scored deal, deals the next one once every human clicked "Next deal"
+  dealIfAllReady() {
+    if (!this.started || this.game.phase !== GAME_PHASES.SCORING) return null; // Nothing to deal
+    const humans = this.humanSeats();
+    if (humans.length === 0 || !humans.every(seat => this.readyForNextDeal.includes(seat))) return null; // Someone hasn't clicked
+    this.readyForNextDeal = [];
+    this.game.dealer = (this.game.dealer + 3) % 4; // Next dealer is counter-clockwise
+    this.game.deal();
+    return { type: 'deal', seat: null };
+  }
+
+  // The host left: the person in the lowest seat hosts now (or the next one to arrive)
+  passHost() {
+    const next = this.humanSeats()[0] ?? this.seats.findIndex(Boolean);
+    this.hostSeat = next === undefined || next === -1 ? null : next;
+  }
+
   // What happens next without a human: { delay, run } where run() makes the change
   // and returns its event, or null while the table waits for a human
   nextStep() {
     const game = this.game;
     if (!this.started) return null; // Still in the lobby
+    if (this.humanSeats().length === 0) return null; // Everyone left: the AI doesn't play on alone
     if (game.phase === GAME_PHASES.DEALING) {
       return { delay: STEP_MS.deal, run: () => { game.deal(); return { type: 'deal' }; } };
     }
@@ -150,6 +249,15 @@ export class Table {
     if (!card || !game.playCard(seat, card.id)) return null; // Should not happen
     return { type: 'play', seat };
   }
+}
+
+function newSeat(token, name = '') {
+  return { token, name: cleanName(name), ai: false, offlineSince: null };
+}
+
+// A player's name as shown at the table: one line, short; '' shows the seat's usual label
+export function cleanName(name) {
+  return typeof name === 'string' ? name.replace(/\s+/g, ' ').trim().slice(0, NAME_LENGTH) : '';
 }
 
 // Tokens are random UUIDs made by the player's app
