@@ -380,15 +380,18 @@ export default function App() {
   };
 
   // Update player names when language changes
+  // Copies the latest state (not the `game` from this render): on first load this
+  // runs right after the deal, and copying the stale undealt game would undo it.
   useEffect(() => {
-    const newGame = new BelotGame();
-    Object.assign(newGame, game);
-    newGame.players[0].name = t('playerYou');
-    newGame.players[1].name = t('playerWest');
-    newGame.players[2].name = t('playerPartner');
-    newGame.players[3].name = t('playerEast');
-    
-    setGame(newGame);
+    setGame(prev => {
+      const newGame = new BelotGame();
+      Object.assign(newGame, prev);
+      newGame.players[0].name = t('playerYou');
+      newGame.players[1].name = t('playerWest');
+      newGame.players[2].name = t('playerPartner');
+      newGame.players[3].name = t('playerEast');
+      return newGame;
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language]);
 

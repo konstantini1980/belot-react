@@ -568,6 +568,45 @@ function getRequestedSuit(game) {
     return leadSuit;
 }
 
+// Helper: The card that costs least to give away. Keeps trumps over plain
+// suits, then fewer card points, then the lower rank.
+function getWeakestCard(cards, contract, trumpSuit) {
+    const isTrump = card => contract === 'all-trump' || card.suit === trumpSuit;
+    const cost = card => [
+        isTrump(card) && contract !== 'all-trump' ? 1 : 0,
+        card.getValue(contract),
+        -card.getRanking(contract),
+    ];
+    return cards.reduce((weakest, card) => {
+        const a = cost(card);
+        const b = cost(weakest);
+        for (let i = 0; i < a.length; i++) {
+            if (a[i] !== b[i]) return a[i] < b[i] ? card : weakest;
+        }
+        return weakest;
+    });
+}
+
+// Helper: Lead when no card is likely to win (rule 2.1.2). Play the weakest
+// card of the longest plain suit: it keeps trumps and high cards for later and
+// gives the partner a chance to take the trick with the top card of that suit.
+function chooseFallbackLead(validCards, contract, trumpSuit) {
+    const plainCards = validCards.filter(card => contract === 'all-trump' || card.suit !== trumpSuit);
+    const pool = plainCards.length > 0 ? plainCards : validCards;
+
+    const bySuit = {};
+    for (const card of pool) {
+        (bySuit[card.suit] ??= []).push(card);
+    }
+    const suitPoints = cards => cards.reduce((sum, card) => sum + card.getValue(contract), 0);
+    const longestSuit = Object.values(bySuit).reduce((best, cards) => {
+        if (cards.length !== best.length) return cards.length > best.length ? cards : best;
+        return suitPoints(cards) < suitPoints(best) ? cards : best;
+    });
+
+    return getWeakestCard(longestSuit, contract, trumpSuit);
+}
+
 // Main function: Make AI play a card
 export function makeAIPlayCard(game, playerId) {
     const player = game.players[playerId];
@@ -631,9 +670,7 @@ export function makeAIPlayCard(game, playerId) {
             }
         } else {
             // 2.1.2
-            // Play random card
-            const randomIndex = Math.floor(Math.random() * validCards.length);
-            selectedCard = validCards[randomIndex];
+            selectedCard = chooseFallbackLead(validCards, game.contract, game.trumpSuit);
         }
     } else {
         // 2.2: Following a trick
@@ -763,8 +800,8 @@ export function makeAIPlayCard(game, playerId) {
     
     // Debug assertion equivalent
     if (selectedCard == null) {
-        // Fallback: play first valid card
-        selectedCard = validCards[0];
+        // Fallback: give away as little as possible
+        selectedCard = getWeakestCard(validCards, game.contract, game.trumpSuit);
     }
     
     return selectedCard;

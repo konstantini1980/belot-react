@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import Card from './Card';
 import CompactScorePanel from './CompactScorePanel';
 import FullScorePanel from './FullScorePanel';
@@ -60,15 +60,13 @@ export default function GameBoard({
   const prevTrickLengthRef = useRef(0);
   const isRoundOver = phase === GAME_PHASES.SCORING || phase === GAME_PHASES.FINISHED;
 
-  // Count tricks won by each team
-  const tricksByTeam = useMemo(() => {
-    if (!tricks || !Array.isArray(tricks) || tricks.length === 0) {
-      return { team0: 0, team1: 0 };
-    }
-    const team0Count = tricks.filter(t => t?.team === 0).length;
-    const team1Count = tricks.filter(t => t?.team === 1).length;
-    return { team0: team0Count, team1: team1Count };
-  }, [tricks.length]);
+  // Count tricks won by each team. Not memoized: the game pushes into the same
+  // tricks array, and counting at most 8 tricks costs nothing.
+  const tricksList = Array.isArray(tricks) ? tricks : [];
+  const tricksByTeam = {
+    team0: tricksList.filter(t => t?.team === 0).length,
+    team1: tricksList.filter(t => t?.team === 1).length,
+  };
 
   const getPlayerPosition = (playerId) => {
     const positions = ['south', 'west', 'north', 'east'];
@@ -121,7 +119,8 @@ export default function GameBoard({
       }
     }
     prevTrickLengthRef.current = currentTrick.cards.length;
-  }, [currentTrick.cards.length, phase, cardPositions]);
+    // Keep .length as a dependency too: the game pushes into the same cards array
+  }, [currentTrick.cards, currentTrick.cards.length, phase, cardPositions]);
 
   // Calculate fixed card positions within board-center for each player
   const calculateCentralCardPositions = () => {
