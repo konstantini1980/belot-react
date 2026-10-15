@@ -113,6 +113,16 @@ describe('Saving and resuming a game', () => {
     expect(loadSavedGame(store)).toBeNull();
   });
 
+  it('An undealt new game removes the save (exiting a game clears it)', () => {
+    const store = fakeStorage();
+    saveGame(gameInPlay(), store);
+
+    saveGame(new BelotGame(), store);
+
+    expect(store.getItem('belot-saved-game')).toBeNull();
+    expect(loadSavedGame(store)).toBeNull();
+  });
+
   it('Nothing saved, a broken save or an old version gives null', () => {
     const store = fakeStorage();
     expect(loadSavedGame(store)).toBeNull();

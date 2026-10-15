@@ -6,7 +6,7 @@ import GameBoard from './components/GameBoard';
 import BiddingPanel from './components/BiddingPanel';
 import DevPanel from './components/DevPanel';
 import LanguageSwitcher from './components/LanguageSwitcher';
-import NewGameButton from './components/NewGameButton';
+import ExitGameButton from './components/ExitGameButton';
 import { useLanguage } from './contexts/LanguageContext';
 import './App.css';
 
@@ -274,6 +274,14 @@ export default function App() {
     setCardPositions(new Map());
   };
 
+  // Ends the game in progress and goes back to the start screen. The fresh,
+  // undealt game replaces the save, which removes it.
+  const handleExitGame = () => {
+    resetBoard();
+    setGame(new BelotGame());
+    setIsGameStarted(false);
+  };
+
   // A fresh game; the dealing effect deals it once play has started
   const handleNewGame = () => {
     resetBoard();
@@ -337,13 +345,13 @@ export default function App() {
         </h1>
         <div className="app-header-controls">
           <LanguageSwitcher />
-          <NewGameButton onNewGame={handleNewGame} />
+          <ExitGameButton onExitGame={handleExitGame} />
         </div>
       </header>
 
       <div className="game-container">
         <GameBoard
-          tableControls={<><LanguageSwitcher /><NewGameButton onNewGame={handleNewGame} /></>}
+          tableControls={<><LanguageSwitcher /><ExitGameButton onExitGame={handleExitGame} /></>}
           players={game.players}
           currentTrick={game.currentTrick}
           currentPlayer={game.currentPlayer}

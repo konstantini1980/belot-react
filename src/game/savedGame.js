@@ -17,6 +17,8 @@ export function saveGame(game, store = storage()) {
   try {
     if (game.phase === GAME_PHASES.FINISHED) {
       store?.removeItem(STORAGE_KEY); // A finished game isn't resumed
+    } else if (game.phase === GAME_PHASES.DEALING && game.dealHistory.length === 0) {
+      store?.removeItem(STORAGE_KEY); // Nothing played yet (a new or exited game): nothing to resume
     } else {
       store?.setItem(STORAGE_KEY, game.serialize());
     }
