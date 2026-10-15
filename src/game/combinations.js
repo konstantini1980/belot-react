@@ -12,7 +12,9 @@ function isConsequent(x, y) {
   return xIndex !== -1 && yIndex !== -1 && yIndex === xIndex + 1;
 }
 
-// Add sequential combination based on length
+// Add the combinations for one run of consecutive cards (sorted high to low).
+// Only five cards of a run count: 6 or 7 in a row is still a quint (the top five),
+// and 8 in a row is announced as a quint plus a tierce.
 function addSequentialCombination(cards, sequences) {
   if (cards.length === 3) {
     sequences.push({
@@ -29,9 +31,16 @@ function addSequentialCombination(cards, sequences) {
   } else if (cards.length >= 5) {
     sequences.push({
       type: 'quint',
-      cards: [...cards],
+      cards: cards.slice(0, 5),
       points: 100
     });
+    if (cards.length === 8) {
+      sequences.push({
+        type: 'tierce',
+        cards: cards.slice(5),
+        points: 20
+      });
+    }
   }
 }
 
@@ -170,17 +179,24 @@ export function findBelot(cards, trumpSuit) {
   return null;
 }
 
-export function getAllCombinations(cards, trumpSuit) {
-  const equals = findEquals(cards);
-  if (equals.length > 0) {
-    const remainingCards = cards.filter(c => !equals.some(e => e.cards.includes(c)));
-    const sequences = findSequences(remainingCards);
-    
-    return [...equals, ...sequences];
-  } else {
-    const sequences = findSequences(cards);
-    
-    return [...sequences];
-  }
-}
+const comboPoints = (combos) => combos.reduce((sum, c) => sum + c.points, 0);
 
+// A card can't count in both a four of a kind and a sequence, and the player picks
+// which to announce. Try every choice of fours to keep and announce the split worth
+// the most points; on a tie the fours are kept.
+export function getAllCombinations(cards, trumpSuit) {
+  const allEquals = findEquals(cards);
+  let best = null;
+
+  for (let mask = (1 << allEquals.length) - 1; mask >= 0; mask--) {
+    const equals = allEquals.filter((_, i) => mask & (1 << i));
+    const remainingCards = cards.filter(c => !equals.some(e => e.cards.includes(c)));
+    const combos = [...equals, ...findSequences(remainingCards)];
+
+    if (!best || comboPoints(combos) > comboPoints(best)) {
+      best = combos;
+    }
+  }
+
+  return best;
+}
