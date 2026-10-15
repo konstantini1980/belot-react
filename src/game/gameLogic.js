@@ -201,6 +201,7 @@ export class BelotGame {
   playCard(playerId, cardId) {
     if (playerId !== this.currentPlayer) return false;
     if (this.phase !== GAME_PHASES.PLAYING) return false;
+    if (this.currentTrick.cards.length >= 4) return false; // Trick is full, waiting for completeTrick()
     
     const player = this.players[playerId];
     const cardIndex = player.hand.findIndex(c => c.id === cardId);
