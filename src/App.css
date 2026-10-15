@@ -16,9 +16,8 @@
 }
 
 .app-logo {
-  font-family: var(--font-serif);
-  font-size: 26px;
-  font-weight: normal;
+  font-size: 24px;
+  font-weight: 700;
   letter-spacing: 1px;
   display: flex;
   align-items: baseline;
@@ -26,6 +25,7 @@
 }
 
 .app-logo-suits {
+  font-family: var(--font-card); /* same suit glyphs as the cards */
   font-size: 15px;
   letter-spacing: 4px;
   color: var(--ink-dim);

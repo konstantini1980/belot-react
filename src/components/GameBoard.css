@@ -270,9 +270,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-serif);
-  font-size: 16px;
-  font-weight: normal;
+  font-size: 15px;
+  font-weight: 700;
   color: #1a1a1a;
   background: linear-gradient(160deg, #f3e6c4, #c9a960);
   flex: none;
