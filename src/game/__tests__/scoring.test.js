@@ -1034,4 +1034,136 @@ describe('Scoring', () => {
       expect(game.lastRoundRoundedPoints).toEqual([0, 23]);
     });
   });
+  describe('Tied (hanging) deals', () => {
+    const mixedTricks = () => Array.from({ length: 8 }, (_, i) => ({ cards: [], team: i % 2 }));
+
+    beforeEach(() => {
+      game.bids = [{ playerId: 0, bid: 'hearts' }];
+      game.tricks = mixedTricks();
+    });
+
+    it('Odd total: the opponents take the bigger half, the rest hangs', () => {
+      game.currentRoundScore = [106, 106];
+
+      game.endRound();
+
+      // 212 -> 21 in all: opponents 11 now, 10 hang (never 10.5 each)
+      expect(game.lastRoundRoundedPoints).toEqual([0, 11]);
+      expect(game.hangingPoints).toBe(10);
+      expect(game.totalScores).toEqual([0, 11]);
+    });
+
+    it('All trumps odd total splits the same way', () => {
+      game.contract = 'all-trump';
+      game.trumpSuit = null;
+      game.bids = [{ playerId: 1, bid: 'all-trump' }];
+      game.currentRoundScore = [154, 154];
+
+      game.endRound();
+
+      // 308 -> 31: opponents (team 0) 16 now, 15 hang
+      expect(game.lastRoundRoundedPoints).toEqual([16, 0]);
+      expect(game.hangingPoints).toBe(15);
+    });
+
+    it('Two tied deals in a row: the hanging points stack up', () => {
+      game.currentRoundScore = [81, 81];
+      game.endRound();
+      expect(game.hangingPoints).toBe(8);
+
+      game.tricks = mixedTricks();
+      game.currentRoundScore = [81, 81];
+      game.endRound();
+
+      // Second tie: opponents take their 8 again, 8 + 8 = 16 now hang
+      expect(game.lastRoundRoundedPoints).toEqual([0, 8]);
+      expect(game.hangingPoints).toBe(16);
+      expect(game.totalScores).toEqual([0, 16]);
+    });
+
+    it('Doubled tie: all points, doubled, hang for the next deal winner', () => {
+      game.double = true;
+      game.currentRoundScore = [81, 81];
+
+      game.endRound();
+
+      // 162 -> 16, doubled 32, nobody scores now
+      expect(game.lastRoundRoundedPoints).toEqual([0, 0]);
+      expect(game.hangingPoints).toBe(32);
+      expect(game.totalScores).toEqual([0, 0]);
+
+      // Next deal, not doubled: team 1 holds the contract and wins 100 : 62
+      game.double = false;
+      game.bids = [{ playerId: 1, bid: 'hearts' }];
+      game.tricks = mixedTricks();
+      game.currentRoundScore = [62, 100];
+      game.endRound();
+
+      // Opponents 62 -> 6, contract team 16 - 6 = 10, plus the 32 hanging
+      expect(game.lastRoundRoundedPoints).toEqual([6, 42]);
+      expect(game.lastRoundBreakdown[1].hangingPoints).toBe(320);
+      expect(game.hangingPoints).toBe(0);
+    });
+
+    it('Redoubled tie: all points, quadrupled, hang', () => {
+      game.double = true;
+      game.redouble = true;
+      game.currentRoundScore = [81, 81];
+
+      game.endRound();
+
+      expect(game.lastRoundRoundedPoints).toEqual([0, 0]);
+      expect(game.hangingPoints).toBe(64);
+    });
+  });
+  describe('Four of a kind against four of a kind', () => {
+    const four = rank => ({
+      type: 'equal', points: ['J', '9'].includes(rank) ? (rank === 'J' ? 200 : 150) : 100,
+      cards: ['clubs', 'diamonds', 'hearts', 'spades'].map(suit => new Card(suit, rank))
+    });
+
+    beforeEach(() => {
+      game.bids = [{ playerId: 0, bid: 'hearts' }];
+      game.tricks = Array.from({ length: 8 }, (_, i) => ({ cards: [], team: i % 2 }));
+      game.currentRoundScore = [90, 72];
+    });
+
+    it('Four Aces beat four Kings (both worth 100)', () => {
+      const aces = four('A');
+      const kings = four('K');
+      game.announcedCombinations = [[kings], [aces]];
+
+      game.endRound();
+
+      expect(aces.valid).toBe(true);
+      expect(kings.valid).toBe(false);
+      // 90 against 72 + 100 = 172: contract lost, opponents take all 262 -> 26
+      expect(game.lastRoundBreakdown[1].combinationPoints).toBe(100);
+      expect(game.lastRoundRoundedPoints).toEqual([0, 26]);
+    });
+
+    it('Four Queens beat four 10s', () => {
+      const queens = four('Q');
+      const tens = four('10');
+      game.announcedCombinations = [[queens], [tens]];
+
+      game.endRound();
+
+      expect(queens.valid).toBe(true);
+      expect(tens.valid).toBe(false);
+      // 90 + 100 = 190 against 72: 262 -> 26, opponents 72 -> 7, contract team 19
+      expect(game.lastRoundRoundedPoints).toEqual([19, 7]);
+    });
+
+    it('Four 9s still beat four Aces', () => {
+      const nines = four('9');
+      const aces = four('A');
+      game.announcedCombinations = [[nines], [aces]];
+
+      game.endRound();
+
+      expect(nines.valid).toBe(true);
+      expect(aces.valid).toBe(false);
+    });
+  });
 });

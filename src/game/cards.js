@@ -59,19 +59,12 @@ export class Card {
     return rankingFor(contract, this.suit).indexOf(this.rank);
   }
 
-  isHigherThan(otherCard, contract, trumpSuit) {
-    const sameSuit = this.suit === otherCard.suit;
-
-    if (sameSuit) {
-      if (contract === 'all-trump' || this.suit === trumpSuit) {
-        return CARD_RANKINGS.trump.indexOf(this.rank) < CARD_RANKINGS.trump.indexOf(otherCard.rank);
-      }
-      else if (contract === 'no-trump' || this.suit !== trumpSuit) {
-        return CARD_RANKINGS.nonTrump.indexOf(this.rank) < CARD_RANKINGS.nonTrump.indexOf(otherCard.rank);
-      } 
-    } else {
-      return this.suit === trumpSuit;
+  // True if this card beats otherCard (played earlier in the same trick)
+  isHigherThan(otherCard, contract) {
+    if (this.suit === otherCard.suit) {
+      return this.getRanking(contract) < otherCard.getRanking(contract); // Same suit: the stronger rank wins
     }
+    return this.suit === contract; // Different suits: only a trump of a suit contract beats it
   }
 }
 

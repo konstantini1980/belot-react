@@ -378,7 +378,7 @@ function getBiggestCardInTrick(game) {
     
     let biggest = game.currentTrick.cards[0];
     game.currentTrick.cards.forEach(({ playerId, card }) => {
-        if (card.isHigherThan(biggest.card, game.contract, game.trumpSuit)) {
+        if (card.isHigherThan(biggest.card, game.contract)) {
             biggest = { playerId, card };
         }
     });

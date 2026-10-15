@@ -1,4 +1,4 @@
-import { createDeck, SEQUENCE_ORDER } from './cards';
+import { Card, createDeck, SEQUENCE_ORDER } from './cards';
 import { getAllCombinations, findBelotOnPlay } from './combinations';
 
 export const CONTRACTS = ['clubs', 'diamonds', 'hearts', 'spades', 'no-trump', 'all-trump'];
@@ -18,6 +18,7 @@ export function lastContractBid(bids) {
   return bids.findLast(b => b.bid in CONTRACT_RANK);
 }
 const WINNING_SCORE = 151;
+const SAVE_VERSION = 1; // Bump when the saved game's shape changes, so old saves are ignored
 
 export const GAME_PHASES = {
   DEALING: 'dealing',
@@ -77,6 +78,27 @@ export class BelotGame {
     copy.lastRoundRoundedPoints = [...this.lastRoundRoundedPoints];
     copy.announcedCombinations = this.announcedCombinations.map(combos => combos.map(c => ({ ...c })));
     return copy;
+  }
+
+  // The whole game as JSON, to save it and pick it up again after a page reload
+  serialize() {
+    return JSON.stringify({ version: SAVE_VERSION, game: this });
+  }
+
+  // A game from serialize(), or null if the text isn't a saved game of this version.
+  // Each card comes back as one Card per id, so a card in a hand, a trick and an
+  // announcement is still the same object, as in the original game.
+  static deserialize(text) {
+    const cards = new Map();
+    const data = JSON.parse(text, (key, value) => {
+      if (value && typeof value === 'object' && 'suit' in value && 'rank' in value && 'id' in value) {
+        if (!cards.has(value.id)) cards.set(value.id, new Card(value.suit, value.rank));
+        return cards.get(value.id);
+      }
+      return value;
+    });
+    if (!data || data.version !== SAVE_VERSION || !data.game) return null; // Not a save we can read
+    return Object.assign(new BelotGame(), data.game);
   }
 
   deal() {
@@ -294,8 +316,7 @@ export class BelotGame {
       return true; // Can play any card when leading
     }
     
-    const leadCard = this.currentTrick.cards[0].card;
-    const leadSuit = leadCard.suit;
+    const leadSuit = this.currentTrick.cards[0].card.suit;
     const hasLeadSuit = player.hand.some(c => c.suit === leadSuit);
     
     if (this.contract === 'all-trump') {
@@ -308,35 +329,10 @@ export class BelotGame {
       // Must follow suit (playing cards of the same color is mandatory)
       if (card.suit !== leadSuit) return false;
       
-      // Find the highest card played so far in the trick (of the lead suit)
-      // In all-trump, all cards are trumps, so we compare by all-trump ranking
-      let highestCard = leadCard;
-      let highestRanking = highestCard.getRanking(this.contract, this.trumpSuit);
-      
-      this.currentTrick.cards.forEach(({ card: trickCard }) => {
-        // Only consider cards of the lead suit
-        if (trickCard.suit === leadSuit) {
-          const trickRanking = trickCard.getRanking(this.contract, this.trumpSuit);
-          // Lower ranking number means higher card (J=0, 9=1, A=2, etc.)
-          if (trickRanking < highestRanking) {
-            highestCard = trickCard;
-            highestRanking = trickRanking;
-          }
-        }
-      });
-      
-      // Raising is mandatory: must play a higher card if available
+      // Raising is mandatory: must play a higher card of the lead suit if available.
       // This applies regardless of which team has the highest card
-      const higherCards = player.hand.filter(c => 
-        c.suit === leadSuit && 
-        c.getRanking(this.contract, this.trumpSuit) < highestRanking
-      );
-      
-      if (higherCards.length > 0 && !higherCards.includes(card)) {
-        return false; // Must play a higher card if available
-      }
-      
-      return true;
+      const higherCards = this.higherCardsInHand(player, leadSuit);
+      return higherCards.length === 0 || higherCards.includes(card);
     }
     
     if (this.contract === 'no-trump') {
@@ -353,70 +349,23 @@ export class BelotGame {
       
       // If trump suit is led, must raise (play higher trump if available)
       if (leadSuit === this.trumpSuit) {
-        // Find the currently winning trump card in the trick
-        let winningCard = leadCard;
-        let winningRanking = winningCard.getRanking(this.contract, this.trumpSuit);
-        
-        this.currentTrick.cards.forEach(({ card: trickCard }) => {
-          // Only consider trump cards
-          if (trickCard.suit === this.trumpSuit) {
-            const trickRanking = trickCard.getRanking(this.contract, this.trumpSuit);
-            // Lower ranking number means higher card
-            if (trickRanking < winningRanking) {
-              winningCard = trickCard;
-              winningRanking = trickRanking;
-            }
-          }
-        });
-        
-        // If player has a higher trump than the winning card, they must play it
-        const higherTrumps = player.hand.filter(c => 
-          c.suit === this.trumpSuit && 
-          c.getRanking(this.contract, this.trumpSuit) < winningRanking
-        );
-        
-        if (higherTrumps.length > 0 && !higherTrumps.includes(card)) {
-          return false; // Must play a higher trump if available
-        }
+        const higherTrumps = this.higherCardsInHand(player, this.trumpSuit);
+        return higherTrumps.length === 0 || higherTrumps.includes(card); // Must play a higher trump if available
       }
       
-      return true;
+      return true; // Following a non-trump suit: any card of it
     }
     
     // Don't have lead suit
-    const opponentHasHighest = this.opponentHasHighestCard(player);
-    
     // Partner holds the trick: no obligation to trump or overtrump
-    if (!opponentHasHighest) return true;
+    if (!this.opponentHasHighestCard(player)) return true;
     
-    // Check if opponents played a trump card
-    let highestOpponentTrump = null;
-    let highestOpponentTrumpRanking = Infinity;
-    this.currentTrick.cards.forEach(({ playerId, card: trickCard }) => {
-      if (this.players[playerId].team !== player.team && 
-          trickCard.suit === this.trumpSuit) {
-        const trickRanking = trickCard.getRanking(this.contract, this.trumpSuit);
-        if (trickRanking < highestOpponentTrumpRanking) {
-          highestOpponentTrump = trickCard;
-          highestOpponentTrumpRanking = trickRanking;
-        }
-      }
-    });
-    
-    // If opponents played a trump card, must play a higher trump if available
-    if (highestOpponentTrump !== null) {
-      const higherTrumps = player.hand.filter(c => 
-        c.suit === this.trumpSuit && 
-        c.getRanking(this.contract, this.trumpSuit) < highestOpponentTrumpRanking
-      );
-      
-      if (higherTrumps.length > 0) {
-        // Must play a higher trump
-        return higherTrumps.includes(card);
-      } else {
-        // Don't have a higher trump, can play any card
-        return true;
-      }
+    // If opponents played a trump card, must play a higher trump if available;
+    // without a higher trump, can play any card
+    const isOpponent = playerId => this.players[playerId].team !== player.team;
+    if (this.highestRankInTrick(this.trumpSuit, isOpponent) !== Infinity) {
+      const higherTrumps = this.higherCardsInHand(player, this.trumpSuit, isOpponent);
+      return higherTrumps.length === 0 || higherTrumps.includes(card);
     }
     
     // Opponents have the highest card: if player has trump, must play trump
@@ -429,6 +378,21 @@ export class BelotGame {
     return true;
   }
 
+  // Rank (lower is stronger, as in getRanking) of the strongest card of `suit` in the
+  // current trick among the players picked by `include`, or Infinity if there is none
+  highestRankInTrick(suit, include = () => true) {
+    return Math.min(Infinity, ...this.currentTrick.cards
+      .filter(({ playerId, card }) => card.suit === suit && include(playerId))
+      .map(({ card }) => card.getRanking(this.contract)));
+  }
+
+  // The player's cards of `suit` that beat the strongest card of `suit` played so far
+  // (by the players picked by `include`)
+  higherCardsInHand(player, suit, include = () => true) {
+    const highest = this.highestRankInTrick(suit, include);
+    return player.hand.filter(c => c.suit === suit && c.getRanking(this.contract) < highest);
+  }
+
   opponentHasHighestCard(player = this.players[this.currentPlayer]) {
     if (this.currentTrick.cards.length === 0) return false;
     
@@ -439,7 +403,7 @@ export class BelotGame {
     let highestPlayer = leadPlayer;
     
     this.currentTrick.cards.forEach(({ playerId, card }) => {
-      if (card.isHigherThan(highestCard, this.contract, this.trumpSuit, leadCard.suit)) {
+      if (card.isHigherThan(highestCard, this.contract)) {
         highestCard = card;
         highestPlayer = playerId;
       }
@@ -453,7 +417,7 @@ export class BelotGame {
     
     let winner = this.currentTrick.cards[0];
     this.currentTrick.cards.forEach(p => {
-      if (p.card.isHigherThan(winner.card, this.contract, this.trumpSuit)) {
+      if (p.card.isHigherThan(winner.card, this.contract)) {
         winner = p;
       }
     });
@@ -530,27 +494,35 @@ export class BelotGame {
     const previousHangingPoints = this.hangingPoints;
     const isHanging = contractPoints === opponentPoints;
     const totalRounded = Math.round((contractPoints + opponentPoints) / 10);
-
-    // In a hanging round the opponents still take their half now
-    const roundWinner = contractPoints > opponentPoints ? contractTeam : opponentTeam;
-    // Hanging cancels doubling; otherwise double/redouble apply (valat included, per belot.bg)
-    const multiplier = isHanging ? 1 : (this.redouble ? 4 : (this.double ? 2 : 1));
-    const winnerTakesAll = this.double || this.redouble || contractPoints < opponentPoints;
+    // Double/redouble apply to everything, valat included (per belot.bg)
+    const multiplier = this.redouble ? 4 : (this.double ? 2 : 1);
 
     const rounded = [0, 0];
-    if (winnerTakesAll) {
-      rounded[roundWinner] = totalRounded * multiplier;
-      this.hangingPoints = 0;
-    } else if (isHanging) {
-      // Contract team's half hangs until the next round; opponents take their half now
-      this.hangingPoints = totalRounded / 2;
-      rounded[opponentTeam] = this.hangingPoints;
-    } else {
-      roundSplitPoints(rounded, this.contract, contractTeam, this.currentRoundScore, totalRounded);
-      this.hangingPoints = 0;
+    if (isHanging && multiplier > 1) {
+      // Doubled tie: all points, doubled or quadrupled, hang for the next deal's winner
+      this.hangingPoints = previousHangingPoints + totalRounded * multiplier;
+      return rounded;
+    }
+    if (isHanging) {
+      // Tie: the contract team's half hangs, the opponents take their half now.
+      // The halves add up to the deal's total, with the odd point going to the
+      // opponents (106 : 106 is 21 in all, so 11 now and 10 hanging).
+      const hanging = Math.floor(totalRounded / 2);
+      rounded[opponentTeam] = totalRounded - hanging;
+      this.hangingPoints = previousHangingPoints + hanging; // Hanging points stack up over tied deals
+      return rounded;
     }
 
-    // Points left hanging from the previous round go to this round's winner
+    const roundWinner = contractPoints > opponentPoints ? contractTeam : opponentTeam;
+    if (multiplier > 1 || contractPoints < opponentPoints) {
+      // Doubled, or the contract team is "inside": the winner takes all the points
+      rounded[roundWinner] = totalRounded * multiplier;
+    } else {
+      roundSplitPoints(rounded, this.contract, contractTeam, this.currentRoundScore, totalRounded);
+    }
+
+    // Points left hanging from earlier deals go to this deal's winner
+    this.hangingPoints = 0;
     rounded[roundWinner] += previousHangingPoints;
     breakdown[roundWinner].hangingPoints = previousHangingPoints * 10;
 
@@ -590,6 +562,13 @@ function compareSequences(a, b) {
     || (highestSequenceRank(a.cards) - highestSequenceRank(b.cards));
 }
 
+// Positive if four of a kind a beats b: more points wins (J, then 9, then the 100s),
+// and between two 100s the higher rank wins (A, K, Q, 10), per the owner's rule
+function compareEquals(a, b) {
+  return (a.points - b.points)
+    || (SEQUENCE_ORDER.indexOf(a.cards[0].rank) - SEQUENCE_ORDER.indexOf(b.cards[0].rank));
+}
+
 // Which team's announcements of one kind count: the team holding the single best one.
 // Returns null when neither team has one, or when the two best are equal (both drop).
 function winningTeam(combinations, isKind, compare) {
@@ -607,7 +586,7 @@ function winningTeam(combinations, isKind, compare) {
 // team with the best one of each kind scores that kind (all of its announcements of it).
 function scoreCombinations(announcedCombinations) {
   const sequenceWinner = winningTeam(announcedCombinations, isSequence, compareSequences);
-  const equalWinner = winningTeam(announcedCombinations, c => c.type === 'equal', (a, b) => a.points - b.points);
+  const equalWinner = winningTeam(announcedCombinations, c => c.type === 'equal', compareEquals);
 
   return announcedCombinations.map((combos, team) => {
     let points = 0;
