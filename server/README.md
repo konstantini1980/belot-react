@@ -58,7 +58,7 @@ Client → server, JSON over the WebSocket at `/rooms/<CODE>`:
   (a real seat number from `seats`); if someone took it first the answer is the error
   `seatTaken` and the socket stays open to pick again.
 - `{ type: 'start' }` (host), `{ type: 'rename', name }`,
-  `{ type: 'leave' }`, `{ type: 'handOver', seat }` (let the AI play for someone offline
+  `{ type: 'leave' }`, `{ type: 'handOver', seat }` (host; anyone if the host is the one away: let the AI play for someone offline
   for a minute), `{ type: 'bid', bid }`, `{ type: 'play', cardId }`, `{ type: 'nextDeal' }`,
   `{ type: 'newGame' }`. Seats in actions are numbered as the sender sees the table (they are 0).
 

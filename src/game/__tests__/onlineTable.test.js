@@ -274,16 +274,26 @@ describe('Online table: four people, and people leaving', () => {
     expect(table.game.phase).toBe(GAME_PHASES.BIDDING);
   });
 
-  it('Lets another player hand an offline player\'s seat to the AI only after the wait', () => {
+  it('Lets the host hand an offline player\'s seat to the AI only after the wait', () => {
     const table = fullTable();
     runSteps(table);
     table.setOnline(3, false, 1000);
+    const later = 1000 + HAND_OVER_AFTER_MS;
     // The east player is offline; the host sees east as seat 3, the partner (seat 2) sees them as seat 1
-    expect(table.handle(HOST_SEAT, { type: 'handOver', seat: 3 }, 1000 + HAND_OVER_AFTER_MS - 1)).toBeNull(); // Too soon
-    expect(table.handle(3, { type: 'handOver', seat: 0 }, 1000 + HAND_OVER_AFTER_MS)).toBeNull(); // Not for yourself
-    expect(table.handle(2, { type: 'handOver', seat: 1 }, 1000 + HAND_OVER_AFTER_MS)).toMatchObject({ type: 'handOver', seat: 3 });
+    expect(table.handle(HOST_SEAT, { type: 'handOver', seat: 3 }, later - 1)).toBeNull(); // Too soon
+    expect(table.handle(2, { type: 'handOver', seat: 1 }, later)).toBeNull(); // Only the host decides
+    expect(table.handle(HOST_SEAT, { type: 'handOver', seat: 3 }, later)).toMatchObject({ type: 'handOver', seat: 3 });
     expect(table.isHuman(3)).toBe(false);
     expect(table.handle(3, { type: 'play', cardId: table.game.players[3].hand[0].id })).toBeNull(); // The AI plays it now
+  });
+
+  it('When the host is the one gone, any other player may hand the host\'s seat over', () => {
+    const table = fullTable();
+    runSteps(table);
+    table.setOnline(HOST_SEAT, false, 0);
+    expect(table.handle(2, { type: 'handOver', seat: 2 }, HAND_OVER_AFTER_MS - 1)).toBeNull(); // Too soon
+    // The partner (seat 2) sees the host as seat 2
+    expect(table.handle(2, { type: 'handOver', seat: 2 }, HAND_OVER_AFTER_MS)).toMatchObject({ type: 'handOver', seat: HOST_SEAT });
   });
 
   it('The AI plays a handed-over seat until its player comes back', () => {
