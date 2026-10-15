@@ -366,7 +366,6 @@
   pointer-events: none;
 }
 
-.combination-balloon-wrapper.south,
 .combination-balloon-wrapper.west,
 .combination-balloon-wrapper.north {
   left: calc(100% + 12px);
@@ -374,6 +373,8 @@
   transform: translateY(-50%);
 }
 
+/* Your bubble sits left of your chip so it grows away from your hand */
+.combination-balloon-wrapper.south,
 .combination-balloon-wrapper.east {
   right: calc(100% + 12px);
   top: 50%;
@@ -664,6 +665,7 @@
 
   .combination-balloon-wrapper.south {
     left: 50%;
+    right: auto;
     top: auto;
     bottom: 8px;
     transform: translateX(-50%);
