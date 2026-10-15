@@ -20,6 +20,8 @@ jobs:
       - run: npm run lint
       - run: npm run test:run
       - run: npm run build
+        env:
+          VITE_ONLINE_SERVER: ${{ vars.ONLINE_SERVER_URL }} # Online play (see server/README.md); empty = local only
 
   # Same as `npm run deploy`: push dist/ to the gh-pages branch, which Pages already serves
   deploy:
@@ -39,6 +41,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+        env:
+          VITE_ONLINE_SERVER: ${{ vars.ONLINE_SERVER_URL }}
       - run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

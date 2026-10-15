@@ -80,6 +80,35 @@ export default {
   // Language Switcher
   language: 'Language',
   english: 'English',
-  bulgarian: 'Bulgarian'
-};
+  bulgarian: 'Bulgarian',
 
+  // Online play
+  playOnline: 'Play online with friends',
+  onlineCreateTable: 'Create a table',
+  onlineFriendPlaysAs: 'Your friend plays as your',
+  onlineAsPartner: 'Partner',
+  onlineAsOpponent: 'Opponent',
+  onlineOrJoin: 'or join a friend\'s table',
+  onlineCodePlaceholder: 'Table code',
+  onlineJoin: 'Join',
+  onlineBack: 'Back',
+  onlineTableCode: 'Table code',
+  onlineShareHint: 'Send this link or code to your friend.',
+  onlineShareLink: 'Share link',
+  onlineCopyLink: 'Copy link',
+  onlineLinkCopied: 'Link copied',
+  onlineShareText: 'Join my Belot table',
+  onlineWaitingForFriend: 'Waiting for your friend to join…',
+  onlineFriendHere: 'Your friend is here.',
+  onlineWaitingForHost: 'You are in. Waiting for your friend to start the game…',
+  onlineConnecting: 'Connecting…',
+  onlineReconnecting: 'Connection lost. Reconnecting…',
+  onlineFriendOffline: 'Your friend is offline. The game waits for them.',
+  onlineError_noRoom: 'There is no table with this code.',
+  onlineError_full: 'This table already has two players.',
+  onlineError_unavailable: 'Could not reach the game server.',
+  onlineError_badToken: 'Could not join this table.',
+  onlineError_taken: 'Could not create the table. Please try again.',
+  confirmLeaveOnline: 'Leave this online game? You can come back with the same link on this device.',
+  playerFriend: 'Friend',
+};

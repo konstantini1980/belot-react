@@ -80,6 +80,35 @@ export default {
   // Language Switcher
   language: 'Език',
   english: 'Английски',
-  bulgarian: 'Български'
-};
+  bulgarian: 'Български',
 
+  // Online play
+  playOnline: 'Игра онлайн с приятели',
+  onlineCreateTable: 'Създай маса',
+  onlineFriendPlaysAs: 'Приятелят ти играе като твой',
+  onlineAsPartner: 'Партньор',
+  onlineAsOpponent: 'Противник',
+  onlineOrJoin: 'или влез в масата на приятел',
+  onlineCodePlaceholder: 'Код на масата',
+  onlineJoin: 'Влез',
+  onlineBack: 'Назад',
+  onlineTableCode: 'Код на масата',
+  onlineShareHint: 'Изпрати този линк или код на приятеля си.',
+  onlineShareLink: 'Сподели линка',
+  onlineCopyLink: 'Копирай линка',
+  onlineLinkCopied: 'Линкът е копиран',
+  onlineShareText: 'Ела на моята маса за белот',
+  onlineWaitingForFriend: 'Чакаме приятеля ти да влезе…',
+  onlineFriendHere: 'Приятелят ти е тук.',
+  onlineWaitingForHost: 'Вътре си. Чакаме приятеля ти да започне играта…',
+  onlineConnecting: 'Свързване…',
+  onlineReconnecting: 'Връзката прекъсна. Свързваме отново…',
+  onlineFriendOffline: 'Приятелят ти не е на линия. Играта го чака.',
+  onlineError_noRoom: 'Няма маса с този код.',
+  onlineError_full: 'На тази маса вече има двама играчи.',
+  onlineError_unavailable: 'Няма връзка със сървъра на играта.',
+  onlineError_badToken: 'Не успяхме да влезем в тази маса.',
+  onlineError_taken: 'Не успяхме да създадем масата. Опитай отново.',
+  confirmLeaveOnline: 'Да напуснеш ли онлайн играта? Можеш да се върнеш със същия линк от това устройство.',
+  playerFriend: 'Приятел',
+};
