@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useMemo } from 'react';
 import en from '../locales/en';
 import bg from '../locales/bg';
 
@@ -19,28 +19,31 @@ export const LanguageProvider = ({ children }) => {
     return savedLanguage || 'en';
   });
 
-  const translations = language === 'bg' ? bg : en;
+  // Built once per language, so consumers only re-render when the language changes
+  const value = useMemo(() => {
+    const translations = language === 'bg' ? bg : en;
 
-  const t = (key, params = {}) => {
-    let translation = translations[key] || key;
-    
-    // Replace parameters in translation
-    if (params && Object.keys(params).length > 0) {
+    const t = (key, params = {}) => {
+      let translation = translations[key] || key;
+
+      // Replace parameters in translation
       Object.keys(params).forEach(param => {
         translation = translation.replace(`{${param}}`, params[param]);
       });
-    }
-    
-    return translation;
-  };
 
-  const changeLanguage = (lang) => {
-    setLanguage(lang);
-    localStorage.setItem('belot-language', lang);
-  };
+      return translation;
+    };
+
+    const changeLanguage = (lang) => {
+      setLanguage(lang);
+      localStorage.setItem('belot-language', lang);
+    };
+
+    return { language, changeLanguage, t };
+  }, [language]);
 
   return (
-    <LanguageContext.Provider value={{ language, changeLanguage, t }}>
+    <LanguageContext.Provider value={value}>
       {children}
     </LanguageContext.Provider>
   );

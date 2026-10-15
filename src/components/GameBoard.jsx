@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import Card from './Card';
 import CompactScorePanel from './CompactScorePanel';
 import FullScorePanel from './FullScorePanel';
@@ -6,6 +6,7 @@ import CombinationBalloon from './CombinationBalloon';
 import SouthPlayerHand from './SouthPlayerHand';
 import AIPlayerHand from './AIPlayerHand';
 import { GAME_PHASES } from '../game/gameLogic';
+import { useLanguage } from '../contexts/LanguageContext';
 import './GameBoard.css';
 
 export default function GameBoard({ 
@@ -19,7 +20,6 @@ export default function GameBoard({
   lastRoundRoundedPoints,
   hangingPoints = 0,
   contract,
-  trumpSuit,
   biddingPanel,
   playableCards = [],
   onCardClick = null,
@@ -33,7 +33,7 @@ export default function GameBoard({
   playerCombinations = {},
   announcedCombinations = [[], []],
   roundBreakdown = null,
-  bids = [],
+  contractTeam = null,
   languageSwitcher = null,
   trickComplete = false,
   // Dev/test props
@@ -46,6 +46,7 @@ export default function GameBoard({
   onStartMobileGame = null,
   startButtonText = '',
 }) {
+  const { t } = useLanguage();
   const [showFullScorePanel, setShowFullScorePanel] = useState(false);
   const [animatingCardsToCenter, setAnimatingCardsToCenter] = useState(new Map()); // Track cards animating to board
   const [holderPosition, setHolderPosition] = useState({ x: 0, y: 0 } );
@@ -61,14 +62,20 @@ export default function GameBoard({
   const isRoundOver = phase === GAME_PHASES.SCORING || phase === GAME_PHASES.FINISHED;
 
   // Count tricks won by each team
-  const tricksByTeam = useMemo(() => {
-    if (!tricks || !Array.isArray(tricks) || tricks.length === 0) {
-      return { team0: 0, team1: 0 };
-    }
-    const team0Count = tricks.filter(t => t?.team === 0).length;
-    const team1Count = tricks.filter(t => t?.team === 1).length;
-    return { team0: team0Count, team1: team1Count };
-  }, [tricks.length]);
+  const tricksByTeam = {
+    team0: tricks.filter(t => t.team === 0).length,
+    team1: tricks.filter(t => t.team === 1).length
+  };
+
+  // Player names follow the current language
+  const playerNames = [t('playerYou'), t('playerWest'), t('playerPartner'), t('playerEast')];
+
+  // Card-to-center animation timers, cancelled if the board unmounts
+  const animationTimersRef = useRef(new Set());
+  useEffect(() => {
+    const timers = animationTimersRef.current;
+    return () => timers.forEach(clearTimeout);
+  }, []);
 
   const getPlayerPosition = (playerId) => {
     const positions = ['south', 'west', 'north', 'east'];
@@ -111,13 +118,15 @@ export default function GameBoard({
         
         // After animation completes (1 second), remove from animating set (card becomes visible)
         // Also clean up the stored position
-        setTimeout(() => {
+        const timer = setTimeout(() => {
+          animationTimersRef.current.delete(timer);
           setAnimatingCardsToCenter(prev => {
             const newMap = new Map(prev);
             newMap.delete(cardKey);
             return newMap;
           });
         }, 1000); // Match CSS animation duration
+        animationTimersRef.current.add(timer);
       }
     }
     prevTrickLengthRef.current = currentTrick.cards.length;
@@ -324,7 +333,7 @@ export default function GameBoard({
             <div key={idx} className={`player-container ${position}`} data-player-id={idx}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
                 <div className={`player-chip ${isActive ? 'active' : ''} ${isTrickWinner ? 'won-trick' : ''}` }>
-                  <span className="player-chip-name">{player.name}</span>
+                  <span className="player-chip-name">{playerNames[idx]}</span>
                   <span className={`player-turn-dot ${isActive ? 'visible' : ''}`}></span>
                 </div>
                 {combinations.length > 0 && (
@@ -341,7 +350,6 @@ export default function GameBoard({
                   onCardClick={onCardClick}
                   playableCards={playableCards}
                   contract={contract}
-                  trumpSuit={trumpSuit}
                 />
               ) : (
                 <AIPlayerHand
@@ -350,7 +358,6 @@ export default function GameBoard({
                   playerIndex={idx}
                   showCards={showCards}
                   contract={contract}
-                  trumpSuit={trumpSuit}
                 />
               )}
             </div>
@@ -366,10 +373,7 @@ export default function GameBoard({
             isDouble={isDouble}
             isRedouble={isRedouble}
             onClick={() => setShowFullScorePanel(true)}
-            contractTeam={contract && bids.length > 0 ? (() => {
-              const contractBid = bids.find(b => b.bid === contract);
-              return contractBid ? players[contractBid.playerId].team : null;
-            })() : null}
+            contractTeam={contractTeam}
           />
         )}
       </div>
