@@ -686,7 +686,7 @@ export class BelotGame {
     });
     
     
-    // --- Round scoring (winner from round points; valat cancels doubling) ---
+    // --- Round scoring (winner from round points) ---
     const contractTeam = this.players[this.bids.find(b => b.bid === this.contract).playerId].team;
     const contractPoints = this.currentRoundScore[contractTeam];
     const opponentPoints = this.currentRoundScore[1 - contractTeam];
