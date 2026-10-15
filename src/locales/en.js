@@ -12,11 +12,14 @@ export default {
   playerEast: 'East',
   
   // Bidding
+  cardBack: 'Card back',
+  cardName: '{rank} of {suit}',
   selectYourBid: 'Select your bid',
   pass: 'Pass',
   double: 'Double',
   redouble: 'Redouble',
   waiting: 'Waiting...',
+  allPassedRedeal: 'Everyone passed, so the cards were dealt again.',
   
   // Contracts
   clubs: 'Clubs',

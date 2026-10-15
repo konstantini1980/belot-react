@@ -9,7 +9,8 @@ export default function BiddingPanel({
   bids, 
   onBid, 
   canDouble = false,
-  canRedouble = false
+  canRedouble = false,
+  allPassed = false
 }) {
   const { t } = useLanguage();
   
@@ -80,7 +81,13 @@ export default function BiddingPanel({
 
   return (
     <div className="bidding-panel">
-      <h3 className="bidding-title">{t('selectYourBid')}</h3>
+      {/* Until the first bid of a deal that was thrown in because all four passed,
+          that news takes the title's place (the panel has a fixed height) */}
+      {allPassed && bids.length === 0 ? (
+        <p className="bidding-notice">{t('allPassedRedeal')}</p>
+      ) : (
+        <h3 className="bidding-title">{t('selectYourBid')}</h3>
+      )}
       
       <div className="bids-list">
         {biddingOrder.map((playerId, idx) => {

@@ -393,6 +393,7 @@ export default function App() {
               onBid={handleBid}
               canDouble={game.canDouble(PLAYER_ID)}
               canRedouble={game.canRedouble(PLAYER_ID)}
+              allPassed={game.allPassed}
             />
           ) : null}
           playableCards={playableCards}

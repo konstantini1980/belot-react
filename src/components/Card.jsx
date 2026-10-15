@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import './Card.css';
 
 // Import all card images
@@ -69,6 +70,7 @@ const CARD_IMAGES = {
 };
 
 export default function Card({ card, onClick, selected, playable, showBack = false, cardId, className = '' }) {
+  const { t } = useLanguage();
   // If showing back, card prop is optional
   if (!showBack && !card) return null;
   
@@ -85,14 +87,14 @@ export default function Card({ card, onClick, selected, playable, showBack = fal
   
   if (showBack) {
     imageSrc = backImage;
-    altText = 'Card back';
+    altText = t('cardBack');
   } else {
     // Get the image based on rank and suit
     const rankName = RANK_MAP[card.rank];
     const suitName = SUIT_MAP[card.suit];
     const imageKey = `${rankName}${suitName}`;
     imageSrc = CARD_IMAGES[imageKey];
-    altText = `${card.rank} of ${card.suit}`;
+    altText = t('cardName', { rank: card.rank, suit: t(card.suit) });
   }
   
   // Determine card ID: use explicit cardId prop, or card.id

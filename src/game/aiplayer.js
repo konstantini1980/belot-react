@@ -27,7 +27,11 @@
 
 2.2. If following a trick (not the first card):
 
-    2.2.1. If you hold the current strongest card in the requested suit, play it. (Note: If the suit has been trumped by an opponent, the "strongest card" is determined from the trump suit).
+    "The partner has played the winning card" below means the partner holds the trick and is sure to keep it: either the partner's card is the strongest card still in the game, or you are the last to play.
+
+    2.2.0. If you are the last to play, an opponent holds the trick and you can beat it, beat it with your cheapest winning card.
+
+    2.2.1. If you hold the current strongest card in the requested suit, play it. (Note: If the suit has been trumped by an opponent, the "strongest card" is determined from the trump suit). Exception: don't overtrump a partner who has played the winning card.
 
     2.2.2. If you do not hold the current strongest card in the requested suit:
 
@@ -111,331 +115,120 @@ export function makeAIBid(hand, bids = [], players = [], playerId = null) {
     return playableContracts(hand).find(outranks) || 'pass';
 }
 
-// Helper: Get all cards that have been played (from tricks only, not current trick)
-function getPlayedCards(game) {
-    const played = [];
-    // Add cards from completed tricks only
-    game.tricks.forEach(trick => {
-        trick.cards.forEach(({ card }) => played.push(card));
-    });
-    return played;
-}
 
-// Helper: Get all cards still in anyone's hand. Only the set is used, never who
-// holds what, and the set is public: the deck minus every card already played.
-function getRemainingCards(game) {
-    const remaining = [];
-    game.players.forEach(player => {
-        player.hand.forEach(card => remaining.push(card));
-    });
-    return remaining;
-}
+// --- Card play ---
 
-// Helper: Get current hand (current trick cards)
-function getCurrentHand(game) {
-    return game.currentTrick.cards.map(({ card }) => card);
-}
-
-// Helper: Get the current max card in a color (from remaining cards and current hand)
-function getCurrentMaxCardInColor(color, contract, trumpSuit, remainingCards, currentHand) {
-    let maxCard = null;
-    const rankingArray = rankingFor(contract, color);
-    
-    // Helper to compare cards
-    const compareCards = (card1, card2) => {
-        const rank1 = rankingArray.indexOf(card1.rank);
-        const rank2 = rankingArray.indexOf(card2.rank);
-        // Lower index = higher card
-        return rank1 - rank2;
+// Everything the play rules look at, worked out once per decision. Only public
+// information is used: the AI's own hand, the cards played so far, and the set
+// of cards still out (the deck minus every card played, never who holds which).
+function playContext(game, playerId) {
+    const hand = game.players[playerId].hand;
+    const trickCards = game.currentTrick.cards.map(({ card }) => card);
+    const stillOut = game.players.flatMap(player => player.hand);
+    return {
+        game,
+        playerId,
+        contract: game.contract,
+        hand,
+        playedCards: game.tricks.flatMap(trick => trick.cards.map(({ card }) => card)),
+        trickCards,
+        // Cards that could still beat a card of the same suit: still out, or on the table
+        liveCards: [...stillOut, ...trickCards],
     };
-    
-    // Check remaining cards
-    for (const card of remainingCards) {
-        if (card.suit === color) {
-            if (maxCard == null || compareCards(maxCard, card) > 0) {
-                maxCard = card;
-            }
-        }
-    }
-    
-    // Check current hand
-    for (const card of currentHand) {
-        if (card.suit === color) {
-            if (maxCard == null || compareCards(maxCard, card) > 0) {
-                maxCard = card;
-            }
-        }
-    }
-    
-    return maxCard;
 }
 
-// Helper: Check if a card is the current max card in the playing color
-function isCurrentMaxCardInPlayingColor(card, playingColor, contract, trumpSuit, remainingCards, currentHand) {
-    if (card.suit !== playingColor) return false;
-    
-    const rankingArray = rankingFor(contract, playingColor);
-    let foundBigger = false;
-    
-    // Helper to compare cards
-    const compareCards = (card1, card2) => {
-        const rank1 = rankingArray.indexOf(card1.rank);
-        const rank2 = rankingArray.indexOf(card2.rank);
-        // Lower index = higher card, so if card1 < card2 in ranking, card1 is bigger
-        return rank1 - rank2;
-    };
-    
-    // Check remaining cards
-    for (const remCard of remainingCards) {
-        if (remCard.suit === playingColor) {
-            if (compareCards(card, remCard) > 0) {
-                foundBigger = true;
-                break;
-            }
-        }
-    }
-    
-    if (!foundBigger) {
-        // Check current hand
-        for (const remCard of currentHand) {
-            if (remCard.suit === playingColor) {
-                if (compareCards(card, remCard) > 0) {
-                    foundBigger = true;
-                    break;
-                }
-            }
-        }
-    }
-    
-    return !foundBigger;
+// The first of the cards with the lowest (or highest) key; null for no cards
+const minBy = (cards, key) => cards.reduce((best, card) => (best === null || key(card) < key(best) ? card : best), null);
+const maxBy = (cards, key) => cards.reduce((best, card) => (best === null || key(card) > key(best) ? card : best), null);
+
+// True if no live card of the card's suit is stronger: it is the top card of its suit now
+function isTopCard(card, ctx) {
+    const rank = card.getRanking(ctx.contract);
+    return !ctx.liveCards.some(c => c.suit === card.suit && c.getRanking(ctx.contract) < rank);
 }
 
-// Rule 1.1: Rank Proximity Rule (EvalutePointsOnRemaining) - Improved implementation
-function evaluatePointsOnRemaining(card, contract, trumpSuit, remainingCards, currentHand, playerHand, playedCards) {
-    // Get current max card in color
-    const maxCard = getCurrentMaxCardInColor(card.suit, contract, trumpSuit, remainingCards, currentHand);
+// Rule 1.1: Rank Proximity Rule. 0 when the player hasn't enough cards in the suit
+// to wait out the stronger cards still live; otherwise higher the closer the card
+// is to the top of its suit and the more cards the player holds in it.
+function evaluatePointsOnRemaining(card, ctx) {
+    const maxCard = minBy(ctx.liveCards.filter(c => c.suit === card.suit), c => c.getRanking(ctx.contract));
     if (!maxCard) return 0;
-    
-    // Calculate distance
+
     // Ranks between this card and the highest one still out in its suit
-    const ranking = rankingFor(contract, card.suit);
-    const distance = ranking.indexOf(card.rank) - ranking.indexOf(maxCard.rank);
-    
-    // Count remaining cards in suit (excluding target card)
-    let remainingCardsInSuit = 0;
-    for (const c of playerHand) {
-        if (c.suit === card.suit && c.id !== card.id) {
-            remainingCardsInSuit++;
-        }
-    }
-    
-    // Count passed cards (played cards in that suit)
-    let passedCards = 0;
-    for (const c of playedCards) {
-        if (c.suit === card.suit) {
-            passedCards++;
-        }
-    }
-    
+    const distance = card.getRanking(ctx.contract) - maxCard.getRanking(ctx.contract);
+    const remainingCardsInSuit = ctx.hand.filter(c => c.suit === card.suit && c.id !== card.id).length;
+    const passedCards = ctx.playedCards.filter(c => c.suit === card.suit).length;
+
     // If not enough cards to cover distance, return 0
-    if (remainingCardsInSuit < distance) {
-        return 0;
-    }
-    
-    // Base score incorporates card's intrinsic value
-    const cardValue = card.getValue(contract);
-    const baseScore = Math.max(10, cardValue * 2); // At least 10, scales with card value
-    
-    // Distance penalty: exponential decay (closer = much better)
-    // distance 0 = no penalty, distance 1 = small penalty, distance 5+ = huge penalty
-    const distancePenalty = distance === 0 ? 0 : Math.pow(2, distance - 1) * 5;
-    
-    // Bonus for being close to max (distance 0 or 1 gets big bonus)
-    const proximityBonus = distance === 0 ? 50 : (distance === 1 ? 30 : 0);
-    
-    // Remaining cards bonus: more cards = more flexibility
-    // But diminishing returns (logarithmic)
-    const remainingBonus = Math.log(remainingCardsInSuit + 1) * 15;
-    
-    // Passed cards penalty: more passed = less chance, but not linear
-    // Early passed cards matter less than recent ones
-    const passedPenalty = passedCards * 3; // Reduced from linear 1:1
-    
-    // Calculate final score
-    let points = baseScore + proximityBonus + remainingBonus - distancePenalty - passedPenalty;
-    
-    // Ensure non-negative (though 0 is already handled above)
-    return Math.max(0, points);
+    if (remainingCardsInSuit < distance) return 0;
+
+    const baseScore = Math.max(10, card.getValue(ctx.contract) * 2); // At least 10, scales with card value
+    const distancePenalty = distance === 0 ? 0 : Math.pow(2, distance - 1) * 5; // Closer is much better
+    const proximityBonus = distance === 0 ? 50 : (distance === 1 ? 30 : 0); // Top or next to top
+    const remainingBonus = Math.log(remainingCardsInSuit + 1) * 15; // More cards, more flexibility (diminishing)
+    const passedPenalty = passedCards * 3; // The more of the suit is gone, the less it is worth
+
+    return Math.max(0, baseScore + proximityBonus + remainingBonus - distancePenalty - passedPenalty);
 }
 
-// Rule 1.2 part 1: Partner Announce (EvalutePointsOnPartnerAnnounce)
-function evaluatePointsOnPartnerAnnounce(card, bids, playerId, players) {
-    const POINTS_TO_ADD = 10;
-    let points = 0;
-    
-    const player = players[playerId];
-    const partner = players.find(p => p.team === player.team && p.id !== playerId);
-    
-    if (!partner) return 0;
-    
-    // Check partner's bids during bidding phase
-    if (bids && Array.isArray(bids)) {
-        const partnerBids = bids.filter(b => b.playerId === partner.id && b.bid in CONTRACT_RANK);
-        for (const bidObj of partnerBids) {
-            const bidSuit = bidObj.bid;
-            // Check if bid is a suit bid (clubs, diamonds, hearts, spades)
-            if (isSuit(bidSuit)) {
-                if (card.suit === bidSuit) {
-                    points += POINTS_TO_ADD;
-                }
-            }
-        }
-        
-        // Check opponent bids (punish playing cards in suits opponents bid)
-        const opponentBids = bids.filter(b => {
-            const bidder = players[b.playerId];
-            return bidder && bidder.team !== player.team && b.bid in CONTRACT_RANK;
-        });
-        for (const bidObj of opponentBids) {
-            const bidSuit = bidObj.bid;
-            if (isSuit(bidSuit)) {
-                if (card.suit === bidSuit) {
-                    points -= POINTS_TO_ADD;
-                }
-            }
-        }
-    }
-    
-    return points;
+// Rule 1.2: a suit the partner bid is worth playing (+10 per bid), a suit an
+// opponent bid is not (-10 per bid)
+function evaluatePointsOnBids(card, ctx) {
+    const { game, playerId } = ctx;
+    const team = game.players[playerId].team;
+    return game.bids
+        .filter(b => b.bid === card.suit && b.playerId !== playerId)
+        .reduce((points, b) => points + (game.players[b.playerId].team === team ? 10 : -10), 0);
 }
 
-// Rule 1.2 part 3: Eliminate Opponent Trumps (EvaluatePointsOnEliminatingOpponentTrumps)
-function evaluatePointsOnEliminatingOpponentTrumps(card, game, playerId, playedCards, currentHand, playerHand) {
+// Rule 1.2: the contract team draws out the opponents' trumps. A bonus for a trump
+// while the opponents may still hold trumps, larger the more of them are unseen.
+function evaluatePointsOnEliminatingOpponentTrumps(card, ctx) {
     const MAX_BONUS = 25; // Higher reward than regular trump color
+    const { game, playerId } = ctx;
     const trumpSuit = isSuit(game.contract) ? game.contract : null;
-    
+
     // Only applies to trump suit contracts (not 'all-trump' or 'no-trump')
-    if (!trumpSuit || card.suit !== trumpSuit) {
-        return 0;
-    }
-    
-    const contractTeam = game.contractTeam();
-    const playerTeam = game.players[playerId].team;
-    
+    if (!trumpSuit || card.suit !== trumpSuit) return 0;
+
     // Only reward if our team called the contract
-    if (contractTeam !== playerTeam) return 0;
-    
-    // --- Inference (no peeking at opponent hands) ---
-    // Total trumps in Belot deck (32 cards, 8 per suit)
-    const TOTAL_TRUMPS = 8;
-    
-    // Visible trumps: already played tricks + cards in current trick (visible on table) + our own hand
-    const playedTrumpCount = playedCards.filter(c => c.suit === trumpSuit).length;
-    const currentTrickTrumpCount = currentHand.filter(c => c.suit === trumpSuit).length;
-    const ourTrumpCount = playerHand.filter(c => c.suit === trumpSuit).length;
-    
-    const unseenTrumps = TOTAL_TRUMPS - playedTrumpCount - currentTrickTrumpCount - ourTrumpCount;
+    const playerTeam = game.players[playerId].team;
+    if (game.contractTeam() !== playerTeam) return 0;
+
+    // Trumps not seen yet: 8 in the deck minus those played, on the table and in our hand
+    const isTrump = c => c.suit === trumpSuit;
+    const unseenTrumps = 8 - ctx.playedCards.filter(isTrump).length
+        - ctx.trickCards.filter(isTrump).length - ctx.hand.filter(isTrump).length;
     if (unseenTrumps <= 0) return 0; // opponents cannot have any trumps left
-    
-    // Strong signal: if a player fails to follow on a trump-led trick, they have no trumps.
-    // (We only use information from completed/current tricks, which is visible.)
-    const opponents = game.players.filter(p => p.team !== playerTeam).map(p => p.id);
+
+    // An opponent who didn't follow a trump lead has no trumps left
     const opponentOutOfTrumps = new Set();
-    
-    const considerTrick = (trickCards) => {
-        if (!trickCards || trickCards.length === 0) return;
-        const leadSuit = trickCards[0].card.suit;
-        if (leadSuit !== trumpSuit) return;
-        
+    for (const trickCards of [...game.tricks.map(trick => trick.cards), game.currentTrick.cards]) {
+        if (trickCards.length === 0 || !isTrump(trickCards[0].card)) continue;
         for (const { playerId: pid, card: c } of trickCards) {
-            if (pid == null) continue;
-            if (game.players[pid]?.team === playerTeam) continue;
-            if (c.suit !== trumpSuit) opponentOutOfTrumps.add(pid);
+            if (game.players[pid].team !== playerTeam && !isTrump(c)) opponentOutOfTrumps.add(pid);
         }
-    };
-    
-    for (const trick of game.tricks) {
-        considerTrick(trick.cards);
     }
-    considerTrick(game.currentTrick.cards);
-    
-    const opponentsPossiblyHaveTrumps = opponents.filter(pid => !opponentOutOfTrumps.has(pid));
-    if (opponentsPossiblyHaveTrumps.length === 0) return 0;
-    
-    // Likelihood heuristic:
-    // - More unseen trumps => more likely opponents still have trumps
-    // - Fewer opponents "possibly having" trumps => higher concentration => more likely they still have them
-    // Clamp to [0, 1] and convert to a bonus.
-    const denom = Math.max(1, opponentsPossiblyHaveTrumps.length * 3); // 3 is a soft scaling factor
-    const likelihood = Math.max(0, Math.min(1, unseenTrumps / denom));
-    
+    const opponentsPossiblyHaveTrumps = game.players
+        .filter(p => p.team !== playerTeam && !opponentOutOfTrumps.has(p.id)).length;
+    if (opponentsPossiblyHaveTrumps === 0) return 0;
+
+    // More unseen trumps, spread over fewer opponents, means they more likely still have some
+    const likelihood = Math.max(0, Math.min(1, unseenTrumps / Math.max(1, opponentsPossiblyHaveTrumps * 3)));
     return Math.max(1, Math.round(MAX_BONUS * likelihood));
 }
 
-// Helper: Get the biggest card in the current trick
-function getBiggestCardInTrick(game) {
-    if (game.currentTrick.cards.length === 0) return null;
-    
-    let biggest = game.currentTrick.cards[0];
-    game.currentTrick.cards.forEach(({ playerId, card }) => {
-        if (card.isHigherThan(biggest.card, game.contract)) {
-            biggest = { playerId, card };
-        }
-    });
-    
-    return biggest;
+// Rules 1.1 and 1.2 together: how good a card is to lead
+function evaluateCard(card, ctx) {
+    return evaluatePointsOnRemaining(card, ctx) + evaluatePointsOnBids(card, ctx)
+        + evaluatePointsOnEliminatingOpponentTrumps(card, ctx);
 }
 
-// Helper: Get partner player
-function getPartner(game, playerId) {
-    const playerTeam = game.players[playerId].team;
-    return game.players.find(p => p.team === playerTeam && p.id !== playerId);
-}
-
-// Helper: Find zero-evaluated colors (suits where all cards have 0 points per Rule 1.1)
-function findZeroEvaluatedColor(validCards, contract, trumpSuit, remainingCards, currentHand, playerHand, playedCards) {
-    const zeroEvaluatedColors = [];
-    const suits = ['spades', 'hearts', 'diamonds', 'clubs'];
-    
-    for (const suit of suits) {
-        let suitCount = 0;
-        let zeroEvaluatedSuitCount = 0;
-        
-        for (const card of validCards) {
-            if (card.suit === suit) {
-                suitCount++;
-                const points = evaluatePointsOnRemaining(card, contract, trumpSuit, remainingCards, currentHand, playerHand, playedCards);
-                if (points === 0) {
-                    zeroEvaluatedSuitCount++;
-                }
-            }
-        }
-        
-        if (zeroEvaluatedSuitCount === suitCount && suitCount !== 0) {
-            zeroEvaluatedColors.push(suit);
-        }
-    }
-    
-    return zeroEvaluatedColors.length !== 0 ? zeroEvaluatedColors : null;
-}
-
-// Helper: Get the requested suit (lead suit or trump if trumped)
+// The suit a card must beat to win the trick: trump once someone has trumped, else the lead suit
 function getRequestedSuit(game) {
-    if (game.currentTrick.cards.length === 0) return null;
-    
-    const leadCard = game.currentTrick.cards[0].card;
-    const leadSuit = leadCard.suit;
-    
-    // Check if suit was trumped
-    const hasTrump = game.currentTrick.cards.some(({ card }) => 
-        card.suit === game.trumpSuit && card.suit !== leadSuit
-    );
-    
-    if (hasTrump && game.trumpSuit) {
-        return game.trumpSuit;
-    }
-    
-    return leadSuit;
+    const leadSuit = game.currentTrick.cards[0].card.suit;
+    const trumped = game.trumpSuit && game.currentTrick.cards.some(({ card }) => card.suit === game.trumpSuit);
+    return trumped ? game.trumpSuit : leadSuit;
 }
 
 // Helper: The card that costs least to give away. Keeps trumps over plain
@@ -477,202 +270,82 @@ function chooseFallbackLead(validCards, contract, trumpSuit) {
     return getWeakestCard(longestSuit, contract, trumpSuit);
 }
 
+// 2.1: Leading the trick
+function chooseLead(validCards, ctx) {
+    const { game } = ctx;
+    const best = maxBy(validCards.filter(card => evaluateCard(card, ctx) > 0), card => evaluateCard(card, ctx));
+    if (!best) {
+        return chooseFallbackLead(validCards, game.contract, game.trumpSuit); // 2.1.2
+    }
+    if (isTopCard(best, ctx)) {
+        return best; // 2.1.1.1
+    }
+    return minBy(validCards.filter(card => card.suit === best.suit), card => card.getValue(game.contract)); // 2.1.1.2
+}
+
+// 2.2: Following a trick
+function chooseFollow(validCards, ctx) {
+    const { game, playerId } = ctx;
+    const value = card => card.getValue(game.contract);
+    const playingColor = getRequestedSuit(game);
+
+    const winner = game.determineTrickWinner();
+    const isLast = game.currentTrick.cards.length === 3;
+    const partnerHolds = game.players[winner.playerId].team === game.players[playerId].team;
+    // The partner keeps the trick: nobody plays after us, or nothing still out beats the partner's card
+    const partnerWins = partnerHolds && (isLast || isTopCard(winner.card, ctx));
+
+    // 2.2.0
+    if (isLast && !partnerHolds) {
+        const winningCards = validCards.filter(card => card.isHigherThan(winner.card, game.contract));
+        if (winningCards.length > 0) return getWeakestCard(winningCards, game.contract, game.trumpSuit);
+    }
+
+    // 2.2.1
+    const topCard = validCards.find(card => card.suit === playingColor && isTopCard(card, ctx));
+    const overtrumpsPartner = topCard && partnerWins && topCard.suit === game.trumpSuit
+        && game.currentTrick.cards[0].card.suit !== game.trumpSuit;
+    if (topCard && !overtrumpsPartner) return topCard;
+    // An overtrump of the partner's sure trick falls through to 2.2.2 instead
+
+    // 2.2.2
+
+    const zeroEvaluatedColors = SUITS.filter(suit => {
+        const suitCards = validCards.filter(card => card.suit === suit);
+        return suitCards.length > 0 && suitCards.every(card => evaluatePointsOnRemaining(card, ctx) === 0);
+    });
+    if (zeroEvaluatedColors.length > 0) {
+        // 2.2.2.1
+        const zeroCards = validCards.filter(card => zeroEvaluatedColors.includes(card.suit));
+        return partnerWins
+            ? maxBy(zeroCards, value)  // 2.2.2.1.1
+            : minBy(zeroCards, value); // 2.2.2.1.2
+    }
+
+    // 2.2.2.2
+    if (partnerWins) {
+        // 2.2.2.2.1
+        const positive = validCards.filter(card => evaluatePointsOnRemaining(card, ctx) > 0);
+        return minBy(positive, card => evaluatePointsOnRemaining(card, ctx));
+    }
+    // 2.2.2.2.2: the cheapest card not worth keeping, or a trump while drawing out
+    // the opponents' trumps; failing that, the cheapest card
+    const expendable = validCards.filter(card =>
+        evaluateCard(card, ctx) <= 0 || evaluatePointsOnEliminatingOpponentTrumps(card, ctx) > 0);
+    return minBy(expendable, value) ?? minBy(validCards, value);
+}
+
 // Main function: Make AI play a card
 export function makeAIPlayCard(game, playerId) {
     const player = game.players[playerId];
-    const playerHand = player.hand;
-    
-    // Get valid cards (playable according to game rules)
-    const validCards = playerHand.filter(card => {
-        return game.isValidCardPlay(player, card);
-    });
-    
-    if (validCards.length === 0) {
-        return null; // Should not happen, but safety check
-    }
-    
-    const playedCards = getPlayedCards(game);
-    const remainingCards = getRemainingCards(game);
-    const currentHand = getCurrentHand(game);
-    const isLeading = game.currentTrick.cards.length === 0;
-    
-    let selectedCard = null;
-    
-    if (isLeading) {
-        // 2.1: Leading the trick
-        let maxEvaluated = 0;
-        let maxEvaluatedCard = null;
-        
-        // Evaluate all valid cards
-        for (const card of validCards) {
-            const points = evaluatePointsOnRemaining(card, game.contract, game.trumpSuit, remainingCards, currentHand, playerHand, playedCards);
-            const pointsOnPartnerAnnounce = evaluatePointsOnPartnerAnnounce(card, game.bids, playerId, game.players);
-            const pointsOnEliminatingOpponentTrumps = evaluatePointsOnEliminatingOpponentTrumps(card, game, playerId, playedCards, currentHand, playerHand);
-            const totalPoints = points + pointsOnPartnerAnnounce + pointsOnEliminatingOpponentTrumps;
-            
-            if (totalPoints > maxEvaluated) {
-                maxEvaluated = totalPoints;
-                maxEvaluatedCard = card;
-            }
-        }
-        
-        if (maxEvaluatedCard != null) {
-            // 2.1.1
-            if (isCurrentMaxCardInPlayingColor(maxEvaluatedCard, maxEvaluatedCard.suit, game.contract, game.trumpSuit, remainingCards, currentHand)) {
-                // 2.1.1.1
-                selectedCard = maxEvaluatedCard;
-            } else {
-                // 2.1.1.2
-                let minPlayingPoints = 1000; // incorrect but big enough value
-                let minPlayingPointsCard = null;
-                
-                for (const card of validCards) {
-                    if (card.suit === maxEvaluatedCard.suit) {
-                        const points = card.getValue(game.contract);
-                        if (points < minPlayingPoints) {
-                            minPlayingPoints = points;
-                            minPlayingPointsCard = card;
-                        }
-                    }
-                }
-                
-                selectedCard = minPlayingPointsCard;
-            }
-        } else {
-            // 2.1.2
-            selectedCard = chooseFallbackLead(validCards, game.contract, game.trumpSuit);
-        }
-    } else {
-        // 2.2: Following a trick
-        const playingColor = getRequestedSuit(game);
-        
-        // Find current max card in playing color
-        let currentMaxCardInPlayingColor = null;
-        for (const card of validCards) {
-            if (card.suit === playingColor && isCurrentMaxCardInPlayingColor(card, playingColor, game.contract, game.trumpSuit, remainingCards, currentHand)) {
-                currentMaxCardInPlayingColor = card;
-                break;
-            }
-        }
-        
-        if (currentMaxCardInPlayingColor != null) {
-            // 2.2.1
-            selectedCard = currentMaxCardInPlayingColor;
-        } else {
-            // 2.2.2
-            const zeroEvaluatedColors = findZeroEvaluatedColor(validCards, game.contract, game.trumpSuit, remainingCards, currentHand, playerHand, playedCards);
-            
-            if (zeroEvaluatedColors != null) {
-                // 2.2.2.1
-                const biggestCardInTrick = getBiggestCardInTrick(game);
-                const partner = getPartner(game, playerId);
-                const playerWhoPlayedBiggest = biggestCardInTrick?.playerId;
-                
-                if (biggestCardInTrick && 
-                    isCurrentMaxCardInPlayingColor(biggestCardInTrick.card, playingColor, game.contract, game.trumpSuit, remainingCards, currentHand) &&
-                    playerWhoPlayedBiggest === partner.id) {
-                    // 2.2.2.1.1
-                    let maxPlayingPoints = -100;
-                    let maxPlayingPointsCard = null;
-                    
-                    for (const card of validCards) {
-                        for (const color of zeroEvaluatedColors) {
-                            if (card.suit === color) {
-                                const points = card.getValue(game.contract);
-                                if (points > maxPlayingPoints) {
-                                    maxPlayingPoints = points;
-                                    maxPlayingPointsCard = card;
-                                }
-                            }
-                        }
-                    }
-                    
-                    selectedCard = maxPlayingPointsCard;
-                } else {
-                    // 2.2.2.1.2
-                    let minPlayingPoints = 1000; // incorrect but big enough value
-                    let minPlayingPointsCard = null;
-                    
-                    for (const card of validCards) {
-                        for (const color of zeroEvaluatedColors) {
-                            if (card.suit === color) {
-                                const points = card.getValue(game.contract);
-                                if (points < minPlayingPoints) {
-                                    minPlayingPoints = points;
-                                    minPlayingPointsCard = card;
-                                }
-                            }
-                        }
-                    }
-                    
-                    selectedCard = minPlayingPointsCard;
-                }
-            } else {
-                // 2.2.2.2
-                const biggestCardInTrick = getBiggestCardInTrick(game);
-                const partner = getPartner(game, playerId);
-                const playerWhoPlayedBiggest = biggestCardInTrick?.playerId;
-                
-                if (biggestCardInTrick && 
-                    isCurrentMaxCardInPlayingColor(biggestCardInTrick.card, playingColor, game.contract, game.trumpSuit, remainingCards, currentHand) &&
-                    playerWhoPlayedBiggest === partner.id) {
-                    // 2.2.2.2.1
-                    let minEvaluated = 1000;
-                    let minEvaluatedCard = null;
-                    
-                    for (const card of validCards) {
-                        const pointsOnRemaining = evaluatePointsOnRemaining(card, game.contract, game.trumpSuit, remainingCards, currentHand, playerHand, playedCards);
-                        // we are in case 2.2.2.2 so we know card evaluated >0 exists
-                        if (pointsOnRemaining > 0 && pointsOnRemaining < minEvaluated) {
-                            minEvaluated = pointsOnRemaining;
-                            minEvaluatedCard = card;
-                        }
-                    }
-                    
-                    selectedCard = minEvaluatedCard;
-                } else {
-                    // 2.2.2.2.2
-                    let minPlayingPoints = 1000; // incorrect but big enough value
-                    let minOnRemainingPoints = 1000;
-                    let minPlayingPointsCard = null;
-                    let minOnRemainingCard = null;
-                    
-                    for (const card of validCards) {
-                        const pointsOnRemaining = evaluatePointsOnRemaining(card, game.contract, game.trumpSuit, remainingCards, currentHand, playerHand, playedCards);
-                        const pointsOnPartnerAnnounce = evaluatePointsOnPartnerAnnounce(card, game.bids, playerId, game.players);
-                        const pointsOnEliminatingOpponentTrumps = evaluatePointsOnEliminatingOpponentTrumps(card, game, playerId, playedCards, currentHand, playerHand);
-                        const totalOnRemaining = pointsOnRemaining + pointsOnPartnerAnnounce + pointsOnEliminatingOpponentTrumps;
-                        
-                        const points = card.getValue(game.contract);
-                        if (points < minPlayingPoints) {
-                            minPlayingPoints = points;
-                            minPlayingPointsCard = card;
-                        }
-                        
-                        // If we're trying to eliminate opponent trumps, prioritize trump cards even if they have slightly positive points
-                        // Otherwise, prefer cards with totalOnRemaining <= 0
-                        const isEliminatingTrump = pointsOnEliminatingOpponentTrumps > 0;
-                        if ((totalOnRemaining <= 0 || isEliminatingTrump) && points < minOnRemainingPoints) {
-                            minOnRemainingPoints = points;
-                            minOnRemainingCard = card;
-                        }
-                    }
-                    
-                    if (minOnRemainingCard == null) {
-                        selectedCard = minPlayingPointsCard;
-                    } else {
-                        selectedCard = minOnRemainingCard;
-                    }
-                }
-            }
-        }
-    }
-    
-    // Debug assertion equivalent
-    if (selectedCard == null) {
-        // Fallback: give away as little as possible
-        selectedCard = getWeakestCard(validCards, game.contract, game.trumpSuit);
-    }
-    
-    return selectedCard;
+    const validCards = player.hand.filter(card => game.isValidCardPlay(player, card));
+    if (validCards.length === 0) return null; // Should not happen, but safety check
+
+    const ctx = playContext(game, playerId);
+    const selected = game.currentTrick.cards.length === 0
+        ? chooseLead(validCards, ctx)
+        : chooseFollow(validCards, ctx);
+
+    // Fallback: give away as little as possible
+    return selected ?? getWeakestCard(validCards, game.contract, game.trumpSuit);
 }

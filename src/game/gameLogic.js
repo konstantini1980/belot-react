@@ -13,6 +13,9 @@ export const CONTRACT_RANK = {
 
 const VALAT_BONUS = 90;
 
+// A score breakdown with nothing in it, one per team
+const emptyBreakdown = () => [0, 1].map(() => ({ cardPoints: 0, combinationPoints: 0, valatPoints: 0 }));
+
 // The last real contract bid (not pass, double or redouble), or undefined
 export function lastContractBid(bids) {
   return bids.findLast(b => b.bid in CONTRACT_RANK);
@@ -54,12 +57,13 @@ export class BelotGame {
     this.tricks = [];
     this.totalScores = [0, 0]; // Team scores
     this.currentRoundScore = [0, 0]; // Points from current round
-    this.lastRoundBreakdown = [{ cardPoints: 0, combinationPoints: 0, valatPoints: 0 }, { cardPoints: 0, combinationPoints: 0, valatPoints: 0 }]; // Breakdown of last round points
+    this.lastRoundBreakdown = emptyBreakdown(); // Breakdown of last round points
     this.lastRoundRoundedPoints = [0, 0]; // Rounded points added to scores from last round
     this.hangingPoints = 0; // Points hanging from last round
     this.announcedCombinations = [[], []]; // Team combinations
     this.lastPlayAnnouncements = []; // What the last played card announced
     this.dealHistory = []; // One entry per finished deal, for the score sheet
+    this.allPassed = false; // The last deal was thrown in because all four passed
     this.winner = null;
   }
 
@@ -107,24 +111,9 @@ export class BelotGame {
     this.deck = createDeck();
     this.players.forEach(player => player.hand = []);
     
-    // Deal 3 cards to each player
-    for (let i = 0; i < 3; i++) {
-      for (let player of this.players) {
-        if (this.deck.length > 0) {
-          player.hand.push(this.deck.pop());
-        }
-      }
-    }
-    
-    // Deal 2 more cards to each player
-    for (let i = 0; i < 2; i++) {
-      for (let player of this.players) {
-        if (this.deck.length > 0) {
-          player.hand.push(this.deck.pop());
-        }
-      }
-    }
-    
+    this.dealCards(3); // Deal 3 cards to each player
+    this.dealCards(2); // Deal 2 more cards to each player
+    this.allPassed = false;
     this.phase = GAME_PHASES.BIDDING;
     // First bidder is next from dealer
     this.currentBidder = (this.dealer + 3) % 4;
@@ -142,11 +131,17 @@ export class BelotGame {
     // Reset round scores for new round
     this.currentRoundScore = [0, 0];
     // Clear last round breakdown when starting new deal
-    this.lastRoundBreakdown = [{ cardPoints: 0, combinationPoints: 0, valatPoints: 0 }, { cardPoints: 0, combinationPoints: 0, valatPoints: 0 }];
+    this.lastRoundBreakdown = emptyBreakdown();
     // Clear last round rounded points when starting new deal
     this.lastRoundRoundedPoints = [0, 0];
   }
 
+  // Deals `count` more cards to each player, one at a time
+  dealCards(count) {
+    for (let i = 0; i < count * this.players.length && this.deck.length > 0; i++) {
+      this.players[i % this.players.length].hand.push(this.deck.pop());
+    }
+  }
 
   makeBid(playerId, bid) {
     if (playerId !== this.currentBidder) return false; // Not this player's turn to bid
@@ -207,14 +202,7 @@ export class BelotGame {
         if (this.contract !== 'no-trump' && this.contract !== 'all-trump') {
           this.trumpSuit = this.contract;
         }
-        // Deal remaining 3 cards
-        for (let i = 0; i < 3; i++) {
-          for (let player of this.players) {
-            if (this.deck.length > 0) {
-              player.hand.push(this.deck.pop());
-            }
-          }
-        }
+        this.dealCards(3); // Deal remaining 3 cards
         this.phase = GAME_PHASES.PLAYING;
         this.currentPlayer = (this.dealer + 3) % 4; // Next from dealer starts playing
       } 
@@ -226,7 +214,8 @@ export class BelotGame {
         // All passed - redeal
         // Next dealer is counter clockwise from current dealer
         this.dealer = (this.dealer + 3) % 4;
-        this.deal();   
+        this.deal();
+        this.allPassed = true; // So the table can say why the cards were dealt again
       } else {
         // Bidding is not over - update current bidder
         this.currentBidder = (this.currentBidder + 3) % 4; // Counter-clockwise
@@ -396,22 +385,9 @@ export class BelotGame {
   }
 
   opponentHasHighestCard(player = this.players[this.currentPlayer]) {
-    if (this.currentTrick.cards.length === 0) return false;
-    
-    const leadCard = this.currentTrick.cards[0].card;
-    const leadPlayer = this.currentTrick.cards[0].playerId;
-    
-    let highestCard = leadCard;
-    let highestPlayer = leadPlayer;
-    
-    this.currentTrick.cards.forEach(({ playerId, card }) => {
-      if (card.isHigherThan(highestCard, this.contract)) {
-        highestCard = card;
-        highestPlayer = playerId;
-      }
-    });
-    
-    return this.players[highestPlayer].team !== player.team;
+    const winner = this.determineTrickWinner();
+    if (!winner) return false; // Nobody has played yet
+    return this.players[winner.playerId].team !== player.team;
   }
 
   determineTrickWinner() {
