@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { SERVER_URL, saveSession } from './session';
+import { SERVER_URL, saveSession, loadName } from './session';
 
 const MAX_RETRY_MS = 10000;
 const GIVE_UP_AFTER = 4; // Failed attempts before a first connection counts as "server unreachable"
 
-// The connection to one table on the game server. Says hello with our token (creating
-// the table, or taking or getting back our seat), passes every state message to onState, and
+// The connection to one table on the game server. Says hello with our token, name and
+// invite role (creating the table, or taking or getting back our seat), passes every state message to onState, and
 // reconnects by itself when the connection drops (a locked phone, a network change).
 // status: 'connecting' | 'open' | 'reconnecting' | 'closed'; error: why it closed.
-export function useOnlineTable({ code, token, create = null }, onState) {
+export function useOnlineTable({ code, token, as = null, create = null }, onState) {
   const [status, setStatus] = useState('connecting');
   const [error, setError] = useState(null);
   const socketRef = useRef(null);
@@ -29,7 +29,7 @@ export function useOnlineTable({ code, token, create = null }, onState) {
       const ws = new WebSocket(`${SERVER_URL}/rooms/${code}`);
       socketRef.current = ws;
       ws.onopen = () => {
-        ws.send(JSON.stringify({ type: 'hello', token, create }));
+        ws.send(JSON.stringify({ type: 'hello', token, name: loadName(), as, create }));
       };
       ws.onmessage = (e) => {
         const message = JSON.parse(e.data);

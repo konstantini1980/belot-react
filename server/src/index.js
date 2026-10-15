@@ -1,5 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
-import { Table, FRIEND_SEATS, viewFor, seatFor } from '../../src/game/onlineTable.js';
+import { Table, HAND_OVER_AFTER_MS, viewFor, seatFor } from '../../src/game/onlineTable.js';
 
 // Online Belot server. The React app (on GitHub Pages) opens a WebSocket to
 // /rooms/<CODE>; every room code is one GameRoom, which holds the table, runs
@@ -32,6 +32,9 @@ export class GameRoom extends DurableObject {
     ctx.blockConcurrencyWhile(async () => {
       const saved = await ctx.storage.get('table');
       this.table = saved ? Table.restore(saved) : null;
+      // Players whose connection didn't survive a restart count as offline from now
+      const online = new Set(this.openSockets().map(ws => this.seatOf(ws)));
+      [0, 1, 2, 3].forEach(seat => { if (!online.has(seat)) this.table?.setOnline(seat, false); });
       this.schedule();
     });
   }
@@ -54,31 +57,37 @@ export class GameRoom extends DurableObject {
       await this.hello(ws, message);
       return;
     }
-    const seat = ws.deserializeAttachment()?.seat;
-    if (seat === undefined || !this.table) return; // Must say hello first
+    const seat = this.seatOf(ws);
+    if (seat === null) return; // Must say hello first (or left the table)
     const event = this.table.handle(seat, message);
+    if (message.type === 'leave') ws.close(1000, 'left'); // Leaving also ends the connection
     if (event) await this.changed(event);
   }
 
-  // A player arrives with their token: creates the table, takes the friend's seat,
-  // or comes back to their own seat (saying hello twice is harmless)
-  async hello(ws, { token, create }) {
-    let joined;
+  // The seat of the player on this socket. Looked up by token each time, because the
+  // host can move people to other seats before the game starts.
+  seatOf(ws) {
+    const token = ws.deserializeAttachment()?.token;
+    return this.table && token ? this.table.seatOf(token) : null;
+  }
+
+  // A player arrives with their token, name and the role from their invite link: creates
+  // the table, takes a free seat, or comes back to their own (saying hello twice is harmless)
+  async hello(ws, { token, name, as: role, create }) {
     if (!this.table) {
       if (!create) return this.refuse(ws, 'noRoom');
       try {
-        this.table = new Table(FRIEND_SEATS[create.friend] ?? FRIEND_SEATS.partner, token);
+        this.table = new Table(token, name);
       } catch {
         return this.refuse(ws, 'badToken');
       }
-      joined = { seat: 0 };
     } else if (create && this.table.seatOf(token) === null) {
       return this.refuse(ws, 'taken'); // Someone else's table has this code; the app picks another
     } else {
-      joined = this.table.join(token);
+      const joined = this.table.join(token, name, role);
       if (joined.error) return this.refuse(ws, joined.error);
     }
-    ws.serializeAttachment({ seat: joined.seat });
+    ws.serializeAttachment({ token });
     ws.send(JSON.stringify({ type: 'joined' }));
     await this.changed(null);
   }
@@ -88,12 +97,28 @@ export class GameRoom extends DurableObject {
     ws.close(1000, error);
   }
 
-  async webSocketClose() {
-    this.broadcast(null); // The other player sees who went offline
+  // A connection dropped: if it was that player's last one, they count as offline from now
+  // (the others see it, and after a while may let the AI play for them)
+  async webSocketClose(ws) {
+    await this.disconnected(ws);
   }
 
-  async webSocketError() {
+  async webSocketError(ws) {
+    await this.disconnected(ws);
+  }
+
+  async disconnected(ws) {
+    const seat = this.seatOf(ws);
+    if (seat === null) return;
+    const stillHere = this.openSockets().some(other => other !== ws && this.seatOf(other) === seat);
+    if (stillHere) return;
+    this.table.setOnline(seat, false);
+    await this.ctx.storage.put('table', this.table.snapshot());
     this.broadcast(null);
+  }
+
+  openSockets() {
+    return this.ctx.getWebSockets().filter(ws => ws.readyState === WebSocket.OPEN);
   }
 
   // After every change: save, tell everyone, and line up the next automatic step
@@ -117,20 +142,32 @@ export class GameRoom extends DurableObject {
   broadcast(event) {
     const table = this.table;
     if (!table) return;
-    const sockets = this.ctx.getWebSockets().filter(ws => ws.readyState === WebSocket.OPEN);
-    const online = new Set(sockets.map(ws => ws.deserializeAttachment()?.seat));
+    const sockets = this.openSockets();
+    const online = new Set(sockets.map(ws => this.seatOf(ws)));
+    const now = Date.now();
+    // Who sits where, as one list for the whole table; each player gets it turned
+    // so that they are first (south), like the game view
+    const seats = [0, 1, 2, 3].map(seat => {
+      const entry = table.seats[seat];
+      return {
+        name: entry?.name ?? '',
+        state: !entry ? 'empty' : entry.ai ? 'away' : 'human', // empty: free, or the AI plays it; away: the AI plays for them
+        online: online.has(seat),
+        offlineFor: table.isHuman(seat) && !online.has(seat) ? table.offlineFor(seat, now) : null,
+        host: seat === table.hostSeat,
+      };
+    });
     for (const ws of sockets) {
-      const seat = ws.deserializeAttachment()?.seat;
-      if (seat === undefined) continue;
-      const other = seat === 0 ? table.friendSeat : 0;
+      const seat = this.seatOf(ws);
+      if (seat === null) continue;
       ws.send(JSON.stringify({
         type: 'state',
-        isHost: seat === 0,
+        isHost: seat === table.hostSeat,
         started: table.started,
-        friendJoined: table.friendJoined,
-        friendAt: seatFor(seat, other), // Where the other human sits, as this player sees the table
-        friendOnline: online.has(other),
-        waitingForNextDeal: table.isWaitingForNextDeal(seat), // Clicked "Next deal", the other human hasn't yet
+        canStart: table.canStart,
+        seats: [0, 1, 2, 3].map(s => seats[(s + seat) % 4]),
+        handOverAfter: HAND_OVER_AFTER_MS,
+        waitingForNextDeal: table.isWaitingForNextDeal(seat), // Clicked "Next deal", others haven't yet
         event: event && { type: event.type, seat: seatFor(seat, event.seat) },
         game: viewFor(table.game, seat),
       }));
