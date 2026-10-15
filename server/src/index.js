@@ -6,7 +6,7 @@ import { Table, FRIEND_SEATS, viewFor, seatFor } from '../../src/game/onlineTabl
 // the AI players and sends each human only what their seat may see.
 
 const ROOM_CODE = /^[A-Z2-9]{4,8}$/;
-const FORGET_AFTER_MS = 7 * 24 * 60 * 60 * 1000; // A table nobody touches for a week is deleted
+const FORGET_AFTER_MS = 24 * 60 * 60 * 1000; // A table nobody touches for 24 hours is deleted
 
 export default {
   async fetch(request, env) {
@@ -136,7 +136,7 @@ export class GameRoom extends DurableObject {
     }
   }
 
-  // Nobody has used the table for a week: forget it
+  // Nobody has used the table for 24 hours: forget it
   async alarm() {
     clearTimeout(this.timer);
     this.table = null;
