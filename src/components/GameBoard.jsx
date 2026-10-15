@@ -250,6 +250,16 @@ export default function GameBoard({
           {biddingPanel}
         </div>
       )}
+      {/* An empty place in front of you while the trick waits for your card. It sits in
+          a copy of the trick area drawn under the hands, so your cards cover its outline. */}
+      {isYourTurnToPlay && (
+        <div className="board-center board-center-under">
+          <div
+            className="trick-slot"
+            style={{ left: `${cardPositionInBoard.south.x}px`, top: `${cardPositionInBoard.south.y}px` }}
+          />
+        </div>
+      )}
       <div
         className={`board-center ${isShowingLastTrick ? 'showing-last-trick' : ''}`}
         ref={boardCenterRef}
@@ -302,14 +312,6 @@ export default function GameBoard({
             </div>
           );
         })}
-
-        {/* An empty place in front of you while the trick waits for your card */}
-        {isYourTurnToPlay && (
-          <div
-            className="trick-slot"
-            style={{ left: `${cardPositionInBoard.south.x}px`, top: `${cardPositionInBoard.south.y}px` }}
-          />
-        )}
 
         {trickComplete && currentTrick.cards.map(({ playerId, card }) => {
           const cardKey = `${playerId}-${card.id}`;

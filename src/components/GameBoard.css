@@ -143,6 +143,12 @@
 .trick-card.from-east .card { transform: rotate(7deg); }
 .trick-card.from-south .card { transform: rotate(2deg); }
 
+/* Same box as .board-center, but under the players' hands (z-index 5) */
+.board-center-under {
+  z-index: 4;
+  pointer-events: none;
+}
+
 /* Where your card goes when it's your turn */
 .trick-slot {
   position: absolute;
