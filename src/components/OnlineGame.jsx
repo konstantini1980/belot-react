@@ -112,7 +112,8 @@ export default function OnlineGame({ table, onLeave, onCancel, onCodeTaken }) {
     && game.currentTrick.cards.length === 4 && game.currentPlayer === null;
 
   // Names at the table: people by their name, AI seats by the usual labels
-  const names = room.seats.map(seat => (seat.state === 'empty' ? null : seat.name || t('playerFriend')));
+  // (yours too; without a name you stay "You")
+  const names = room.seats.map((seat, i) => (seat.state === 'empty' ? null : seat.name || (i === 0 ? null : t('playerFriend'))));
   const withAI = seat => (room.seats[seat].state === 'away' ? t('onlineAIPlaysFor', { name: names[seat] }) : names[seat]);
   const seatNames = room.seats.map((_, seat) => withAI(seat));
 
