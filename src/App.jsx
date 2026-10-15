@@ -6,6 +6,7 @@ import GameBoard from './components/GameBoard';
 import BiddingPanel from './components/BiddingPanel';
 import DevPanel from './components/DevPanel';
 import LanguageSwitcher from './components/LanguageSwitcher';
+import FullscreenToggle from './components/FullscreenToggle';
 import { useLanguage } from './contexts/LanguageContext';
 import './App.css';
 
@@ -99,7 +100,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    // On mobile, don't auto-deal until the user enters immersive mode via the start button
+    // On mobile, don't auto-deal until the user taps the start button
     if (isMobile && !isMobileGameStarted) {
       return;
     }
@@ -303,16 +304,8 @@ export default function App() {
     setGame(newGame);
   };
 
-  const handleStartMobileGame = async () => {
-    // Must be called from a user gesture
-    try {
-      if (!document.fullscreenElement && document.documentElement?.requestFullscreen) {
-        await document.documentElement.requestFullscreen();
-      }
-    } catch {
-      // Some browsers/devices (notably iOS Safari) may not support fullscreen;
-      // still proceed to start the game.
-    }
+  // Starts play on mobile; full screen is a separate, optional toggle on the table
+  const handleStartMobileGame = () => {
     setIsMobileGameStarted(true);
   };
 
@@ -359,7 +352,7 @@ export default function App() {
 
       <div className="game-container">
         <GameBoard
-          languageSwitcher={<LanguageSwitcher />}
+          tableControls={<><FullscreenToggle /><LanguageSwitcher /></>}
           players={game.players}
           currentTrick={game.currentTrick}
           currentPlayer={game.currentPlayer}

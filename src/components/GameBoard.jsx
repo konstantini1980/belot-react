@@ -45,7 +45,7 @@ export default function GameBoard({
   dealHistory = [],
   roundBreakdown = null,
   contractTeam = null,
-  languageSwitcher = null,
+  tableControls = null,
   trickComplete = false,
   // Dev/test props
   forceShowScorePanel = false,
@@ -228,9 +228,9 @@ export default function GameBoard({
   
   return (
     <div className={`game-board ${showStartButton ? 'show-start-button-only' : ''} ${biddingPanel ? 'bidding' : ''}`}>
-      {languageSwitcher && (
-        <div className="language-switcher-container">
-          {languageSwitcher}
+      {tableControls && (
+        <div className="table-controls">
+          {tableControls}
         </div>
       )}
       {isMobile && !isMobileGameStarted && onStartMobileGame && (

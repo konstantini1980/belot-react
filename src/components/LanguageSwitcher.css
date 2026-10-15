@@ -29,3 +29,12 @@
   border-color: var(--gold-soft);
   background: rgba(231, 195, 106, 0.12);
 }
+
+.fullscreen-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  width: 32px;
+  padding: 0;
+}
