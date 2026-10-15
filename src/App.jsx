@@ -43,8 +43,10 @@ export default function App() {
     }
 
     if (game.phase === GAME_PHASES.DEALING) {
-      game.deal();
-      setGame({ ...game });
+      const newGame = new BelotGame();
+      Object.assign(newGame, game);
+      newGame.deal();
+      setGame(newGame);
       setPlayableCards([]); // Clear playable cards when dealing
       setPlayerCombinations({});
     }

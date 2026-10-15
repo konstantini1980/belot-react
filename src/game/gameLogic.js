@@ -403,7 +403,10 @@ export class BelotGame {
     }
     
     // Don't have lead suit
-    const opponentHasHighest = this.opponentHasHighestCard();
+    const opponentHasHighest = this.opponentHasHighestCard(player);
+    
+    // Partner holds the trick: no obligation to trump or overtrump
+    if (!opponentHasHighest) return true;
     
     // Check if opponents played a trump card
     let highestOpponentTrump = null;
@@ -435,19 +438,17 @@ export class BelotGame {
       }
     }
     
-    // If opponents have the highest card and player has trump, must play trump
-    if (opponentHasHighest) {
-      const hasTrump = player.hand.some(c => c.suit === this.trumpSuit);
-      if (hasTrump) {
-        return card.suit === this.trumpSuit;
-      }
+    // Opponents have the highest card: if player has trump, must play trump
+    const hasTrump = player.hand.some(c => c.suit === this.trumpSuit);
+    if (hasTrump) {
+      return card.suit === this.trumpSuit;
     }
     
     // Otherwise, can play any card
     return true;
   }
 
-  opponentHasHighestCard() {
+  opponentHasHighestCard(player = this.players[this.currentPlayer]) {
     if (this.currentTrick.cards.length === 0) return false;
     
     const leadCard = this.currentTrick.cards[0].card;
@@ -463,7 +464,7 @@ export class BelotGame {
       }
     });
     
-    return this.players[highestPlayer].team !== this.players[this.currentPlayer].team;
+    return this.players[highestPlayer].team !== player.team;
   }
 
   determineTrickWinner() {

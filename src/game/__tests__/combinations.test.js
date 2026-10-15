@@ -92,8 +92,36 @@ describe('Combination Discovery', () => {
       const sequences = findSequences(cards);
       expect(sequences).toHaveLength(1);
       expect(sequences[0].type).toBe('quint');
-      // The algorithm finds A, K, Q, J, 10, 9 as a sequence of 6 consecutive cards
-      expect(sequences[0].cards.length).toBeGreaterThanOrEqual(5);
+      // Only five cards of the 6-card run count
+      expect(sequences[0].cards).toHaveLength(5);
+    });
+    it('should count only the top five cards of a 6-card run as a quint', () => {
+      const cards = ['A', 'K', 'Q', 'J', '10', '9'].map(r => new Card('hearts', r));
+
+      const sequences = findSequences(cards);
+      expect(sequences).toHaveLength(1);
+      expect(sequences[0].type).toBe('quint');
+      expect(sequences[0].points).toBe(100);
+      expect(sequences[0].cards.map(c => c.rank)).toEqual(['A', 'K', 'Q', 'J', '10']);
+    });
+
+    it('should count a 7-card run as a single quint', () => {
+      const cards = ['K', 'Q', 'J', '10', '9', '8', '7'].map(r => new Card('spades', r));
+
+      const sequences = findSequences(cards);
+      expect(sequences).toHaveLength(1);
+      expect(sequences[0].type).toBe('quint');
+      expect(sequences[0].cards.map(c => c.rank)).toEqual(['K', 'Q', 'J', '10', '9']);
+    });
+
+    it('should count an 8-card run as a quint plus a tierce (120 points)', () => {
+      const cards = ['A', 'K', 'Q', 'J', '10', '9', '8', '7'].map(r => new Card('clubs', r));
+
+      const sequences = findSequences(cards);
+      expect(sequences.map(s => s.type)).toEqual(['quint', 'tierce']);
+      expect(sequences[0].cards.map(c => c.rank)).toEqual(['A', 'K', 'Q', 'J', '10']);
+      expect(sequences[1].cards.map(c => c.rank)).toEqual(['9', '8', '7']);
+      expect(sequences.reduce((sum, s) => sum + s.points, 0)).toBe(120);
     });
   });
 
@@ -199,6 +227,50 @@ describe('Combination Discovery', () => {
         new Card('clubs', 'J'),
         new Card('hearts', 'J')
       ]);
+    });
+
+    it('should not count a card in both four of a kind and a sequence', () => {
+      // Four nines (150) share the 9 of hearts with the hearts tierce 10-9-8
+      const cards = [
+        new Card('hearts', '9'),
+        new Card('spades', '9'),
+        new Card('diamonds', '9'),
+        new Card('clubs', '9'),
+        new Card('hearts', '10'),
+        new Card('hearts', '8'),
+        new Card('spades', 'A'),
+        new Card('clubs', '7')
+      ];
+
+      const combos = getAllCombinations(cards, 'spades');
+      expect(combos.map(c => c.type)).toEqual(['equal']);
+      expect(combos[0].points).toBe(150);
+    });
+
+    it('should keep sequences that the four of a kind does not break', () => {
+      // Four tens take the 10 of spades; K-Q-J of spades is still a tierce
+      const cards = [
+        new Card('hearts', '10'),
+        new Card('spades', '10'),
+        new Card('diamonds', '10'),
+        new Card('clubs', '10'),
+        new Card('spades', 'K'),
+        new Card('spades', 'Q'),
+        new Card('spades', 'J'),
+        new Card('spades', '9')
+      ];
+
+      const combos = getAllCombinations(cards, 'hearts');
+      expect(combos.map(c => c.type)).toEqual(['equal', 'tierce']);
+      expect(combos.reduce((sum, c) => sum + c.points, 0)).toBe(120);
+      expect(combos[1].cards.map(c => c.rank)).toEqual(['K', 'Q', 'J']);
+    });
+
+    it('should announce an 8-card run as a quint and a tierce', () => {
+      const cards = ['A', 'K', 'Q', 'J', '10', '9', '8', '7'].map(r => new Card('diamonds', r));
+
+      const combos = getAllCombinations(cards, 'hearts');
+      expect(combos.reduce((sum, c) => sum + c.points, 0)).toBe(120);
     });
 
     it('should return empty array when no combinations exist', () => {
@@ -350,6 +422,48 @@ describe('Combination Discovery', () => {
       expect(belot).not.toBeNull();
       expect(belot.type).toBe('belot');
     });
+    it('should not find belot in all-trump when following a different led suit', () => {
+      const playedCard = new Card('clubs', 'K');
+      const playerHand = [
+        new Card('clubs', 'Q'),
+        new Card('clubs', 'K'),
+        new Card('spades', '7')
+      ];
+
+      expect(findBelotOnPlay('all-trump', playedCard, playerHand, 'hearts')).toBeNull();
+    });
+
+    it('should find belot in all-trump when leading the trick with Q or K', () => {
+      const playedCard = new Card('clubs', 'Q');
+      const playerHand = [
+        new Card('clubs', 'Q'),
+        new Card('clubs', 'K'),
+        new Card('spades', '7')
+      ];
+
+      // playCard passes the played card's own suit as the lead suit when leading
+      const belot = findBelotOnPlay('all-trump', playedCard, playerHand, 'clubs');
+      expect(belot).not.toBeNull();
+      expect(belot.cards.every(c => c.suit === 'clubs')).toBe(true);
+    });
+
+    it('should not find belot from a Q and K of different suits', () => {
+      const playedCard = new Card('hearts', 'Q');
+      const playerHand = [
+        new Card('hearts', 'Q'),
+        new Card('spades', 'K')
+      ];
+
+      expect(findBelotOnPlay('hearts', playedCard, playerHand, 'hearts')).toBeNull();
+      expect(findBelotOnPlay('all-trump', playedCard, playerHand, 'hearts')).toBeNull();
+    });
+
+    it('should not find belot when the partner card was already played', () => {
+      // Q of hearts already played earlier, now playing the K
+      const playedCard = new Card('hearts', 'K');
+      const playerHand = [new Card('hearts', 'K'), new Card('spades', 'A')];
+
+      expect(findBelotOnPlay('hearts', playedCard, playerHand, 'hearts')).toBeNull();
+    });
   });
 });
-
