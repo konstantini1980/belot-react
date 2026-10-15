@@ -58,11 +58,6 @@ export default function FullScorePanel({
     const v = currentRoundScores[teamIndex];
     return typeof v === 'object' && v !== null && 'roundPoints' in v ? v.roundPoints : (v || 0);
   };
-  const getHangingForTeam = (teamIndex) => {
-    if (!currentRoundScores || currentRoundScores[teamIndex] == null) return 0;
-    const v = currentRoundScores[teamIndex];
-    return typeof v === 'object' && v !== null && 'hangingPoints' in v ? v.hangingPoints : hangingPoints;
-  };
   const playerRoundScore = getRoundPoints(0);
   const opponentRoundScore = getRoundPoints(1);
 

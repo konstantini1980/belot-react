@@ -41,7 +41,7 @@ export default function AIPlayerHand({
     <div className={`ai-player-hand ai-player-hand-${position}`}>
       {showCards ? (
         // Show actual cards when showCards is enabled
-        sortedCards.map((card, i) => (
+        sortedCards.map((card) => (
           <Card
             key={card.id}
             card={card}

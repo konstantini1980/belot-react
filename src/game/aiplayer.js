@@ -89,13 +89,6 @@ export function makeAIBid(hand, bids = [], players = [], playerId = null) {
                    .map(b => b.bid);
     };
     
-    // Helper: Get player's own bids
-    const getPlayerBids = () => {
-        if (!playerId || !bids) return [];
-        return bids.filter(b => b.playerId === playerId && b.bid !== 'pass' && b.bid !== 'double' && b.bid !== 'redouble')
-                   .map(b => b.bid);
-    };
-    
     // Check if partner has bid trump suits on their own
     const partnerBids = getPartnerBids();
     const partnerTrumpBids = partnerBids.filter(isTrumpSuitBid);
@@ -283,43 +276,6 @@ function isCurrentMaxCardInPlayingColor(card, playingColor, contract, trumpSuit,
     }
     
     return !foundBigger;
-}
-
-// Rule 1.1: Rank Proximity Rule (EvalutePointsOnRemaining) - Original implementation
-function evaluatePointsOnRemainingOriginal(card, contract, trumpSuit, remainingCards, currentHand, playerHand, playedCards) {
-    const POINTS_TO_ADD = 20;
-    let points = POINTS_TO_ADD;
-    
-    // Get current max card in color
-    const maxCard = getCurrentMaxCardInColor(card.suit, contract, trumpSuit, remainingCards, currentHand);
-    if (!maxCard) return 0;
-    
-    // Calculate distance
-    const distance = getDistance(card, maxCard, contract, trumpSuit);
-    
-    // Count remaining cards in suit (excluding target card)
-    let remainingCardsInSuit = 0;
-    for (const c of playerHand) {
-        if (c.suit === card.suit && c.id !== card.id) {
-            remainingCardsInSuit++;
-        }
-    }
-    
-    // Count passed cards (played cards in that suit)
-    let passedCards = 0;
-    for (const c of playedCards) {
-        if (c.suit === card.suit) {
-            passedCards++;
-        }
-    }
-    
-    if (remainingCardsInSuit >= distance) {
-        points += (remainingCardsInSuit - distance) * POINTS_TO_ADD - distance - passedCards;
-    } else {
-        points = 0;
-    }
-    
-    return points;
 }
 
 // Rule 1.1: Rank Proximity Rule (EvalutePointsOnRemaining) - Improved implementation

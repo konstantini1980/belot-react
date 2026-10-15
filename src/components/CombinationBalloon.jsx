@@ -2,7 +2,7 @@ import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import './CombinationBalloon.css';
 
-export default function CombinationBalloon({ combinations, playerName, onClose }) {
+export default function CombinationBalloon({ combinations }) {
   const { t } = useLanguage();
   
   // Format combination type name

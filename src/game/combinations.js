@@ -172,19 +172,12 @@ export function findBelotOnPlay(contract, playedCard, playerHand, leadSuit) {
   return null;
 }
 
-// Legacy function for backward compatibility (used for auto-announce, but belot won't be included)
-export function findBelot(cards, trumpSuit) {
-  // This function is kept for backward compatibility but belot should not be auto-announced
-  // Belot should only be announced when Q or K is actually played
-  return null;
-}
-
 const comboPoints = (combos) => combos.reduce((sum, c) => sum + c.points, 0);
 
 // A card can't count in both a four of a kind and a sequence, and the player picks
 // which to announce. Try every choice of fours to keep and announce the split worth
 // the most points; on a tie the fours are kept.
-export function getAllCombinations(cards, trumpSuit) {
+export function getAllCombinations(cards) {
   const allEquals = findEquals(cards);
   let best = null;
 

@@ -119,8 +119,6 @@ describe('Card Validation (isValidCardPlay)', () => {
         ]
       };
       const player = game.players[0];
-      const validCard = player.hand[0]; // J (same as highest, but player has it)
-      const invalidCard = player.hand[2]; // A (lower than J)
 
       // Player must play J if they have it, or a higher trump if available
       // Since J is already played and is highest, player can play any trump

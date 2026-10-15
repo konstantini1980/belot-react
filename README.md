@@ -53,7 +53,8 @@ npm run build
 
 - **Bidding Phase**: Click on contract buttons or "Pass" to make your bid
 - **Playing Phase**: Click on playable cards (highlighted in green) to play them
-- **Combinations**: Announce combinations when it's your turn to play the first card of a trick
+- **Combinations**: Announced for you automatically. Sequences and four of a kind are declared when you play
+  your first card, and belot when you play its queen or king. They appear in a balloon next to the player
 
 ## Technical Details
 

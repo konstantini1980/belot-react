@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import './BiddingPanel.css';
 
@@ -7,7 +7,6 @@ export default function BiddingPanel({
   playerId, 
   bids, 
   onBid, 
-  contract,
   players 
 }) {
   const { t } = useLanguage();

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BelotGame, GAME_PHASES } from './game/gameLogic';
 import { getAllCombinations, findBelotOnPlay } from './game/combinations';
 import { makeAIBid, makeAIPlayCard } from './game/aiplayer';
@@ -231,7 +231,7 @@ export default function App() {
     // Check combinations before playing (on full hand) - for sequences and equals
     let combos = [];
     if (isFirstTrick && newGame.contract && newGame.contract !== 'no-trump') {
-      combos = getAllCombinations(player.hand, newGame.trumpSuit);
+      combos = getAllCombinations(player.hand);
     }
 
     // Check for belot when Q or K is played (before playing the card)
@@ -437,7 +437,6 @@ export default function App() {
               playerId={PLAYER_ID}
               bids={game.bids}
               onBid={handleBid}
-              contract={game.contract}
               players={game.players}
             />
           ) : null}

@@ -980,5 +980,58 @@ describe('Scoring', () => {
       
     });
   });
-});
 
+  describe('Round point calculation by contract', () => {
+    const mixedTricks = () => Array.from({ length: 8 }, (_, i) => ({ cards: [], team: i % 2 }));
+
+    it('No trumps - each team rounds its own doubled card points', () => {
+      game.contract = 'no-trump';
+      game.trumpSuit = null;
+      game.bids = [{ playerId: 0, bid: 'no-trump' }];
+      game.tricks = mixedTricks();
+      game.currentRoundScore = [90, 72];
+
+      game.endRound();
+
+      // 90 * 2 = 180 -> 18, 72 * 2 = 144 -> 14
+      expect(game.lastRoundBreakdown[0].cardPoints).toBe(180);
+      expect(game.lastRoundBreakdown[1].cardPoints).toBe(144);
+      expect(game.lastRoundRoundedPoints).toEqual([18, 14]);
+      expect(game.totalScores).toEqual([18, 14]);
+    });
+
+    it('All trumps - opponents round up at 5, contract team gets the rest', () => {
+      game.contract = 'all-trump';
+      game.trumpSuit = null;
+      game.bids = [{ playerId: 1, bid: 'all-trump' }];
+      game.tricks = mixedTricks();
+      game.currentRoundScore = [74, 184];
+
+      game.endRound();
+
+      // Total 258 -> 26; opponents 74 -> 8, contract team 26 - 8 = 18
+      expect(game.lastRoundRoundedPoints).toEqual([8, 18]);
+      expect(game.totalScores).toEqual([8, 18]);
+    });
+
+    it('Belot still counts when the same team loses the sequence comparison', () => {
+      game.bids = [{ playerId: 0, bid: 'hearts' }];
+      game.tricks = mixedTricks();
+      game.currentRoundScore = [90, 72];
+      const tierce = { type: 'tierce', points: 20, cards: [new Card('spades', 'K'), new Card('spades', 'Q'), new Card('spades', 'J')] };
+      const belot = { type: 'belot', points: 20, cards: [new Card('hearts', 'Q'), new Card('hearts', 'K')] };
+      const quarte = { type: 'quarte', points: 50, cards: [new Card('clubs', '10'), new Card('clubs', '9'), new Card('clubs', '8'), new Card('clubs', '7')] };
+      game.announcedCombinations = [[tierce, belot], [quarte]];
+
+      game.endRound();
+
+      expect(tierce.valid).toBe(false);
+      expect(belot.valid).toBe(true);
+      expect(quarte.valid).toBe(true);
+      // 90 + 20 = 110 against 72 + 50 = 122: contract lost, opponents take all 232 -> 23
+      expect(game.lastRoundBreakdown[0].combinationPoints).toBe(20);
+      expect(game.lastRoundBreakdown[1].combinationPoints).toBe(50);
+      expect(game.lastRoundRoundedPoints).toEqual([0, 23]);
+    });
+  });
+});
