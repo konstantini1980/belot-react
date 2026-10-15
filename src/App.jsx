@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { BelotGame, GAME_PHASES } from './game/gameLogic';
 import { makeAIBid, makeAIPlayCard } from './game/aiplayer';
 import GameBoard from './components/GameBoard';
@@ -30,18 +30,54 @@ export default function App() {
 
   // One-off timers (animations, balloons). Kept so a new game or deal can cancel them.
   const timersRef = useRef(new Set());
-  const later = (fn, ms) => {
+  // Stable across renders (it only touches the ref), so effects can list it
+  const later = useCallback((fn, ms) => {
     const id = setTimeout(() => {
       timersRef.current.delete(id);
       fn();
     }, ms);
     timersRef.current.add(id);
-  };
+  }, []);
   const clearTimers = () => {
     timersRef.current.forEach(clearTimeout);
     timersRef.current.clear();
   };
   useEffect(() => clearTimers, []);
+
+  // Animate cards to the holders for 1 second, then complete the trick.
+  // Both updates work on the latest state, not the one this render saw.
+  const animateToHolders = useCallback(() => {
+    setTrickComplete(true);
+    setGame(prev => {
+      const g = prev.clone();
+      g.currentPlayer = null; // nobody's turn while the trick is collected
+      return g;
+    });
+
+    later(() => {
+      setGame(prev => {
+        const g = prev.clone();
+        g.completeTrick();
+        return g;
+      });
+      setTrickComplete(false);
+    }, 1000);
+  }, [later]);
+
+  // Bids for the AI whose turn it is in the latest state, so the timer that
+  // calls it never acts on a stale game
+  const handleAIBid = useCallback(() => {
+    setGame(prev => {
+      if (prev.phase !== GAME_PHASES.BIDDING || prev.currentBidder === PLAYER_ID) return prev; // Not an AI's bid any more
+      const newGame = prev.clone();
+      const playerId = newGame.currentBidder;
+      const bid = makeAIBid(newGame.players[playerId].hand, newGame.bids, newGame.players, playerId);
+      if (!newGame.makeBid(playerId, bid)) {
+        newGame.makeBid(playerId, 'pass'); // Invalid AI bid falls back to pass
+      }
+      return newGame;
+    });
+  }, []);
 
   useEffect(() => {
     // Detect "mobile" using the same breakpoint logic we use in CSS
@@ -59,9 +95,12 @@ export default function App() {
     }
 
     if (game.phase === GAME_PHASES.DEALING) {
-      const newGame = game.clone();
-      newGame.deal();
-      setGame(newGame);
+      setGame(prev => {
+        if (prev.phase !== GAME_PHASES.DEALING) return prev; // Already dealt
+        const newGame = prev.clone();
+        newGame.deal();
+        return newGame;
+      });
       setPlayableCards([]); // Clear playable cards when dealing
       setPlayerCombinations({});
     }
@@ -75,12 +114,10 @@ export default function App() {
   // Auto-play for AI players
   useEffect(() => {
     if (game.phase === GAME_PHASES.BIDDING && game.currentBidder !== PLAYER_ID) {
-      const timer = setTimeout(() => {
-        handleAIBid();
-      }, 1000);
+      const timer = setTimeout(handleAIBid, 1000);
       return () => clearTimeout(timer);
     }
-  }, [game.phase, game.currentBidder, game.bids.length]);
+  }, [game.phase, game.currentBidder, game.bids.length, handleAIBid]);
 
   useEffect(() => {
     if (game.phase === GAME_PHASES.PLAYING && game.currentPlayer !== null && game.currentPlayer !== PLAYER_ID) {
@@ -110,27 +147,7 @@ export default function App() {
     if (game.phase !== GAME_PHASES.PLAYING) {
       setTrickComplete(false);
     }
-  }, [game.phase, game.currentTrick.cards.length]);
-
-  // Animate cards to the holders for 1 second, then complete the trick.
-  // Both updates work on the latest state, not the one this render saw.
-  const animateToHolders = () => {
-    setTrickComplete(true);
-    setGame(prev => {
-      const g = prev.clone();
-      g.currentPlayer = null; // nobody's turn while the trick is collected
-      return g;
-    });
-
-    later(() => {
-      setGame(prev => {
-        const g = prev.clone();
-        g.completeTrick();
-        return g;
-      });
-      setTrickComplete(false);
-    }, 1000);
-  };
+  }, [game.phase, game.currentTrick.cards.length, animateToHolders]);
 
   const updatePlayableCards = () => {
     if (game.currentPlayer !== PLAYER_ID) return;
@@ -144,16 +161,6 @@ export default function App() {
     if (newGame.makeBid(PLAYER_ID, bid)) {
       setGame(newGame);
     }
-  };
-
-  const handleAIBid = () => {
-    const newGame = game.clone();
-    const playerId = newGame.currentBidder;
-    const bid = makeAIBid(newGame.players[playerId].hand, newGame.bids, newGame.players, playerId);
-    if (!newGame.makeBid(playerId, bid)) {
-      newGame.makeBid(playerId, 'pass');
-    }
-    setGame(newGame);
   };
 
   const handleCardClick = (card, event) => {
