@@ -120,9 +120,14 @@ export class Table {
     return since == null ? null : Math.max(0, now - since);
   }
 
-  // Another player may let the AI play for someone who has been offline long enough
+  // Someone offline long enough may have the AI play for them
   canHandOver(seat, now = Date.now()) {
     return this.started && this.isHuman(seat) && this.offlineFor(seat, now) >= HAND_OVER_AFTER_MS;
+  }
+
+  // Who may decide that: the host; if the host is the one gone that long, anyone else
+  mayHandOver(seat, now = Date.now()) {
+    return seat === this.hostSeat || this.canHandOver(this.hostSeat, now);
   }
 
   // An action from the player in `seat`. A seat named in an action (handOver) is
@@ -149,6 +154,7 @@ export class Table {
         return this.seatsChanged({ type: 'leave', seat });
       case 'handOver': {
         const target = named(action.seat);
+        if (!this.mayHandOver(seat, now)) return null; // Only the host decides (anyone, if the host is the one away)
         if (target === null || target === seat || !this.canHandOver(target, now)) return null; // Only for someone offline long enough
         this.seats[target].ai = true; // The seat stays theirs; they take it back by returning
         return this.seatsChanged({ type: 'handOver', seat: target });

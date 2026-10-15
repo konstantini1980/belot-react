@@ -121,7 +121,10 @@ export default function OnlineGame({ table, onLeave, onCancel, onCodeTaken }) {
   const offline = room.seats.map((seat, i) => i).filter(i => i !== 0 && room.seats[i].handOverAt !== null);
   const notice = status !== 'open' ? t('onlineReconnecting')
     : offline.length > 0 ? t('onlinePlayerOffline', { name: offline.map(i => names[i]).join(', ') }) : null;
-  const canHandOver = offline.filter(i => now >= room.seats[i].handOverAt);
+  // Only the host lets the computer play for someone (anyone, if the host is the one away)
+  const awayLongEnough = i => room.seats[i].handOverAt !== null && now >= room.seats[i].handOverAt;
+  const hostAway = room.seats.some((seat, i) => seat.host && awayLongEnough(i));
+  const canHandOver = room.isHost || hostAway ? offline.filter(awayLongEnough) : [];
 
   return (
     <SeatNamesProvider names={seatNames}>
