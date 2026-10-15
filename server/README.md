@@ -58,12 +58,12 @@ Client → server, JSON over the WebSocket at `/rooms/<CODE>`:
   (a real seat number from `seats`); if someone took it first the answer is the error
   `seatTaken` and the socket stays open to pick again.
 - `{ type: 'start' }` (host), `{ type: 'rename', name }`,
-  `{ type: 'leave' }`, `{ type: 'handOver', seat }` (host; anyone if the host is the one away: let the AI play for someone offline
-  for a minute), `{ type: 'bid', bid }`, `{ type: 'play', cardId }`, `{ type: 'nextDeal' }`,
+  `{ type: 'leave' }`, `{ type: 'handOver', seat }` (host; anyone if the host is the one away: someone offline
+  for a minute leaves their seat, as with `leave`, and the AI plays it), `{ type: 'bid', bid }`, `{ type: 'play', cardId }`, `{ type: 'nextDeal' }`,
   `{ type: 'newGame' }`. Seats in actions are numbered as the sender sees the table (they are 0).
 
 Server → client: `{ type: 'joined' }`, `{ type: 'error', error }` (`noRoom`, `full`,
 `taken`, `badToken`, `seatTaken`), and `{ type: 'state', isHost, started, canStart, seats, handOverAfter,
 waitingForNextDeal, event, game }` after every change. `seats` lists the four seats turned the
-same way (`name`, `state`: empty / human / away, `online`, `offlineFor`, `host`). `game` is the game as that player sees it
+same way (`name`, `state`: empty / human, `online`, `offlineFor`, `host`). `game` is the game as that player sees it
 (`viewFor`): turned so they are player 0, other hands face down.

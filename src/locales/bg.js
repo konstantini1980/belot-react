@@ -107,7 +107,6 @@ export default {
   onlineSeatHost: 'Домакин',
   onlinePlayerOffline: '{name} не е на линия. Играта чака.',
   onlineHandOver: 'Компютърът да играе за {name}',
-  onlineAIPlaysFor: '{name} (компютър)',
   onlineCreateTable: 'Създай маса',
   onlineOrJoin: 'или влез в масата на приятел',
   onlineCodePlaceholder: 'Код на масата',

@@ -35,7 +35,9 @@ export function useOnlineTable({ code, token, create = null, choose = false }, o
       socketRef.current = ws;
       ws.onopen = () => {
         const token = tokenRef.current;
-        if (sitRef.current) ws.send(JSON.stringify({ type: 'hello', token, name: loadName(), seat: sitRef.current.seat, create }));
+        // Once seated, a reconnect asks for the same seat: if the host handed it to the AI
+        // meanwhile, we take it back while it is still free (and never create a table again)
+        if (sitRef.current) ws.send(JSON.stringify({ type: 'hello', token, name: loadName(), seat: sitRef.current.seat, create: joined ? null : create }));
         else ws.send(JSON.stringify({ type: 'look', token })); // Seats us back if this token has a seat nobody uses
       };
       ws.onmessage = (e) => {
@@ -43,7 +45,7 @@ export function useOnlineTable({ code, token, create = null, choose = false }, o
         if (message.type === 'joined') {
           joined = true;
           failures = 0;
-          sitRef.current ??= {}; // Seated (also when the server put us back in our seat)
+          sitRef.current = { seat: message.seat }; // Seated (also when the server put us back in our seat)
           saveSession(code, tokenRef.current); // A reload comes back to this seat
           setStatus('open');
         } else if (message.type === 'seats') {

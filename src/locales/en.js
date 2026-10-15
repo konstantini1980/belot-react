@@ -107,7 +107,6 @@ export default {
   onlineSeatHost: 'Host',
   onlinePlayerOffline: '{name} is offline. The game waits.',
   onlineHandOver: 'Let the computer play for {name}',
-  onlineAIPlaysFor: '{name} (computer)',
   onlineCreateTable: 'Create a table',
   onlineOrJoin: 'or join a friend\'s table',
   onlineCodePlaceholder: 'Table code',

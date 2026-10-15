@@ -108,7 +108,7 @@ export class GameRoom extends DurableObject {
       if (joined.error) return this.refuse(ws, joined.error);
     }
     ws.serializeAttachment({ token });
-    ws.send(JSON.stringify({ type: 'joined' }));
+    ws.send(JSON.stringify({ type: 'joined', seat: this.table.seatOf(token) })); // The seat to ask for again after a dropped connection
     await this.changed(null);
   }
 
@@ -171,7 +171,7 @@ export class GameRoom extends DurableObject {
       const entry = table.seats[seat];
       return {
         name: entry?.name ?? '',
-        state: !entry ? 'empty' : entry.ai ? 'away' : 'human', // empty: free, or the AI plays it; away: the AI plays for them
+        state: entry ? 'human' : 'empty', // empty: free, or the AI plays it
         online: online.has(seat),
         offlineFor: table.isHuman(seat) && !online.has(seat) ? table.offlineFor(seat, now) : null,
         host: seat === table.hostSeat,
@@ -210,7 +210,7 @@ export class GameRoom extends DurableObject {
       seats: [0, 1, 2, 3].map(s => {
         const seat = (s + from) % 4;
         const entry = table.seats[seat];
-        return { seat, name: entry?.name ?? '', state: !entry ? 'empty' : entry.ai ? 'away' : 'human', host: seat === table.hostSeat };
+        return { seat, name: entry?.name ?? '', state: entry ? 'human' : 'empty', host: seat === table.hostSeat };
       }),
     };
   }
