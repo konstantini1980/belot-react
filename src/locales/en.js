@@ -5,6 +5,10 @@ export default {
   teamWins: 'Team {team} wins!',
   newGame: 'New game',
   startBelotGame: 'Start game',
+  chooseLanguage: 'Language',
+  languageEnglish: 'English',
+  languageBulgarian: 'Български',
+  leaveGame: 'Leave game',
   continueGame: 'Continue game',
   confirmNewGame: 'Leave this game and start a new one?',
   

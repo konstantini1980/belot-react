@@ -336,14 +336,14 @@ export default function App() {
           <span className="app-logo-suits" aria-hidden="true">♣<span className="red">♦♥</span>♠</span>
         </h1>
         <div className="app-header-controls">
-          <NewGameButton onNewGame={handleNewGame} />
           <LanguageSwitcher />
+          <NewGameButton onNewGame={handleNewGame} />
         </div>
       </header>
 
       <div className="game-container">
         <GameBoard
-          tableControls={<><NewGameButton onNewGame={handleNewGame} /><LanguageSwitcher /></>}
+          tableControls={<><LanguageSwitcher /><NewGameButton onNewGame={handleNewGame} /></>}
           players={game.players}
           currentTrick={game.currentTrick}
           currentPlayer={game.currentPlayer}

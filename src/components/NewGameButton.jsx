@@ -2,8 +2,7 @@ import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import './LanguageSwitcher.css';
 
-// Abandons the game in progress (after a confirmation) and deals a new one.
-// Shows as an icon on phones and as an icon with text on desktop.
+// A small X that leaves the game in progress (after a confirmation) and deals a new one
 export default function NewGameButton({ onNewGame }) {
   const { t } = useLanguage();
 
@@ -12,12 +11,11 @@ export default function NewGameButton({ onNewGame }) {
   };
 
   return (
-    <button className="lang-button new-game-top-button" onClick={handleClick} title={t('newGame')} aria-label={t('newGame')}>
-      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none"
-        stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5" />
+    <button className="lang-button icon-button" onClick={handleClick} title={t('leaveGame')} aria-label={t('leaveGame')}>
+      <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none"
+        stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+        <path d="M6 6l12 12M18 6L6 18" />
       </svg>
-      <span className="new-game-top-label">{t('newGame')}</span>
     </button>
   );
 }
