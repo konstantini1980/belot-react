@@ -581,9 +581,9 @@ function getWeakestCard(cards, contract, trumpSuit) {
         const a = cost(card);
         const b = cost(weakest);
         for (let i = 0; i < a.length; i++) {
-            if (a[i] !== b[i]) return a[i] < b[i] ? card : weakest;
+            if (a[i] !== b[i]) return a[i] < b[i] ? card : weakest; // First criterion that differs decides
         }
-        return weakest;
+        return weakest; // Same cost: keep the earlier card
     });
 }
 
@@ -592,7 +592,7 @@ function getWeakestCard(cards, contract, trumpSuit) {
 // gives the partner a chance to take the trick with the top card of that suit.
 function chooseFallbackLead(validCards, contract, trumpSuit) {
     const plainCards = validCards.filter(card => contract === 'all-trump' || card.suit !== trumpSuit);
-    const pool = plainCards.length > 0 ? plainCards : validCards;
+    const pool = plainCards.length > 0 ? plainCards : validCards; // Lead a trump only when holding nothing else
 
     const bySuit = {};
     for (const card of pool) {
@@ -600,8 +600,8 @@ function chooseFallbackLead(validCards, contract, trumpSuit) {
     }
     const suitPoints = cards => cards.reduce((sum, card) => sum + card.getValue(contract), 0);
     const longestSuit = Object.values(bySuit).reduce((best, cards) => {
-        if (cards.length !== best.length) return cards.length > best.length ? cards : best;
-        return suitPoints(cards) < suitPoints(best) ? cards : best;
+        if (cards.length !== best.length) return cards.length > best.length ? cards : best; // Longer suit wins
+        return suitPoints(cards) < suitPoints(best) ? cards : best; // Same length: risk fewer points
     });
 
     return getWeakestCard(longestSuit, contract, trumpSuit);
