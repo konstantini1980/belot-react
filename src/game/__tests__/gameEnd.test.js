@@ -37,6 +37,21 @@ describe('Game end', () => {
     expect(game.phase).toBe(GAME_PHASES.FINISHED);
   });
 
+  it('ends at exactly 151 even when the other team is close behind', () => {
+    // 151 or more wins (>=, not >): 92 + 10 = 102 vs 60 gives 10 + 6
+    const game = finishDeal({ totalScores: [141, 140], roundScore: [92, 60], tricksWon: SPLIT_TRICKS });
+    expect(game.totalScores).toEqual([151, 146]);
+    expect(game.winner).toBe(0);
+    expect(game.phase).toBe(GAME_PHASES.FINISHED);
+  });
+
+  it('keeps playing at 150', () => {
+    const game = finishDeal({ totalScores: [140, 100], roundScore: [92, 60], tricksWon: SPLIT_TRICKS });
+    expect(game.totalScores).toEqual([150, 106]);
+    expect(game.winner).toBe(null);
+    expect(game.phase).toBe(GAME_PHASES.SCORING);
+  });
+
   it('gives the win to the higher total when both teams pass 151', () => {
     // Team 0 bid and lost: 52 + 10 vs 100, all 16 go to team 1
     const game = finishDeal({ totalScores: [155, 140], roundScore: [52, 100], tricksWon: SPLIT_TRICKS });

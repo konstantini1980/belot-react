@@ -325,10 +325,10 @@
   white-space: nowrap;
 }
 
-/* Whose turn it is */
+/* Whose turn it is (to bid or to play): the same pulse as the trick's winner */
 .player-chip.active {
   border-color: var(--gold);
-  box-shadow: 0 0 0 3px var(--gold-soft), 0 0 22px var(--gold-soft);
+  animation: goldPulse 1s ease-in-out infinite;
 }
 
 .player-chip.active .player-avatar {
@@ -337,10 +337,10 @@
 
 /* Who took the trick */
 .player-chip.won-trick {
-  animation: wonTrick 1s ease-in-out infinite;
+  animation: goldPulse 1s ease-in-out infinite;
 }
 
-@keyframes wonTrick {
+@keyframes goldPulse {
   0%, 100% {
     box-shadow: 0 0 0 2px var(--gold-soft);
   }
@@ -379,6 +379,22 @@
   top: 50%;
   transform: translateY(-50%);
 }
+
+/* The bid bubble: on the light bubble the suits take the card colours */
+.bid-balloon {
+  gap: 6px;
+}
+
+.bid-balloon .bid-suit-icon {
+  font-family: var(--font-card);
+  font-size: 17px;
+  line-height: 1;
+}
+
+.bid-balloon .tone-red { color: var(--card-red); }
+.bid-balloon .tone-black,
+.bid-balloon .tone-no-trump { color: var(--card-black); }
+.bid-balloon .tone-all-trump { color: #9a7413; }
 
 /* Card Holders Container */
 .card-holders-container {
@@ -620,21 +636,16 @@
     background: var(--panel);
   }
 
-  /* On phones the turn shows on the avatar */
-  .player-container .player-chip.active {
+  /* On phones the turn and the trick's winner pulse on the avatar */
+  .player-container:not(.south) .player-chip.active,
+  .player-container:not(.south) .player-chip.won-trick {
     box-shadow: none;
-  }
-
-  .player-container .player-chip.active .player-avatar {
-    box-shadow: 0 0 0 3px var(--gold), 0 0 18px var(--gold-soft);
-  }
-
-  .player-container .player-chip.won-trick {
     animation: none;
   }
 
-  .player-container .player-chip.won-trick .player-avatar {
-    animation: wonTrick 1s ease-in-out infinite;
+  .player-container:not(.south) .player-chip.active .player-avatar,
+  .player-container:not(.south) .player-chip.won-trick .player-avatar {
+    animation: goldPulse 1s ease-in-out infinite;
   }
 
   .player-container.north {

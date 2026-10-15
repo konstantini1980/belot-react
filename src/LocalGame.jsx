@@ -281,6 +281,7 @@ export default function LocalGame({ onPlayOnline }) {
           currentTrick={game.currentTrick}
           currentPlayer={game.currentPlayer}
           currentBidder={game.currentBidder}
+          bids={game.bids}
           tricks={game.tricks}
           totalScores={game.totalScores}
           currentRoundScores={game.currentRoundScore}

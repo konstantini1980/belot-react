@@ -99,6 +99,7 @@ export default function OnlineGame({ table, onLeave, onCodeTaken }) {
           currentTrick={game.currentTrick}
           currentPlayer={game.currentPlayer}
           currentBidder={game.currentBidder}
+          bids={game.bids}
           tricks={game.tricks}
           totalScores={game.totalScores}
           currentRoundScores={game.currentRoundScore}

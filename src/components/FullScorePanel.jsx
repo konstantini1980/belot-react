@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { GAME_PHASES } from '../game/gameLogic';
+import { GAME_PHASES, WINNING_SCORE } from '../game/gameLogic';
 import { useLanguage } from '../contexts/LanguageContext';
 import { usePlayerNames } from '../contexts/PlayerNamesContext';
 import { contractLabel, multiplierLabel } from './contractLabel';
@@ -48,12 +48,18 @@ export default function FullScorePanel({
   const { t } = useLanguage();
   const playerNames = usePlayerNames();
   const isGameFinished = phase === GAME_PHASES.FINISHED;
-  const maxScore = 151;
+  const maxScore = WINNING_SCORE;
   const isRoundOver = phase === GAME_PHASES.SCORING || phase === GAME_PHASES.FINISHED;
   const panelRef = useRef(null);
   
   const playerTotalScore = totalScores[0] || 0;
   const opponentTotalScore = totalScores[1] || 0;
+  // A team reached 151 but the game goes on: say why (a valat deal, or equal totals)
+  const wasValat = roundBreakdown?.some(team => team?.valatPoints > 0);
+  const noWinnerReason = isRoundOver && !isGameFinished
+    && Math.max(playerTotalScore, opponentTotalScore) >= WINNING_SCORE
+    ? t(wasValat ? 'noWinnerAfterValat' : 'noWinnerEqualTotals')
+    : null;
   const playerTotalProgress = (playerTotalScore / maxScore) * 100;
   const opponentTotalProgress = (opponentTotalScore / maxScore) * 100;
   
@@ -309,7 +315,7 @@ export default function FullScorePanel({
             {t('nextDeal')}
           </button>
         ) : null}
-        {!isGameFinished && <span className="win-condition">{t('firstTo151Wins')}</span>}
+        {!isGameFinished && <span className="win-condition">{noWinnerReason ?? t('firstTo151Wins')}</span>}
       </div>
     </div>
   );
