@@ -18,7 +18,7 @@ A React web implementation of the popular Bulgarian card game Belot, following t
   - Last 10 points
   - Valat bonus
 - Beautiful, modern UI with card animations
-- Real-time game state management
+- The game in progress is saved in your browser, so a page reload carries on where you left off
 
 ## Game Rules
 

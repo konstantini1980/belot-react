@@ -1,4 +1,4 @@
-import { createDeck, SEQUENCE_ORDER } from './cards';
+import { Card, createDeck, SEQUENCE_ORDER } from './cards';
 import { getAllCombinations, findBelotOnPlay } from './combinations';
 
 export const CONTRACTS = ['clubs', 'diamonds', 'hearts', 'spades', 'no-trump', 'all-trump'];
@@ -18,6 +18,7 @@ export function lastContractBid(bids) {
   return bids.findLast(b => b.bid in CONTRACT_RANK);
 }
 const WINNING_SCORE = 151;
+const SAVE_VERSION = 1; // Bump when the saved game's shape changes, so old saves are ignored
 
 export const GAME_PHASES = {
   DEALING: 'dealing',
@@ -77,6 +78,27 @@ export class BelotGame {
     copy.lastRoundRoundedPoints = [...this.lastRoundRoundedPoints];
     copy.announcedCombinations = this.announcedCombinations.map(combos => combos.map(c => ({ ...c })));
     return copy;
+  }
+
+  // The whole game as JSON, to save it and pick it up again after a page reload
+  serialize() {
+    return JSON.stringify({ version: SAVE_VERSION, game: this });
+  }
+
+  // A game from serialize(), or null if the text isn't a saved game of this version.
+  // Each card comes back as one Card per id, so a card in a hand, a trick and an
+  // announcement is still the same object, as in the original game.
+  static deserialize(text) {
+    const cards = new Map();
+    const data = JSON.parse(text, (key, value) => {
+      if (value && typeof value === 'object' && 'suit' in value && 'rank' in value && 'id' in value) {
+        if (!cards.has(value.id)) cards.set(value.id, new Card(value.suit, value.rank));
+        return cards.get(value.id);
+      }
+      return value;
+    });
+    if (!data || data.version !== SAVE_VERSION || !data.game) return null; // Not a save we can read
+    return Object.assign(new BelotGame(), data.game);
   }
 
   deal() {

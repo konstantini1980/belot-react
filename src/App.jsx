@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { BelotGame, GAME_PHASES } from './game/gameLogic';
 import { makeAIBid, makeAIPlayCard } from './game/aiplayer';
+import { saveGame, loadSavedGame } from './game/savedGame';
 import GameBoard from './components/GameBoard';
 import BiddingPanel from './components/BiddingPanel';
 import DevPanel from './components/DevPanel';
@@ -15,7 +16,8 @@ const BALLOON_MS = { belot: 4000, other: 3000 };
 
 export default function App() {
   const { t } = useLanguage();
-  const [game, setGame] = useState(() => new BelotGame());
+  // A game saved before a page reload carries on; otherwise a new one starts
+  const [game, setGame] = useState(() => loadSavedGame() || new BelotGame());
   const [playableCards, setPlayableCards] = useState([]);
   const [trickComplete, setTrickComplete] = useState(false);
   const [playerCombinations, setPlayerCombinations] = useState({}); // { playerId: combinations[] }
@@ -79,6 +81,14 @@ export default function App() {
     });
   }, []);
 
+  // Save after every change, so a reload resumes where the game was
+  useEffect(() => {
+    saveGame(game);
+  }, [game]);
+
+  // On mobile nothing moves until the player taps the start button (also after a reload)
+  const paused = isMobile && !isMobileGameStarted;
+
   useEffect(() => {
     // Detect "mobile" using the same breakpoint logic we use in CSS
     const mq = window.matchMedia('(max-width: 768px), ((max-width: 1024px) and (max-height: 768px))');
@@ -113,13 +123,14 @@ export default function App() {
 
   // Auto-play for AI players
   useEffect(() => {
-    if (game.phase === GAME_PHASES.BIDDING && game.currentBidder !== PLAYER_ID) {
+    if (!paused && game.phase === GAME_PHASES.BIDDING && game.currentBidder !== PLAYER_ID) {
       const timer = setTimeout(handleAIBid, 1000);
       return () => clearTimeout(timer);
     }
-  }, [game.phase, game.currentBidder, game.bids.length, handleAIBid]);
+  }, [paused, game.phase, game.currentBidder, game.bids.length, handleAIBid]);
 
   useEffect(() => {
+    if (paused) return; // Waiting for the mobile start button
     if (game.phase === GAME_PHASES.PLAYING && game.currentPlayer !== null && game.currentPlayer !== PLAYER_ID) {
       // Clear playable cards when it's not player's turn
       setPlayableCards([]);
@@ -136,18 +147,18 @@ export default function App() {
     }
     
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [game.phase, game.currentPlayer]);
+  }, [paused, game.phase, game.currentPlayer]);
 
   // After the 4th card, wait 2 seconds, then animate the trick to the holders
   useEffect(() => {
-    if (game.phase === GAME_PHASES.PLAYING && game.currentTrick.cards.length === 4) {
+    if (!paused && game.phase === GAME_PHASES.PLAYING && game.currentTrick.cards.length === 4) {
       const timer = setTimeout(animateToHolders, 2000);
       return () => clearTimeout(timer);
     }
     if (game.phase !== GAME_PHASES.PLAYING) {
       setTrickComplete(false);
     }
-  }, [game.phase, game.currentTrick.cards.length, animateToHolders]);
+  }, [paused, game.phase, game.currentTrick.cards.length, animateToHolders]);
 
   const updatePlayableCards = () => {
     if (game.currentPlayer !== PLAYER_ID) return;
