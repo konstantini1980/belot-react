@@ -78,6 +78,29 @@ describe('Saving and resuming a game', () => {
     expect(loaded.totalScores).toEqual([42, 57]);
   });
 
+  // A reload must not be a way to get new cards: the five dealt cards and the
+  // three still in the deck come back the same, so the full hands match too
+  it('Reloading during bidding keeps every dealt card and the rest of the deck', () => {
+    const store = fakeStorage();
+    const game = new BelotGame();
+    game.deal();
+    saveGame(game, store);
+
+    const restored = loadSavedGame(store);
+    expect(restored.phase).toBe(GAME_PHASES.BIDDING);
+    expect(restored.players.map(p => p.hand.map(c => c.id))).toEqual(game.players.map(p => p.hand.map(c => c.id)));
+    expect(restored.deck.map(c => c.id)).toEqual(game.deck.map(c => c.id));
+
+    // Both games finish bidding the same way and deal the same last three cards
+    for (const g of [game, restored]) {
+      g.makeBid(g.currentBidder, 'hearts');
+      for (let i = 0; i < 3; i++) g.makeBid(g.currentBidder, 'pass');
+    }
+    expect(restored.phase).toBe(GAME_PHASES.PLAYING);
+    expect(restored.players.map(p => p.hand.map(c => c.id))).toEqual(game.players.map(p => p.hand.map(c => c.id)));
+    expect(restored.players.every(p => p.hand.length === 8)).toBe(true);
+  });
+
   it('A finished game removes the save', () => {
     const store = fakeStorage();
     const game = gameInPlay();
