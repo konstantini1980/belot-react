@@ -224,7 +224,7 @@ export function OnlineLobby({ code, status, error, room, onStart, onRename, onLe
     if (!taken) note = t('onlineSeatEmpty');
     else if (seat !== 0 && !info.online) note = t('onlineSeatOffline');
     if (info.host) note = note ? `${note} · ${t('onlineSeatHost')}` : t('onlineSeatHost');
-    const name = seat === 0 ? labels[0] : (taken ? info.name || t('playerFriend') : labels[seat]);
+    const name = taken ? info.name || (seat === 0 ? labels[0] : t('playerFriend')) : labels[seat]; // Your own name at the bottom too
     return { name, note, taken };
   });
   const host = room.seats.find(seat => seat.host);

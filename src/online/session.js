@@ -4,37 +4,45 @@
 export const SERVER_URL = import.meta.env.VITE_ONLINE_SERVER
   || (import.meta.env.DEV ? `ws://${window.location.hostname}:8787` : '');
 
-// { code, token, left } of our last table: a reload rejoins it, unless we left it;
-// after leaving, the same link still gets our seat back
+// { code, token, left } of our last table: a reload rejoins it, unless we left it.
+// Kept per tab (sessionStorage), so two tabs of one browser can sit at the same table
+// as different players, and per browser (localStorage), so a phone that closed the tab
+// still gets its seat back from the link.
 const STORAGE_KEY = 'belot-online';
 const CODE_LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // No 0/O or 1/I, easy to read out
 export const CODE_LENGTH = 6;
 
-function storage() {
+function storage(kind = 'localStorage') {
   try {
-    return window.localStorage;
+    return window[kind];
   } catch {
     return null; // Storage blocked: the table is just not remembered
   }
 }
 
-export function loadSession() {
+function read(kind) {
   try {
-    const session = JSON.parse(storage()?.getItem(STORAGE_KEY) || 'null');
+    const session = JSON.parse(storage(kind)?.getItem(STORAGE_KEY) || 'null');
     return session?.code ? session : null;
   } catch {
     return null;
   }
 }
 
-export function saveSession(code, token, left = false) {
-  try {
-    storage()?.setItem(STORAGE_KEY, JSON.stringify({ code, token, left }));
-  } catch {
-    // Storage full or blocked: a reload won't rejoin, nothing else breaks
-  }
+// This tab's table first, else the last one in this browser
+export function loadSession() {
+  return read('sessionStorage') ?? read('localStorage');
 }
 
+export function saveSession(code, token, left = false) {
+  for (const kind of ['sessionStorage', 'localStorage']) {
+    try {
+      storage(kind)?.setItem(STORAGE_KEY, JSON.stringify({ code, token, left }));
+    } catch {
+      // Storage full or blocked: a reload won't rejoin, nothing else breaks
+    }
+  }
+}
 
 export function newRoomCode() {
   const values = globalThis.crypto.getRandomValues(new Uint32Array(CODE_LENGTH));
@@ -63,12 +71,13 @@ export function takeRoomFromUrl() {
   return code.length === CODE_LENGTH ? code : null;
 }
 
-// A table to open by its code: back to our own seat if we sat there and didn't leave,
-// otherwise a new token and a choice of seat first (confirm)
+// A table to open by its code. It always starts on the join screen (confirm): with the
+// token we had there, the server seats us straight back if that seat is free of anyone
+// else; if another tab or window of this browser is sitting there, we get a new token
+// and pick a seat like anyone else.
 export function tableByCode(code) {
   const saved = loadSession();
-  const back = saved?.code === code && !saved.left;
-  return { code, token: back ? saved.token : newToken(), confirm: !back };
+  return { code, token: saved?.code === code ? saved.token : newToken(), confirm: true };
 }
 
 // Which table to open when the page loads: a shared link, else the table we were at
@@ -77,25 +86,32 @@ export function initialTable() {
   const linked = takeRoomFromUrl();
   if (linked) return tableByCode(linked);
   const saved = loadSession();
-  return saved && !saved.left ? { code: saved.code, token: saved.token } : null;
+  return saved && !saved.left ? tableByCode(saved.code) : null; // Straight back to our seat, unless another tab has it
 }
 
-// The name this player shows at online tables (kept for next time)
+// The name this player shows at online tables (kept for next time; this tab's own
+// first, so two tabs testing as two players keep their names apart)
 const NAME_KEY = 'belot-online-name';
 
 export function loadName() {
-  try {
-    return storage()?.getItem(NAME_KEY) || '';
-  } catch {
-    return '';
+  for (const kind of ['sessionStorage', 'localStorage']) {
+    try {
+      const name = storage(kind)?.getItem(NAME_KEY);
+      if (name) return name;
+    } catch {
+      // Storage blocked: try the other one
+    }
   }
+  return '';
 }
 
 export function saveName(name) {
-  try {
-    storage()?.setItem(NAME_KEY, name);
-  } catch {
-    // Storage blocked: the name is asked again next time
+  for (const kind of ['sessionStorage', 'localStorage']) {
+    try {
+      storage(kind)?.setItem(NAME_KEY, name);
+    } catch {
+      // Storage blocked: the name is asked again next time
+    }
   }
 }
 

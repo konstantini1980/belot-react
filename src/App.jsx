@@ -17,8 +17,8 @@ export default function App() {
 
   const createTable = () => setOnline({ code: newRoomCode(), token: newToken(), create: true });
   const joinTable = (code) => setOnline(tableByCode(code)); // Our old seat, if we had one; else choose one
-  const leaveTable = () => {
-    saveSession(online.code, online.token, true); // Not rejoined on reload; the link still works
+  const leaveTable = (token = online.token) => {
+    saveSession(online.code, token, true); // Not rejoined on reload
     setOnline(null);
   };
 

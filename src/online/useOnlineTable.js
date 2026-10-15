@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { SERVER_URL, saveSession, loadName } from './session';
+import { SERVER_URL, saveSession, loadName, newToken } from './session';
 
 const MAX_RETRY_MS = 10000;
 const GIVE_UP_AFTER = 4; // Failed attempts before a first connection counts as "server unreachable"
@@ -16,6 +16,7 @@ export function useOnlineTable({ code, token, create = null, choose = false }, o
   const [freeSeats, setFreeSeats] = useState(null);
   const socketRef = useRef(null);
   const sitRef = useRef(choose ? null : {}); // { seat } once we sit down; null while still choosing
+  const tokenRef = useRef(token); // Replaced if another tab of this browser holds our old seat
   const onStateRef = useRef(onState);
   useEffect(() => {
     onStateRef.current = onState;
@@ -33,17 +34,20 @@ export function useOnlineTable({ code, token, create = null, choose = false }, o
       const ws = new WebSocket(`${SERVER_URL}/rooms/${code}`);
       socketRef.current = ws;
       ws.onopen = () => {
+        const token = tokenRef.current;
         if (sitRef.current) ws.send(JSON.stringify({ type: 'hello', token, name: loadName(), seat: sitRef.current.seat, create }));
-        else ws.send(JSON.stringify({ type: 'look' }));
+        else ws.send(JSON.stringify({ type: 'look', token })); // Seats us back if this token has a seat nobody uses
       };
       ws.onmessage = (e) => {
         const message = JSON.parse(e.data);
         if (message.type === 'joined') {
           joined = true;
           failures = 0;
-          saveSession(code, token); // A reload comes back to this seat
+          sitRef.current ??= {}; // Seated (also when the server put us back in our seat)
+          saveSession(code, tokenRef.current); // A reload comes back to this seat
           setStatus('open');
         } else if (message.type === 'seats') {
+          if (message.tokenInUse) tokenRef.current = newToken(); // Our old seat is in use here: join as someone new
           setFreeSeats(message);
         } else if (message.type === 'error' && message.error === 'seatTaken') {
           sitRef.current = null; // Back to choosing
@@ -98,8 +102,10 @@ export function useOnlineTable({ code, token, create = null, choose = false }, o
     sitRef.current = { seat };
     setError(null);
     const ws = socketRef.current;
-    if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'hello', token, name: loadName(), seat }));
-  }, [token]);
+    if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'hello', token: tokenRef.current, name: loadName(), seat }));
+  }, []);
 
-  return { status, error, send, freeSeats, sit };
+  const currentToken = useCallback(() => tokenRef.current, []);
+
+  return { status, error, send, freeSeats, sit, currentToken };
 }

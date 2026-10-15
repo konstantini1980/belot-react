@@ -54,12 +54,12 @@ export default function OnlineGame({ table, onLeave, onCancel, onCodeTaken }) {
     setNow(receivedAt);
   }, [storeCardPosition, showAnnouncements, resetEffects]);
 
-  const { status, error, send, freeSeats, sit } = useOnlineTable({ ...table, choose: Boolean(table.confirm) }, onState);
+  const { status, error, send, freeSeats, sit, currentToken } = useOnlineTable({ ...table, choose: Boolean(table.confirm) }, onState);
 
   // Leaving on purpose frees the seat (the AI plays it if the game is running)
   const leave = () => {
     send({ type: 'leave' });
-    onLeave();
+    onLeave(currentToken());
   };
 
   // Tick while someone is offline, so "Let the computer play" shows up when the wait is over

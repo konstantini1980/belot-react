@@ -60,8 +60,15 @@ export class GameRoom extends DurableObject {
     if (message.type === 'look') {
       // Someone opened an invite: show them the free seats until they sit down
       if (!this.table) return this.refuse(ws, 'noRoom');
+      const seat = this.table.seatOf(message.token);
+      const inUse = seat !== null && this.openSockets().some(other => other !== ws && this.seatOf(other) === seat);
+      if (seat !== null && !inUse) {
+        await this.hello(ws, { token: message.token }); // Their own seat, nobody on it: straight back in
+        return;
+      }
       ws.serializeAttachment({ looking: true });
-      ws.send(JSON.stringify(this.freeSeatsMessage()));
+      // inUse: another tab or window of the same browser sits there, so this one joins as someone new
+      ws.send(JSON.stringify({ ...this.freeSeatsMessage(), tokenInUse: inUse }));
       return;
     }
     const seat = this.seatOf(ws);
