@@ -838,7 +838,7 @@ describe('Scoring', () => {
       expect(game.lastRoundRoundedPoints[1]).toBe(2); 
     });
 
-    it('Trump game - valat game cancels doubling', () => {
+    it('Trump game - doubled valat - winner takes everything times 2', () => {
       // First, set up a round with equal points to create hanging points
       game.contract = 'hearts';
       game.double = true;
@@ -878,18 +878,56 @@ describe('Scoring', () => {
       
       game.endRound();
       
+      // 162 + 90 (valat) + 20 (tierce) = 272 -> 27, doubled = 54, all to the valat team
       expect(game.hangingPoints).toBe(0);
-      expect(game.totalScores[0]).toBe(55); // Contract team - add valat points
-      expect(game.totalScores[1]).toBe(32); // Opponent team - add tierce points
+      expect(game.totalScores[0]).toBe(84);
+      expect(game.totalScores[1]).toBe(30);
       
-      expect(game.lastRoundBreakdown[0].combinationPoints).toBe(0);
-      expect(game.lastRoundBreakdown[1].combinationPoints).toBe(20);
       expect(game.lastRoundBreakdown[0].valatPoints).toBe(90);
       expect(game.lastRoundBreakdown[1].valatPoints).toBe(0);
       
-      // Verify:       
-      expect(game.lastRoundRoundedPoints[0]).toBe(25); 
-      expect(game.lastRoundRoundedPoints[1]).toBe(2); 
+      expect(game.lastRoundRoundedPoints[0]).toBe(54); 
+      expect(game.lastRoundRoundedPoints[1]).toBe(0); 
+    });
+
+    it('Trump game - redoubled valat - winner takes everything times 4', () => {
+      game.contract = 'hearts';
+      game.trumpSuit = 'hearts';
+      game.double = true;
+      game.redouble = true;
+      game.bids = [
+        { playerId: 0, bid: 'hearts' },
+        { playerId: 1, bid: 'double' },
+        { playerId: 2, bid: 'redouble' },
+        { playerId: 3, bid: 'pass' },
+        { playerId: 0, bid: 'pass' },
+        { playerId: 1, bid: 'pass' }
+      ];
+      game.announcedCombinations[0] = [];
+      game.announcedCombinations[1] = [];
+      for (let i = 0; i < 8; i++) {
+        game.tricks.push({
+          cards: [
+            { playerId: 0, card: new Card('hearts', 'A') },
+            { playerId: 1, card: new Card('spades', '7') },
+            { playerId: 2, card: new Card('clubs', '7') },
+            { playerId: 3, card: new Card('diamonds', '7') }
+          ],
+          team: 0
+        });
+      }
+      game.currentRoundScore[0] = 162;
+      game.currentRoundScore[1] = 0;
+      game.totalScores[0] = 30;
+      game.totalScores[1] = 30;
+
+      game.endRound();
+
+      // 162 + 90 (valat) = 252 -> 25, redoubled = 100, all to the valat team
+      expect(game.lastRoundRoundedPoints[0]).toBe(100);
+      expect(game.lastRoundRoundedPoints[1]).toBe(0);
+      expect(game.totalScores[0]).toBe(130);
+      expect(game.totalScores[1]).toBe(30); 
     });
     
     it('Trump game - doubling and redoubling points', () => {

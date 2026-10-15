@@ -686,7 +686,7 @@ export class BelotGame {
     });
     
     
-    // --- Round scoring (winner from round points; valat cancels doubling) ---
+    // --- Round scoring (winner from round points) ---
     const contractTeam = this.players[this.bids.find(b => b.bid === this.contract).playerId].team;
     const contractPoints = this.currentRoundScore[contractTeam];
     const opponentPoints = this.currentRoundScore[1 - contractTeam];
@@ -697,9 +697,9 @@ export class BelotGame {
 
     // even in hanging situation, the non contract team takes its points.
     const roundWinner = contractPoints > opponentPoints ? contractTeam : (1 - contractTeam);
-    // Valat or hanging cancels doubling: count normally; otherwise double/redouble apply
-    const effectiveMultiplier = isValat || isHanging ? 1 : (this.redouble ? 4 : (this.double ? 2 : 1));
-    const winnerTakesAll = (((this.double || this.redouble) && !isValat) || (contractPoints < opponentPoints));
+    // Hanging cancels doubling: count normally; otherwise double/redouble apply (valat included, per belot.bg)
+    const effectiveMultiplier = isHanging ? 1 : (this.redouble ? 4 : (this.double ? 2 : 1));
+    const winnerTakesAll = this.double || this.redouble || (contractPoints < opponentPoints);
 
     this.lastRoundRoundedPoints = [0, 0];
 

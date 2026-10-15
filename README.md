@@ -22,18 +22,12 @@ A React web implementation of the popular Bulgarian card game Belot, following t
 
 ## Game Rules
 
-Belot is played with 4 players in two teams. The game uses a 32-card deck (7, 8, 9, 10, J, Q, K, A of all suits).
+New to Belot? Read **[RULES.md](RULES.md)**, a beginner's guide covering the goal, dealing,
+bidding, what you may play, combinations, scoring and special situations.
 
-### Phases
-
-1. **Dealing**: Each player receives 5 cards (3 + 2)
-2. **Bidding**: Players bid on contracts, then receive 3 more cards
-3. **Playing**: 8 tricks are played following suit and trump rules
-4. **Scoring**: Points are calculated and added to team scores
-
-### Winning
-
-The game ends when a team reaches 151 points. The team with the higher score wins.
+In short: four players in two teams play with a 32-card deck (7 to A). Each deal has a
+bidding phase that picks the trump, eight tricks, and scoring. The first team to 151 points
+wins.
 
 ## Installation
 
