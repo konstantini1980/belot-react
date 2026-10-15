@@ -350,7 +350,11 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>{t('appTitle')}</h1>
+        <h1 className="app-logo" title={t('appTitle')}>
+          {t('logo')}
+          <span className="app-logo-suits" aria-hidden="true">♣<span className="red">♦♥</span>♠</span>
+        </h1>
+        <LanguageSwitcher />
       </header>
 
       <div className="game-container">

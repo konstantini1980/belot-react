@@ -9,6 +9,16 @@ import { GAME_PHASES } from '../game/gameLogic';
 import { useLanguage } from '../contexts/LanguageContext';
 import './GameBoard.css';
 
+// The card size lives in CSS (--card-w / --card-h, smaller on phones); read it so
+// trick positions and animations match what's on screen.
+function readCardSize(element) {
+  const style = getComputedStyle(element);
+  return {
+    width: parseFloat(style.getPropertyValue('--card-w')) || 88,
+    height: parseFloat(style.getPropertyValue('--card-h')) || 124,
+  };
+}
+
 export default function GameBoard({ 
   players, 
   currentTrick, 
@@ -148,8 +158,7 @@ export default function GameBoard({
       
       // Calculate fixed positions for each player within board-center
       // These are relative to board-center (not screen coordinates)
-      const cardWidth = 80; // Full card width
-      const cardHeight = 108; // Full card height
+      const { width: cardWidth, height: cardHeight } = readCardSize(boardCenterRef.current);
       
       // Use TOP-LEFT coordinates for `left/top` positioning.
       // Bottom (South, player 0): centered horizontally, near bottom
@@ -185,8 +194,7 @@ export default function GameBoard({
       // Target is the CENTER of the holders container, expressed in `.board-center` coordinates.
       // Since trick cards are absolutely positioned inside `.board-center`, we convert viewport
       // coordinates -> local coordinates by subtracting `.board-center` top-left.
-      const cardWidth = 80;
-      const cardHeight = 108;
+      const { width: cardWidth, height: cardHeight } = readCardSize(boardCenterRef.current);
       const holderCenterX = holder.left + holder.width / 2;
       const holderCenterY = holder.top + holder.height / 2;
       const targetX = holderCenterX - boardCenter.left - cardWidth / 2;
@@ -215,9 +223,11 @@ export default function GameBoard({
   }, [trickComplete, phase, currentTrick.cards.length]);
 
   const showStartButton = isMobile && !isMobileGameStarted && onStartMobileGame;
+  const isYourTurnToPlay = phase === GAME_PHASES.PLAYING && currentPlayer === 0 && !trickComplete
+    && !isShowingLastTrick && !currentTrick.cards.some(({ playerId }) => playerId === 0);
   
   return (
-    <div className={`game-board ${showStartButton ? 'show-start-button-only' : ''}`}>
+    <div className={`game-board ${showStartButton ? 'show-start-button-only' : ''} ${biddingPanel ? 'bidding' : ''}`}>
       {languageSwitcher && (
         <div className="language-switcher-container">
           {languageSwitcher}
@@ -248,7 +258,7 @@ export default function GameBoard({
               return (
                 <div
                   key={`last-${playerId}-${card.id}`}
-                  className="trick-card last-trick-card"
+                  className={`trick-card last-trick-card from-${getPlayerPosition(playerId)}`}
                   style={{ left: `${targetPos.x}px`, top: `${targetPos.y}px` }}
                 >
                   <Card card={card} />
@@ -273,7 +283,7 @@ export default function GameBoard({
           return (
             <div 
               key={cardKey} 
-              className={`trick-card ${isAnimating ? 'animating-to-center' : ''}`}
+              className={`trick-card from-${position} ${isAnimating ? 'animating-to-center' : ''}`}
               style={{
                 left: targetPos ? `${targetPos.x}px` : undefined,
                 top: targetPos ? `${targetPos.y}px` : undefined,
@@ -288,6 +298,14 @@ export default function GameBoard({
           );
         })}
 
+        {/* An empty place in front of you while the trick waits for your card */}
+        {isYourTurnToPlay && (
+          <div
+            className="trick-slot"
+            style={{ left: `${cardPositionInBoard.south.x}px`, top: `${cardPositionInBoard.south.y}px` }}
+          />
+        )}
+
         {trickComplete && currentTrick.cards.map(({ playerId, card }) => {
           const cardKey = `${playerId}-${card.id}`;
           const position = getPlayerPosition(playerId);
@@ -297,7 +315,7 @@ export default function GameBoard({
           return (
             <div 
               key={cardKey} 
-              className="trick-card moving-to-holder"
+              className={`trick-card from-${position} moving-to-holder`}
               style={{
                 left: sourcePos ? `${sourcePos.x}px` : undefined,
                 top: sourcePos ? `${sourcePos.y}px` : undefined,
@@ -372,9 +390,13 @@ export default function GameBoard({
           return (
             <div key={idx} className={`player-container ${position}`} data-player-id={idx}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-                <div className={`player-chip ${isActive ? 'active' : ''} ${isTrickWinner ? 'won-trick' : ''}` }>
+                <div className={`player-chip team-${idx % 2} ${isActive ? 'active' : ''} ${isTrickWinner ? 'won-trick' : ''}` }>
+                  <span className="player-avatar">
+                    {playerNames[idx].charAt(0)}
+                    {/* On phones the opponents' cards are hidden; this badge counts them */}
+                    {!isSouth && <span className="player-card-count">{player.hand.length}</span>}
+                  </span>
                   <span className="player-chip-name">{playerNames[idx]}</span>
-                  <span className={`player-turn-dot ${isActive ? 'visible' : ''}`}></span>
                 </div>
                 {combinations.length > 0 && (
                   <div className={`combination-balloon-wrapper ${position}`}>
@@ -409,6 +431,7 @@ export default function GameBoard({
         {!isRoundOver && (
           <CompactScorePanel 
             roundScores={currentRoundScores}
+            totalScores={totalScores}
             contract={contract}
             isDouble={isDouble}
             isRedouble={isRedouble}
