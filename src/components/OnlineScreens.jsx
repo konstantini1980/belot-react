@@ -59,7 +59,7 @@ export function OnlineSetup({ onCreate, onJoin, onBack }) {
           autoComplete="off"
           spellCheck="false"
         />
-        <button type="submit" className="start-new-game-button" disabled={!canJoin}>{t('onlineJoin')}</button>
+        <button type="submit" className="start-button" disabled={!canJoin}>{t('onlineJoin')}</button>
       </form>
     </TablePanel>
   );
@@ -163,7 +163,7 @@ function InviteButton({ code }) {
     }
   };
   return (
-    <button className="start-new-game-button" onClick={share}>
+    <button className="start-button" onClick={share}>
       {copied ? t('onlineLinkCopied') : t(canShare ? 'onlineShareLink' : 'onlineCopyLink')}
     </button>
   );
@@ -201,7 +201,7 @@ export function OnlineLobby({ code, status, error, room, onStart, onLeave }) {
     return (
       <TablePanel onExit={onLeave}>
         <p className="online-message">{t(`onlineError_${error}`)}</p>
-        <button className="start-new-game-button" onClick={onLeave}>{t('onlineBack')}</button>
+        <button className="start-button" onClick={onLeave}>{t('onlineBack')}</button>
       </TablePanel>
     );
   }
