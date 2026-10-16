@@ -58,7 +58,7 @@ export default {
   showLastTrick: 'Покажи последната ръка',
   totalScore: 'Общо',
   nextDeal: 'Следващо раздаване',
-  nextDealWaiting: 'Чакаме другите да натиснат „Следващо раздаване“…',
+  nextDealWaiting: 'Чакаме другите играчи…',
   firstTo151Wins: 'Печели първият отбор достигнал 151 точки',
   noWinnerAfterValat: 'Още няма победител: играта не се печели с валат',
   noWinnerEqualTotals: 'Още няма победител: резултатът е равен, играе се нататък',

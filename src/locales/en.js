@@ -58,7 +58,7 @@ export default {
   showLastTrick: 'Show the last trick',
   totalScore: 'Total Score',
   nextDeal: 'Next Deal',
-  nextDealWaiting: 'Waiting for the other players to click Next Deal…',
+  nextDealWaiting: 'Waiting for other players…',
   firstTo151Wins: 'The first team that reaches 151 points wins',
   noWinnerAfterValat: 'No winner yet: a game can\'t be won with a valat',
   noWinnerEqualTotals: 'No winner yet: the totals are equal, so play goes on',
