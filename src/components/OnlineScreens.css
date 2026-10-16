@@ -170,18 +170,20 @@ button.online-seat:hover {
 
 .online-join .start-new-game-button {
   width: auto;
+  min-height: 0;
   padding: 10px 18px;
 }
 
-/* The panel's X, in its top right corner (the title keeps clear of it) */
+/* The panel's X, in its top right corner, centred on the title's line (the title keeps clear of it) */
 .online-close {
   position: absolute;
-  top: 12px;
+  top: 22px; /* The panel's top padding: level with the title, whose line is as tall as the X */
   right: 12px;
 }
 
 .online-panel .online-title {
   padding: 0 34px;
+  line-height: 32px;
 }
 
 /* Room between the seats and the table code below them */
