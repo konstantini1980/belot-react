@@ -1,6 +1,7 @@
 /* Online play: the setup and lobby panel on the empty table, and the status notice */
 
 .online-panel {
+  position: relative;
   width: min(360px, calc(100vw - 32px));
   max-height: calc(100dvh - 120px);
   overflow-y: auto;
@@ -17,14 +18,17 @@
   text-align: center;
 }
 
-.online-panel .start-button,
-.online-panel .start-new-game-button {
+.online-panel .start-button {
   min-width: 0;
   width: 100%;
 }
 
-.online-panel button:disabled {
-  opacity: 0.45;
+/* Every panel button is gold; a disabled one is a flat, faint gold so it can't pass for a field */
+.online-panel .start-button:disabled {
+  background: rgba(231, 195, 106, 0.16);
+  border-color: rgba(231, 195, 106, 0.25);
+  color: rgba(231, 195, 106, 0.55);
+  box-shadow: none;
   cursor: default;
 }
 
@@ -167,18 +171,28 @@ button.online-seat:hover {
   color: var(--ink-dim);
 }
 
-.online-join .start-new-game-button {
+.online-join .start-button {
   width: auto;
-  padding: 10px 18px;
+  min-height: 0;
+  padding: 10px 20px;
+  font-size: 16px;
 }
 
-.online-link-button {
-  background: none;
-  border: none;
-  color: var(--ink-dim);
-  font: 14px var(--font-sans);
-  text-decoration: underline;
-  cursor: pointer;
+/* The panel's X, in its top right corner, centred on the title's line (the title keeps clear of it) */
+.online-close {
+  position: absolute;
+  top: 22px; /* The panel's top padding: level with the title, whose line is as tall as the X */
+  right: 22px; /* The panel's side padding: in line with the fields' right edge */
+}
+
+.online-panel .online-title {
+  padding: 0 34px;
+  line-height: 32px;
+}
+
+/* Room between the seats and the table code below them */
+.online-code-label {
+  margin-top: 14px;
 }
 
 .online-code {

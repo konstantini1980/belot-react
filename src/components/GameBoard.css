@@ -68,7 +68,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  align-items: center;
+  align-items: stretch; /* Start buttons share one width */
   justify-content: center;
   visibility: visible !important;
   opacity: 1 !important;
@@ -76,10 +76,11 @@
 
 .start-button-overlay .start-button {
   min-width: 220px;
+  min-height: 54px;
   flex: 0 0 auto;
-  padding: 16px 24px;
+  padding: 10px 24px;
   background: linear-gradient(180deg, #f1d488, #d1a945);
-  border: none;
+  border: 1px solid transparent;
   border-radius: 14px;
   color: var(--bubble-ink);
   font-family: var(--font-sans);
@@ -93,7 +94,9 @@
 
 .start-button-overlay .start-new-game-button {
   min-width: 220px;
-  padding: 12px 24px;
+  min-height: 54px; /* Same height as the start button above it */
+  padding: 10px 24px;
+  line-height: 1.2;
   background: rgba(0, 0, 0, 0.35);
   border: 1px solid var(--panel-line);
   border-radius: 14px;

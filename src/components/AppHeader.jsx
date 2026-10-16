@@ -3,9 +3,10 @@ import LanguageSwitcher from './LanguageSwitcher';
 import ExitGameButton from './ExitGameButton';
 import { useLanguage } from '../contexts/LanguageContext';
 
-// Language and exit, in the top bar on desktop and on the table on phones
+// Language and exit, in the top bar on desktop and on the table on phones.
+// No onExitGame (start screen, online panels): no X, as there is no game to leave.
 export function TableControls({ onExitGame, confirmText }) {
-  return <><LanguageSwitcher /><ExitGameButton onExitGame={onExitGame} confirmText={confirmText} /></>;
+  return <><LanguageSwitcher />{onExitGame && <ExitGameButton onExitGame={onExitGame} confirmText={confirmText} />}</>;
 }
 
 export default function AppHeader({ onExitGame, confirmText }) {

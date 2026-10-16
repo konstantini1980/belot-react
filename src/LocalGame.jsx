@@ -236,6 +236,9 @@ export default function LocalGame({ onPlayOnline }) {
     setIsGameStarted(true);
   };
 
+  // The X shows only once play has started (not on the start screen)
+  const exitGame = isGameStarted ? handleExitGame : null;
+
   // A saved game that was already under way when the page loaded
   const hasGameInProgress = game.phase !== GAME_PHASES.DEALING || game.dealHistory.length > 0;
 
@@ -272,11 +275,11 @@ export default function LocalGame({ onPlayOnline }) {
 
   return (
     <>
-      <AppHeader onExitGame={handleExitGame} />
+      <AppHeader onExitGame={exitGame} />
 
       <div className="game-container">
         <GameBoard
-          tableControls={<TableControls onExitGame={handleExitGame} />}
+          tableControls={<TableControls onExitGame={exitGame} />}
           players={game.players}
           currentTrick={game.currentTrick}
           currentPlayer={game.currentPlayer}
