@@ -1,6 +1,7 @@
 /* Online play: the setup and lobby panel on the empty table, and the status notice */
 
 .online-panel {
+  position: relative;
   width: min(360px, calc(100vw - 32px));
   max-height: calc(100dvh - 120px);
   overflow-y: auto;
@@ -172,13 +173,20 @@ button.online-seat:hover {
   padding: 10px 18px;
 }
 
-.online-link-button {
-  background: none;
-  border: none;
-  color: var(--ink-dim);
-  font: 14px var(--font-sans);
-  text-decoration: underline;
-  cursor: pointer;
+/* The panel's X, in its top right corner (the title keeps clear of it) */
+.online-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.online-panel .online-title {
+  padding: 0 34px;
+}
+
+/* Room between the seats and the table code below them */
+.online-code-label {
+  margin-top: 14px;
 }
 
 .online-code {

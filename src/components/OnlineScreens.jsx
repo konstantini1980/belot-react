@@ -1,20 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import AppHeader, { TableControls } from './AppHeader';
+import ExitGameButton from './ExitGameButton';
 import { useLanguage } from '../contexts/LanguageContext';
 import { CODE_LENGTH, normalizeCode, shareLink, loadName, saveName } from '../online/session';
 import { NAME_LENGTH } from '../game/onlineTable';
 import './OnlineScreens.css';
 
-// An empty table with a panel in the middle, for the online screens before play
+// An empty table with a panel in the middle, for the online screens before play.
+// The panel's own X closes it (asking first when confirmText is set); the top bar has no X here.
 function TablePanel({ onExit, confirmText, children }) {
+  const { t } = useLanguage();
   return (
     <>
-      <AppHeader onExitGame={onExit} confirmText={confirmText} />
+      <AppHeader />
       <div className="game-container">
         <div className="game-board show-start-button-only">
-          <div className="table-controls"><TableControls onExitGame={onExit} confirmText={confirmText} /></div>
+          <div className="table-controls"><TableControls /></div>
           <div className="start-button-overlay">
-            <div className="online-panel">{children}</div>
+            <div className="online-panel">
+              <ExitGameButton
+                className="lang-button icon-button online-close"
+                onExitGame={onExit}
+                confirmText={confirmText}
+                noConfirm={!confirmText}
+                label={confirmText ? t('exitGame') : t('close')}
+              />
+              {children}
+            </div>
           </div>
         </div>
       </div>
@@ -30,7 +42,7 @@ export function OnlineSetup({ onCreate, onJoin, onBack }) {
   const canJoin = code.length === CODE_LENGTH && Boolean(name);
 
   return (
-    <TablePanel onExit={onBack} confirmText={t('confirmExitGame')}>
+    <TablePanel onExit={onBack}>
       <h2 className="online-title">{t('playOnline')}</h2>
       <p className="online-hint">{t('onlineSetupHint')}</p>
       <NameField onChange={setName} />
@@ -49,7 +61,6 @@ export function OnlineSetup({ onCreate, onJoin, onBack }) {
         />
         <button type="submit" className="start-new-game-button" disabled={!canJoin}>{t('onlineJoin')}</button>
       </form>
-      <button className="online-link-button" onClick={onBack}>{t('onlineBack')}</button>
     </TablePanel>
   );
 }
@@ -94,7 +105,7 @@ export function OnlineJoin({ free, error, onSit, onBack }) {
 
   if (!free) {
     return (
-      <TablePanel onExit={onBack} confirmText={t('confirmExitGame')}>
+      <TablePanel onExit={onBack}>
         <p className="online-message">{t('onlineConnecting')}</p>
       </TablePanel>
     );
@@ -115,7 +126,7 @@ export function OnlineJoin({ free, error, onSit, onBack }) {
   });
 
   return (
-    <TablePanel onExit={onBack} confirmText={t('confirmExitGame')}>
+    <TablePanel onExit={onBack}>
       <h2 className="online-title">{t('onlineJoinTitle', { name: hostName })}</h2>
       <NameField onChange={setName} onSubmit={join} />
       {anyFree ? (
@@ -128,7 +139,6 @@ export function OnlineJoin({ free, error, onSit, onBack }) {
       )}
       {error === 'seatTaken' && <p className="online-message" role="status">{t('onlineError_seatTaken')}</p>}
       <button className="start-button" onClick={join} disabled={!name || pickedSeat === null}>{t('onlineJoin')}</button>
-      <button className="online-link-button" onClick={onBack}>{t('onlineBack')}</button>
     </TablePanel>
   );
 }
@@ -189,7 +199,7 @@ export function OnlineLobby({ code, status, error, room, onStart, onLeave }) {
 
   if (error) {
     return (
-      <TablePanel onExit={onLeave} confirmText={t('confirmExitGame')}>
+      <TablePanel onExit={onLeave}>
         <p className="online-message">{t(`onlineError_${error}`)}</p>
         <button className="start-new-game-button" onClick={onLeave}>{t('onlineBack')}</button>
       </TablePanel>
@@ -222,7 +232,7 @@ export function OnlineLobby({ code, status, error, room, onStart, onLeave }) {
       <SeatMap seats={view} />
       {room.isHost ? (
         <>
-          <div className="online-label">{t('onlineTableCode')}</div>
+          <div className="online-label online-code-label">{t('onlineTableCode')}</div>
           <div className="online-code" aria-label={t('onlineTableCode')}>{code}</div>
           <InviteButton code={code} />
           <p className="online-hint">{t('onlineShareHint')}</p>
